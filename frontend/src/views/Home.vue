@@ -1,106 +1,183 @@
 <template>
-  <div class="flex lg:flex-row flex-col gap-4 lg:gap-0 bg-surface-0 dark:bg-surface-900 relative overflow-hidden min-h-screen lg:min-h-0">
-    <div class="flex-1 flex items-center justify-center relative z-10">
-      <div class="p-6 pt-8 lg:p-12 relative w-full">
-        <!-- Mobile profile image - centered at top -->
-        <div class="lg:hidden flex justify-center mb-6">
-          <img
-            src="/steve_2.jpeg"
-            alt="profile"
-            class="profile-image-mobile"
+  <div class="relative min-h-screen">
+    <!-- Hero Section with Background Image -->
+    <div class="hero-container relative">
+      <div class="hero-overlay"></div>
+      <div class="hero-content relative z-10 flex flex-col items-center justify-center text-center text-white px-6 py-20 lg:py-32">
+        <h1 class="text-4xl md:text-6xl lg:text-7xl font-bold mb-6">
+          Beta Theta Pi
+        </h1>
+        <h2 class="text-2xl md:text-4xl lg:text-5xl font-semibold mb-4 text-green-500">
+          Alpha Nu Chapter
+        </h2>
+        <p class="text-lg md:text-xl lg:text-2xl mb-8 max-w-3xl">
+          University of Kansas
+        </p>
+        <div class="flex flex-wrap gap-4 justify-center">
+          <Button 
+            label="Learn About Rush" 
+            icon="pi pi-users" 
+            @click="$router.push('/rush')"
+            size="large"
+            class="bg-green-600 hover:bg-green-700 border-green-600"
+          />
+          <Button 
+            label="Contact Us" 
+            icon="pi pi-envelope" 
+            @click="$router.push('/contact')"
+            size="large"
+            outlined
+            class="border-white text-white hover:bg-white hover:text-black"
           />
         </div>
-        <h1
-          class="text-3xl lg:text-5xl font-bold text-surface-900 dark:text-surface-0 mb-4 lg:leading-normal text-center lg:text-left"
-        >
-          Hi, I'm Steve <br /><span class="text-blue-500 dark:text-blue-400"
-            >Let me introduce you to my work</span
-          >
-        </h1>
-        <p
-          class="text-surface-700 dark:text-surface-200 leading-normal mb-8 text-center lg:text-left"
-        >
-          Actually, there is nothing to introduce you to yet.  It is all coming soon.
-        </p>
-        <div class="flex items-center justify-center lg:justify-start gap-6">
-          <Button label="Contact Me" type="button" @click="showContactModal = true" />
-        </div>
       </div>
-    </div>
-    <!-- Desktop image container -->
-    <div class="hidden lg:flex flex-[0.75] pt-8 lg:pt-0 overflow-hidden relative lg:-ml-16 min-h-0">
-      <!-- Wide, soft gradient overlay for seamless blend -->
-      <div class="absolute left-0 top-0 bottom-0 w-64 lg:w-96 bg-gradient-to-r from-surface-0 via-surface-0/60 via-surface-0/20 to-transparent dark:from-surface-900 dark:via-surface-900/60 dark:via-surface-900/20 dark:to-transparent z-20 pointer-events-none"></div>
-      <img
-        src="/steve_2.jpeg"
-        alt="hero-1"
-        class="hero-image"
-      />
     </div>
 
-    <!-- Contact Modal -->
-    <Dialog
-      v-model:visible="showContactModal"
-      modal
-      :style="{ width: '25rem' }"
-      :breakpoints="{ '960px': '75vw', '641px': '90vw' }"
-    >
-      <template #header>
-        <h3 class="text-xl font-semibold">Contact Me</h3>
-      </template>
-      <div class="flex flex-col items-center gap-4">
-        <img
-          src="/steve_2.jpeg"
-          alt="Steve"
-          class="w-32 h-32 rounded-full object-cover border-4 border-surface-200 dark:border-surface-700"
-        />
-        <div class="text-center">
-          <h4 class="text-2xl font-bold mb-4">Steve Babb</h4>
-          <div class="flex flex-col gap-3">
-            <div class="flex items-center gap-2">
-              <i class="pi pi-envelope text-primary"></i>
-              <a href="mailto:stevebabbmail@gmail.com" class="text-primary hover:underline">
-                stevebabbmail@gmail.com
-              </a>
-            </div>
-            <div class="flex items-center gap-2">
-              <i class="pi pi-linkedin text-primary"></i>
-              <a href="https://www.linkedin.com/in/steve-babb/" target="_blank" rel="noopener noreferrer" class="text-primary hover:underline">
-                linkedin.com/in/steve-babb
-              </a>
-            </div>
-          </div>
+    <!-- About Section -->
+    <div class="bg-surface-0 py-16 px-6 md:px-12 lg:px-20">
+      <div class="max-w-6xl mx-auto">
+        <div class="text-center mb-12">
+          <h2 class="text-3xl md:text-4xl font-bold text-surface-900 mb-4">
+            Building Better Men
+          </h2>
+          <div class="w-24 h-1 bg-green-600 mx-auto mb-6"></div>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <Card class="text-center">
+            <template #content>
+              <div class="flex flex-col items-center">
+                <i class="pi pi-users text-5xl text-green-600 mb-4"></i>
+                <h3 class="text-xl font-bold mb-3">Brotherhood</h3>
+                <p class="text-surface-700">
+                  Forging lifelong bonds of friendship and mutual support among our members.
+                </p>
+              </div>
+            </template>
+          </Card>
+
+          <Card class="text-center">
+            <template #content>
+              <div class="flex flex-col items-center">
+                <i class="pi pi-graduation-cap text-5xl text-green-600 mb-4"></i>
+                <h3 class="text-xl font-bold mb-3">Scholarship</h3>
+                <p class="text-surface-700">
+                  Committed to academic excellence and intellectual growth.
+                </p>
+              </div>
+            </template>
+          </Card>
+
+          <Card class="text-center">
+            <template #content>
+              <div class="flex flex-col items-center">
+                <i class="pi pi-heart text-5xl text-green-600 mb-4"></i>
+                <h3 class="text-xl font-bold mb-3">Service</h3>
+                <p class="text-surface-700">
+                  Giving back to our community and making a positive impact.
+                </p>
+              </div>
+            </template>
+          </Card>
         </div>
       </div>
-    </Dialog>
+    </div>
+
+    <!-- Quick Links Section -->
+    <div class="bg-surface-50 py-16 px-6 md:px-12 lg:px-20">
+      <div class="max-w-6xl mx-auto">
+        <div class="text-center mb-12">
+          <h2 class="text-3xl md:text-4xl font-bold text-surface-900 mb-4">
+            Explore Our Chapter
+          </h2>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <Card class="cursor-pointer hover:shadow-lg transition-shadow" @click="$router.push('/rush')">
+            <template #content>
+              <div class="text-center">
+                <i class="pi pi-users text-4xl text-green-600 mb-3"></i>
+                <h3 class="text-lg font-bold mb-2">Rush</h3>
+                <p class="text-sm text-surface-600">Join our brotherhood</p>
+              </div>
+            </template>
+          </Card>
+
+          <Card class="cursor-pointer hover:shadow-lg transition-shadow" @click="$router.push('/newsletters')">
+            <template #content>
+              <div class="text-center">
+                <i class="pi pi-book text-4xl text-green-600 mb-3"></i>
+                <h3 class="text-lg font-bold mb-2">Newsletters</h3>
+                <p class="text-sm text-surface-600">Stay updated</p>
+              </div>
+            </template>
+          </Card>
+
+          <Card class="cursor-pointer hover:shadow-lg transition-shadow" @click="$router.push('/members')">
+            <template #content>
+              <div class="text-center">
+                <i class="pi pi-id-card text-4xl text-green-600 mb-3"></i>
+                <h3 class="text-lg font-bold mb-2">Members</h3>
+                <p class="text-sm text-surface-600">Meet our brothers</p>
+              </div>
+            </template>
+          </Card>
+
+          <Card class="cursor-pointer hover:shadow-lg transition-shadow" @click="$router.push('/contact')">
+            <template #content>
+              <div class="text-center">
+                <i class="pi pi-envelope text-4xl text-green-600 mb-3"></i>
+                <h3 class="text-lg font-bold mb-2">Contact</h3>
+                <p class="text-sm text-surface-600">Get in touch</p>
+              </div>
+            </template>
+          </Card>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
-<script setup>
-  import { ref } from "vue";
-  import Button from "primevue/button";
-  import Dialog from "primevue/dialog";
 
-  const showContactModal = ref(false);
+<script setup>
+  import Button from "primevue/button";
+  import Card from "primevue/card";
 </script>
+
 <style scoped>
-  /* Mobile profile image - centered hero image */
-  .profile-image-mobile {
-    width: 150px;
-    height: 150px;
-    border-radius: 50%;
-    object-fit: cover;
-    object-position: center 20%;
+  .hero-container {
+    min-height: 70vh;
+    background: linear-gradient(135deg, rgba(0, 0, 0, 0.3) 0%, rgba(0, 0, 0, 0.2) 50%, rgba(0, 0, 0, 0.3) 100%);
+    background-image: url('/kansas_beta.jpeg');
+    background-size: cover;
+    background-position: center;
+    background-blend-mode: overlay;
   }
 
-  /* Desktop hero image */
-  .hero-image {
-    width: 100%;
-    max-width: 100%;
-    height: 100%;
-    max-height: 100%;
-    object-fit: contain;
-    object-position: right;
-    clip-path: polygon(15% 0%, 100% 0%, 100% 100%, 0% 100%);
+  .hero-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(
+      to bottom,
+      rgba(0, 0, 0, 0.4) 0%,
+      rgba(0, 0, 0, 0.3) 50%,
+      rgba(0, 0, 0, 0.4) 100%
+    );
+  }
+
+  .hero-content {
+    min-height: 70vh;
+  }
+
+  @media (max-width: 768px) {
+    .hero-container {
+      min-height: 60vh;
+    }
+    .hero-content {
+      min-height: 60vh;
+    }
   }
 </style>
 
