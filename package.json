@@ -1,0 +1,22 @@
+{
+  "name": "verusware",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Verusware monorepo",
+  "scripts": {
+    "prepare": "husky install",
+    "install:all": "npm install && cd backend && npm install && cd ../frontend && npm install",
+    "deploy": "./deploy.sh",
+    "deploy:backend": "./deploy.sh backend",
+    "deploy:frontend": "./deploy.sh frontend",
+    "lint:backend": "cd backend && npm run lint",
+    "lint:frontend": "cd frontend && npm run lint",
+    "format:backend": "cd backend && npm run format",
+    "format:frontend": "cd frontend && npm run format"
+  },
+  "devDependencies": {
+    "husky": "^8.0.3",
+    "lint-staged": "^14.0.1"
+  }
+}
+

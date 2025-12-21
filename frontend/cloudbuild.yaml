@@ -1,0 +1,34 @@
+steps:
+  # Build frontend Docker image
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '--build-arg'
+      - 'VITE_API_URL=${_FRONTEND_API_URL}'
+      - '--build-arg'
+      - 'VITE_APP_NAME=Verusware'
+      - '--build-arg'
+      - 'VITE_APP_VERSION=1.0.0'
+      - '-t'
+      - 'gcr.io/$PROJECT_ID/verusware-frontend'
+      - '.'
+    id: 'build-frontend'
+
+  # Push frontend image
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'gcr.io/$PROJECT_ID/verusware-frontend']
+    id: 'push-frontend'
+    waitFor: ['build-frontend']
+
+images:
+  - 'gcr.io/$PROJECT_ID/verusware-frontend'
+
+options:
+  machineType: 'E2_HIGHCPU_8'
+  logging: CLOUD_LOGGING_ONLY
+
+timeout: '1200s'
+
+substitutions:
+  _FRONTEND_API_URL: 'http://localhost:3000'
+
