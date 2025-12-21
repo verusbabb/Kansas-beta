@@ -1,0 +1,4 @@
+# This directory contains database migration files
+# Migrations are version-controlled SQL/TypeScript files that define schema changes
+
+

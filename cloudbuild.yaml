@@ -1,0 +1,142 @@
+steps:
+  # Build backend Docker image
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['build', '-t', 'gcr.io/$PROJECT_ID/verusware-backend', './backend']
+    id: 'build-backend'
+
+  # Build frontend Docker image
+  # Note: Frontend env vars are baked into the build at build time
+  # They can come from:
+  # 1. Cloud Build substitution variables (--substitutions)
+  # 2. Secret Manager (accessed during build)
+  # 3. Environment variables set in this step
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '--build-arg'
+      - 'VITE_API_URL=${_FRONTEND_API_URL}'
+      - '--build-arg'
+      - 'VITE_APP_NAME=${_APP_NAME:-Verusware}'
+      - '--build-arg'
+      - 'VITE_APP_VERSION=${_APP_VERSION:-1.0.0}'
+      - '-t'
+      - 'gcr.io/$PROJECT_ID/verusware-frontend'
+      - './frontend'
+    id: 'build-frontend'
+    env:
+      - 'VITE_API_URL=${_FRONTEND_API_URL}'
+      - 'VITE_APP_NAME=${_APP_NAME:-Verusware}'
+
+  # Push backend image
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'gcr.io/$PROJECT_ID/verusware-backend']
+    id: 'push-backend'
+    waitFor: ['build-backend']
+
+  # Run database migrations
+  # This step runs migrations before deploying the app
+  # Uses Node.js to run migrations with Cloud SQL connection
+  - name: 'node:20'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        cd backend
+        npm ci --production=false
+        npm run migration:run
+    id: 'run-migrations'
+    waitFor: ['push-backend']
+    env:
+      - 'NODE_ENV=production'
+      - 'DATABASE_HOST=/cloudsql/$PROJECT_ID:us-central1:verusware-db'
+      - 'DATABASE_NAME=${_DATABASE_NAME:-verusware}'
+      - 'DATABASE_USER=${_DATABASE_USER:-postgres}'
+      - 'GCP_SECRET_MANAGER_ENABLED=true'
+      - 'GCP_PROJECT_ID=$PROJECT_ID'
+    # Connect to Cloud SQL instance via Unix socket
+    volumes:
+      - name: 'cloudsql'
+        path: /cloudsql
+    # Note: DATABASE_PASSWORD should be loaded from Secret Manager
+    # The migration script will use Secret Manager to get the password
+
+  # Push frontend image
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'gcr.io/$PROJECT_ID/verusware-frontend']
+    id: 'push-frontend'
+    waitFor: ['build-frontend']
+
+  # Deploy backend to Cloud Run
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args:
+      - 'run'
+      - 'deploy'
+      - 'verusware-backend'
+      - '--image'
+      - 'gcr.io/$PROJECT_ID/verusware-backend'
+      - '--region'
+      - 'us-central1'
+      - '--platform'
+      - 'managed'
+      - '--allow-unauthenticated'
+      - '--port'
+      - '3000'
+      - '--memory'
+      - '512Mi'
+      - '--cpu'
+      - '1'
+      - '--min-instances'
+      - '0'
+      - '--max-instances'
+      - '10'
+      - '--add-cloudsql-instances'
+      - '$PROJECT_ID:us-central1:verusware-db'
+    id: 'deploy-backend'
+    waitFor: ['run-migrations']
+
+  # Deploy frontend to Cloud Run
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args:
+      - 'run'
+      - 'deploy'
+      - 'verusware-frontend'
+      - '--image'
+      - 'gcr.io/$PROJECT_ID/verusware-frontend'
+      - '--region'
+      - 'us-central1'
+      - '--platform'
+      - 'managed'
+      - '--allow-unauthenticated'
+      - '--port'
+      - '80'
+      - '--memory'
+      - '256Mi'
+      - '--cpu'
+      - '1'
+      - '--min-instances'
+      - '0'
+      - '--max-instances'
+      - '10'
+    id: 'deploy-frontend'
+    waitFor: ['push-frontend']
+
+images:
+  - 'gcr.io/$PROJECT_ID/verusware-backend'
+  - 'gcr.io/$PROJECT_ID/verusware-frontend'
+
+options:
+  machineType: 'E2_HIGHCPU_8'
+  logging: CLOUD_LOGGING_ONLY
+
+timeout: '1200s'
+
+substitutions:
+  _FRONTEND_API_URL: 'https://api.verusware.com'
+  _APP_NAME: 'Verusware'
+  _APP_VERSION: '1.0.0'
+  _DATABASE_NAME: 'verusware'
+  _DATABASE_USER: 'postgres'
+  # _DATABASE_PASSWORD should be set via Secret Manager or Cloud Build secrets
+
