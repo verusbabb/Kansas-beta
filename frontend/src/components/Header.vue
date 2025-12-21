@@ -2,11 +2,16 @@
   <div>
     <Toast />
 
-    <div class="card">
+    <div>
       <Menubar :model="items" class="header-menubar">
         <template #start>
-          <div class="text-2xl font-bold mr-8">
-            Verus | <span class="text-indigo-500">Ware</span>
+          <div class="flex items-center gap-3 header-branding">
+            <div class="text-2xl font-bold flex items-center gap-2">
+              <span class="brand-text">Beta Theta Pi</span>
+              <span class="mx-2 brand-pipe">|</span>
+              <span class="brand-alpha">Alpha Nu</span>
+              <img src="/crest.webp" alt="Beta Theta Pi Crest" class="crest-image" />
+            </div>
           </div>
         </template>
         <template #item="{ item, props, hasSubmenu, root }">
@@ -18,7 +23,7 @@
               custom
               v-slot="{ href, navigate, isActive }"
             >
-              <a :href="href" @click="navigate" class="flex items-center">
+              <a :href="href" @click="navigate" class="flex items-center" :class="{ 'active-link': isActive }">
                 <span :class="item.icon"></span>
                 <span class="ml-2">{{ item.label }}</span>
                 <Badge
@@ -59,18 +64,6 @@
             </a>
           </template>
         </template>
-        <template #end>
-          <Button
-            label="DB Connection Check"
-            icon="pi pi-heart"
-            @click="handleHealthCheck"
-            :loading="isCheckingHealth"
-            :disabled="isCheckingHealth"
-            text
-            severity="secondary"
-            class="db-check-button"
-          />
-        </template>
       </Menubar>
     </div>
   </div>
@@ -80,24 +73,9 @@
   import { ref } from "vue";
   import {
     Badge,
-    Button,
     Menubar,
     Toast,
   } from "primevue";
-  import { useHealthStore } from "@/stores/health";
-
-  const healthStore = useHealthStore();
-  const isCheckingHealth = ref(false);
-
-  const handleHealthCheck = async () => {
-    console.log('Health Check clicked');
-    isCheckingHealth.value = true;
-    try {
-      await healthStore.checkHealthWithToast();
-    } finally {
-      isCheckingHealth.value = false;
-    }
-  };
 
   const items = ref([
     {
@@ -106,33 +84,24 @@
       routerLink: "/",
     },
     {
-      label: "Things",
-      icon: "pi pi-pencil",
-      routerLink: "/blog",
+      label: "Rush",
+      icon: "pi pi-users",
+      routerLink: "/rush",
     },
     {
-      label: "Projects",
-      icon: "pi pi-graduation-cap",
-      badge: 3,
-      items: [
-        {
-          label: "Coming Soon",
-          icon: "pi pi-check",
-        },
-        {
-          label: "Coming Soon",
-          icon: "pi pi-check",
-        },
-        {
-          label: "Coming Soon",
-          icon: "pi pi-check",
-        },
-      ],
+      label: "NewsLetters",
+      icon: "pi pi-book",
+      routerLink: "/newsletters",
     },
     {
-      label: "Profile",
-      icon: "pi pi-user",
-      routerLink: "/",
+      label: "Members and Alumni",
+      icon: "pi pi-id-card",
+      routerLink: "/members",
+    },
+    {
+      label: "Contact Us",
+      icon: "pi pi-envelope",
+      routerLink: "/contact",
     },
   ]);
 </script>
@@ -142,47 +111,95 @@
   .header-menubar :deep(.p-menubar) {
     padding-left: 1rem;
     padding-right: 1rem;
+    background: #000000 !important;
+    background-color: #000000 !important;
+    border: none !important;
+    border-bottom: 2px solid #22c55e !important;
+    display: flex !important;
+    justify-content: space-between !important;
   }
 
-  /* Design customization: Green checkmark icons in submenu */
-  :deep(.p-submenu-list .pi) {
-    color: #10b981;
+  .header-menubar :deep(.p-menubar-root) {
+    background: #000000 !important;
+    background-color: #000000 !important;
   }
 
-  /* Functional: Hide DB Connection Check button label on mobile */
-  .db-check-button :deep(.p-button-label) {
-    display: none;
+  .header-menubar :deep(.p-menubar-start) {
+    background: transparent !important;
   }
 
-  @media (min-width: 1024px) {
-    .db-check-button :deep(.p-button-label) {
-      display: inline-block;
-    }
+  /* Right justify navigation and add spacing */
+  .header-menubar :deep(.p-menubar-root-list) {
+    display: flex !important;
+    justify-content: flex-end !important;
+    gap: 1.5rem !important;
+    margin-left: auto !important;
   }
 
-  /* Design customization: Replace all icons with green checkmarks on mobile */
+  .header-menubar :deep(.p-menubar-root-list > li) {
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+  }
+
+  /* Beta Theta Pi colors - black and green on white background */
+  .header-branding {
+    color: #000000 !important;
+  }
+
+  .header-menubar :deep(.p-menubar-start) {
+    color: #000000 !important;
+  }
+
+  .brand-text {
+    color: #000000 !important;
+  }
+
+  .brand-pipe {
+    color: #22c55e !important;
+  }
+
+  .brand-alpha {
+    color: #22c55e !important;
+  }
+
+  .crest-image {
+    height: 2.5rem;
+    width: auto;
+    margin-left: 0.5rem;
+    object-fit: contain;
+  }
+
+  /* Navigation links - black text on white background */
+  .header-menubar :deep(.p-menubar-root-list > li > a) {
+    color: #000000 !important;
+  }
+
+  .header-menubar :deep(.p-menubar-root-list > li > a:hover) {
+    background-color: rgba(34, 197, 94, 0.15) !important;
+    color: #000000 !important;
+  }
+
+  .header-menubar :deep(.p-menubar-root-list > li > a .pi) {
+    color: #000000 !important;
+  }
+
+  .active-link {
+    background-color: rgba(34, 197, 94, 0.2) !important;
+    border-bottom: none !important;
+    font-weight: 600 !important;
+    color: #000000 !important;
+  }
+
+  .active-link .pi {
+    color: #000000 !important;
+  }
+
+
+  /* Mobile menu styling */
   @media (max-width: 1023px) {
-    /* Add margin to mobile overlay container (handles both main menu and submenus) */
     :deep(.p-menubar-mobile) {
       margin-left: 1rem;
       margin-right: 1rem;
-    }
-
-    :deep(.p-menubar-mobile-active .p-menubar-root-list > li > a .pi:not(.pi-angle-down)) {
-      color: #10b981;
-      margin-right: 0.5rem;
-    }
-
-    :deep(.p-menubar-mobile-active .p-menubar-root-list > li > a .pi.pi-home::before),
-    :deep(.p-menubar-mobile-active .p-menubar-root-list > li > a .pi.pi-pencil::before),
-    :deep(.p-menubar-mobile-active .p-menubar-root-list > li > a .pi.pi-graduation-cap::before),
-    :deep(.p-menubar-mobile-active .p-menubar-root-list > li > a .pi.pi-user::before) {
-      content: "\e90b";
-    }
-
-    :deep(.p-menubar-mobile-active .p-submenu-list > li > a .pi) {
-      margin-right: 0.5rem;
-      color: #10b981;
     }
   }
 </style>
