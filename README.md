@@ -1,6 +1,6 @@
-# Verusware
+# Kansas Beta
 
-A full-stack application with NestJS backend and Vue 3 frontend, deployed to Google Cloud Platform with custom domain support.
+A full-stack application for Beta Theta Pi Alpha Nu Chapter at the University of Kansas, built with NestJS backend and Vue 3 frontend, deployed to Google Cloud Platform.
 
 ## Tech Stack
 
@@ -27,7 +27,7 @@ A full-stack application with NestJS backend and Vue 3 frontend, deployed to Goo
 ## Project Structure
 
 ```
-verusware/
+kansas-beta/
 ├── backend/                    # NestJS backend application
 │   ├── src/
 │   │   ├── config/            # Configuration & Secret Manager
@@ -130,13 +130,13 @@ FRONTEND_URL=http://localhost:5173
 # Database (Local PostgreSQL)
 DATABASE_HOST=localhost
 DATABASE_PORT=5432
-DATABASE_NAME=verusware
+DATABASE_NAME=kansas_beta
 DATABASE_USER=postgres
 DATABASE_PASSWORD=your_password
 
 # GCP Secret Manager (set to false for local dev)
 GCP_SECRET_MANAGER_ENABLED=false
-GCP_PROJECT_ID=verusware
+GCP_PROJECT_ID=kansas-beta
 ```
 
 **Note:** For production, secrets are stored in GCP Secret Manager. See `backend/src/config/README.md` for details.
@@ -190,7 +190,7 @@ git commit --no-verify -m "your message"
 1. Install and start PostgreSQL locally
 2. Create a database:
 ```bash
-createdb verusware
+createdb kansas_beta
 ```
 3. The application will auto-sync tables in development mode
 
@@ -249,31 +249,41 @@ The built files will be in the `dist/` directory.
 ### Build Backend Image
 ```bash
 cd backend
-docker build -t verusware-backend .
-docker run -p 3000:3000 verusware-backend
+docker build -t kansas-beta-backend .
+docker run -p 3000:3000 kansas-beta-backend
 ```
 
 ### Build Frontend Image
 ```bash
 cd frontend
-docker build -t verusware-frontend .
-docker run -p 80:80 verusware-frontend
+docker build -t kansas-beta-frontend .
+docker run -p 80:80 kansas-beta-frontend
 ```
 
 ## GCP Deployment
 
 ### Prerequisites
 1. Google Cloud Platform account
-2. GCP project created (`verusware`)
+2. GCP project created (`kansas-beta`)
 3. `gcloud` CLI installed and authenticated
 4. Billing enabled on GCP project
 5. Required APIs enabled (see below)
 
 ### Initial Setup
 
+**Quick Setup:**
+Run the automated setup script:
+```bash
+./setup-gcp.sh
+```
+
+This will create the project, enable APIs, create the database, and set up permissions.
+
+**Manual Setup:**
+
 1. Set your GCP project:
 ```bash
-gcloud config set project verusware
+gcloud config set project kansas-beta
 ```
 
 2. Enable required APIs:
@@ -291,7 +301,7 @@ gcloud services enable \
 
 1. Create a Cloud SQL PostgreSQL instance:
 ```bash
-gcloud sql instances create verusware-db \
+gcloud sql instances create kansas-beta-db \
   --database-version=POSTGRES_15 \
   --tier=db-f1-micro \
   --region=us-central1 \
@@ -300,8 +310,8 @@ gcloud sql instances create verusware-db \
 
 2. Create a database:
 ```bash
-gcloud sql databases create verusware \
-  --instance=verusware-db
+gcloud sql databases create kansas_beta \
+  --instance=kansas-beta-db
 ```
 
 3. Store database password in Secret Manager:
@@ -350,13 +360,13 @@ The script handles:
 1. Build and push the image:
 ```bash
 cd backend
-gcloud builds submit --tag gcr.io/verusware/verusware-backend
+gcloud builds submit --tag gcr.io/kansas-beta/kansas-beta-backend
 ```
 
 2. Deploy to Cloud Run:
 ```bash
-gcloud run deploy verusware-backend \
-  --image gcr.io/verusware/verusware-backend \
+gcloud run deploy kansas-beta-backend \
+  --image gcr.io/kansas-beta/kansas-beta-backend \
   --region us-central1 \
   --platform managed \
   --allow-unauthenticated \
@@ -365,15 +375,15 @@ gcloud run deploy verusware-backend \
   --cpu 1 \
   --min-instances 0 \
   --max-instances 10 \
-  --set-env-vars NODE_ENV=production,GCP_SECRET_MANAGER_ENABLED=true,GCP_PROJECT_ID=verusware,DATABASE_HOST=/cloudsql/verusware:us-central1:verusware-db,DATABASE_NAME=verusware \
-  --add-cloudsql-instances verusware:us-central1:verusware-db
+  --set-env-vars NODE_ENV=production,GCP_SECRET_MANAGER_ENABLED=true,GCP_PROJECT_ID=kansas-beta,DATABASE_HOST=/cloudsql/kansas-beta:us-central1:kansas-beta-db,DATABASE_NAME=kansas_beta \
+  --add-cloudsql-instances kansas-beta:us-central1:kansas-beta-db
 ```
 
 #### Deploy Frontend
 
 1. Get backend URL:
 ```bash
-BACKEND_URL=$(gcloud run services describe verusware-backend \
+BACKEND_URL=$(gcloud run services describe kansas-beta-backend \
   --region us-central1 \
   --format 'value(status.url)')
 ```
@@ -384,8 +394,8 @@ cd frontend
 gcloud builds submit --config=cloudbuild.yaml \
   --substitutions=_FRONTEND_API_URL=${BACKEND_URL}
 
-gcloud run deploy verusware-frontend \
-  --image gcr.io/verusware/verusware-frontend \
+gcloud run deploy kansas-beta-frontend \
+  --image gcr.io/kansas-beta/kansas-beta-frontend \
   --region us-central1 \
   --platform managed \
   --allow-unauthenticated \
@@ -398,33 +408,26 @@ gcloud run deploy verusware-frontend \
 
 ### Custom Domain Setup
 
-The application is configured for custom domains:
-- **Backend**: `api.verusware.com`
-- **Frontend**: `verusware.com` and `www.verusware.com`
+To set up custom domains (optional):
 
 1. Create domain mappings:
 ```bash
-# Backend
+# Backend (replace with your domain)
 gcloud run domain-mappings create \
-  --service verusware-backend \
-  --domain api.verusware.com \
+  --service kansas-beta-backend \
+  --domain api.yourdomain.com \
   --region us-central1
 
-# Frontend
+# Frontend (replace with your domain)
 gcloud run domain-mappings create \
-  --service verusware-frontend \
-  --domain verusware.com \
-  --region us-central1
-
-gcloud run domain-mappings create \
-  --service verusware-frontend \
-  --domain www.verusware.com \
+  --service kansas-beta-frontend \
+  --domain yourdomain.com \
   --region us-central1
 ```
 
-2. Get DNS records and configure in your DNS provider (e.g., GoDaddy)
+2. Get DNS records and configure in your DNS provider
 
-3. Check DNS propagation:
+3. Check DNS propagation (update check-dns.sh with your domains):
 ```bash
 ./check-dns.sh
 ```
@@ -435,7 +438,7 @@ gcloud run domain-mappings create \
 
 ```bash
 gcloud builds submit --config=cloudbuild.yaml \
-  --substitutions=_FRONTEND_API_URL=https://api.verusware.com
+  --substitutions=_FRONTEND_API_URL=${BACKEND_URL}
 ```
 
 ## Cost Optimization
@@ -514,9 +517,20 @@ The frontend includes a "DB Connection Check" button in the header that:
 
 ## Project URLs
 
-- **Frontend**: https://verusware.com
-- **Backend API**: https://api.verusware.com
-- **API Documentation**: https://api.verusware.com/api
+After deployment, get your service URLs:
+```bash
+# Frontend URL
+gcloud run services describe kansas-beta-frontend \
+  --region us-central1 \
+  --format 'value(status.url)'
+
+# Backend URL
+gcloud run services describe kansas-beta-backend \
+  --region us-central1 \
+  --format 'value(status.url)'
+```
+
+The API documentation will be available at: `{BACKEND_URL}/api`
 
 ## Additional Documentation
 

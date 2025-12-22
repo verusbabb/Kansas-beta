@@ -45,13 +45,21 @@ export class HttpExceptionFilter implements ExceptionFilter {
 
     // Log the error
     if (status >= 500) {
-      this.logger.error(
-        {
-          ...errorResponse,
-          stack: exception instanceof Error ? exception.stack : undefined,
-        },
-        'Unhandled exception',
-      );
+      const errorDetails = {
+        ...errorResponse,
+        stack: exception instanceof Error ? exception.stack : undefined,
+        errorName: exception instanceof Error ? exception.name : undefined,
+        errorMessage: exception instanceof Error ? exception.message : String(exception),
+        // Include Sequelize-specific error details if present
+        ...(exception && typeof exception === 'object' && 'original' in exception
+          ? {
+              original: (exception as any).original,
+              sql: (exception as any).sql,
+              parameters: (exception as any).parameters,
+            }
+          : {}),
+      };
+      this.logger.error(errorDetails, 'Unhandled exception');
     } else {
       this.logger.warn(errorResponse, 'Client error');
     }

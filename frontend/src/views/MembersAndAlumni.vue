@@ -1,13 +1,13 @@
 <template>
   <div class="bg-surface-0 min-h-screen">
     <!-- Hero Section -->
-    <div class="bg-gradient-to-r from-black via-gray-900 to-black text-white py-16 px-6">
+    <div class="bg-gradient-to-r from-[#5A7A9F] via-[#6F8FAF] to-[#5A7A9F] text-white py-16 px-6">
       <div class="max-w-6xl mx-auto text-center">
-        <h1 class="text-4xl md:text-5xl font-bold mb-4">Members & Alumni</h1>
+        <h1 class="text-4xl md:text-5xl font-bold mb-4">People</h1>
         <p class="text-xl md:text-2xl text-gray-300 mb-6">
-          Meet the brothers of Alpha Nu Chapter
+          Members, Alumni, Advisors, and Leadership Teams
         </p>
-        <div class="w-32 h-1 bg-green-600 mx-auto"></div>
+        <div class="w-32 h-1 bg-gray-400 mx-auto"></div>
       </div>
     </div>
 
@@ -18,7 +18,7 @@
         <TabPanel header="Active Members">
           <div class="mt-6">
             <!-- Search and Filter -->
-            <div class="mb-6 flex flex-col md:flex-row gap-4">
+            <div class="mb-6 flex flex-col md:flex-row gap-4 items-center">
               <span class="p-input-icon-left flex-1">
                 <i class="pi pi-search" />
                 <InputText 
@@ -27,12 +27,14 @@
                   class="w-full"
                 />
               </span>
-              <Select 
-                v-model="activeYearFilter" 
-                :options="yearOptions" 
-                placeholder="Filter by Year"
-                class="w-full md:w-48"
-              />
+              <div class="w-full md:w-48">
+                <Select 
+                  v-model="activeYearFilter" 
+                  :options="yearOptions" 
+                  placeholder="Filter by Year"
+                  class="w-full"
+                />
+              </div>
             </div>
 
             <!-- Members Grid -->
@@ -74,7 +76,7 @@
         <TabPanel header="Alumni">
           <div class="mt-6">
             <!-- Search and Filter -->
-            <div class="mb-6 flex flex-col md:flex-row gap-4">
+            <div class="mb-6 flex flex-col md:flex-row gap-4 items-center">
               <span class="p-input-icon-left flex-1">
                 <i class="pi pi-search" />
                 <InputText 
@@ -83,12 +85,14 @@
                   class="w-full"
                 />
               </span>
-              <Select 
-                v-model="alumniYearFilter" 
-                :options="yearOptions" 
-                placeholder="Filter by Graduation Year"
-                class="w-full md:w-48"
-              />
+              <div class="w-full md:w-48">
+                <Select 
+                  v-model="alumniYearFilter" 
+                  :options="yearOptions" 
+                  placeholder="Filter by Graduation Year"
+                  class="w-full"
+                />
+              </div>
             </div>
 
             <!-- Alumni Grid -->
@@ -202,6 +206,56 @@
 <style scoped>
   :deep(.p-tabview-nav) {
     background: transparent;
+  }
+
+  /* Ensure search input and select dropdown have matching heights and alignment */
+  :deep(.p-inputtext) {
+    height: 2.5rem;
+    box-sizing: border-box;
+  }
+
+  :deep(.p-select) {
+    height: 2.5rem;
+    box-sizing: border-box;
+  }
+
+  :deep(.p-select .p-select-label) {
+    height: 2.5rem;
+    line-height: 2.5rem;
+    display: flex;
+    align-items: center;
+    padding: 0 0.75rem;
+    box-sizing: border-box;
+  }
+
+  /* Ensure the Select input wrapper aligns properly */
+  :deep(.p-select .p-select-trigger) {
+    height: 2.5rem;
+    display: flex;
+    align-items: center;
+    box-sizing: border-box;
+  }
+
+  /* Ensure both input and select are aligned at the same baseline */
+  :deep(.p-input-icon-left) {
+    display: flex;
+    align-items: center;
+  }
+
+  /* Add spacing between search icon and input */
+  :deep(.p-input-icon-left .pi) {
+    margin-right: 0.75rem;
+  }
+
+  :deep(.p-input-icon-left .p-inputtext) {
+    padding-left: 0.5rem;
+  }
+
+  /* Center the placeholder text in Select */
+  :deep(.p-select .p-select-label.p-placeholder) {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
   }
 </style>
 

@@ -4,6 +4,7 @@ import PrimeVue from 'primevue/config'
 import Material from '@primevue/themes/material'
 import Ripple from 'primevue/ripple'
 import ToastService from 'primevue/toastservice'
+import ConfirmationService from 'primevue/confirmationservice'
 import 'primeicons/primeicons.css'
 
 import App from './App.vue'
@@ -25,6 +26,7 @@ app.use(PrimeVue, {
   },
 })
 app.use(ToastService)
+app.use(ConfirmationService)
 app.directive('ripple', Ripple)
 
 app.mount('#app')

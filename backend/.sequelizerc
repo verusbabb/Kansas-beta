@@ -1,10 +1,13 @@
 const path = require('path');
 
+// Resolve paths relative to this file's location (backend directory)
+const backendDir = __dirname;
+
 module.exports = {
-  'config': path.resolve('src', 'database', 'config', 'database.config.ts'),
-  'models-path': path.resolve('src', 'database', 'entities'),
-  'seeders-path': path.resolve('src', 'database', 'seeders'),
-  'migrations-path': path.resolve('src', 'database', 'migrations'),
+  'config': path.join(backendDir, 'src', 'database', 'config', 'database.config.js'),
+  'models-path': path.join(backendDir, 'src', 'database', 'entities'),
+  'seeders-path': path.join(backendDir, 'src', 'database', 'seeders'),
+  'migrations-path': path.join(backendDir, 'src', 'database', 'migrations'),
 };
 
 

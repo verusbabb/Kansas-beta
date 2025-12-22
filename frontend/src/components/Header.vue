@@ -3,12 +3,12 @@
     <Toast />
 
     <div>
-      <Menubar :model="items" class="header-menubar">
+      <Menubar :model="items" class="header-menubar" :autoDisplay="false" :mobileBreakpoint="1024">
         <template #start>
           <div class="flex items-center gap-3 header-branding">
-            <div class="text-2xl font-bold flex items-center gap-2">
+            <div class="header-text-container font-bold flex items-center gap-2">
               <span class="brand-text">Beta Theta Pi</span>
-              <span class="mx-2 brand-pipe">|</span>
+              <span class="mx-1 md:mx-2 brand-pipe">|</span>
               <span class="brand-alpha">Alpha Nu</span>
               <img src="/crest.webp" alt="Beta Theta Pi Crest" class="crest-image" />
             </div>
@@ -94,72 +94,96 @@
       routerLink: "/newsletters",
     },
     {
-      label: "Members and Alumni",
+      label: "Events",
+      icon: "pi pi-calendar",
+      routerLink: "/events",
+    },
+        {
+      label: "People",
       icon: "pi pi-id-card",
       routerLink: "/members",
-    },
-    {
+        },
+        {
+      label: "Donate",
+      icon: "pi pi-heart",
+      routerLink: "/donate",
+        },
+        {
       label: "Contact Us",
       icon: "pi pi-envelope",
       routerLink: "/contact",
+    },
+    {
+      label: "Admin",
+      icon: "pi pi-cog",
+      routerLink: "/admin",
     },
   ]);
 </script>
 
 <style scoped>
+  /* Ensure header container is always visible */
+  .header-menubar {
+    display: block !important;
+    visibility: visible !important;
+  }
+
   /* Add padding inside the Menubar */
   .header-menubar :deep(.p-menubar) {
     padding-left: 1rem;
     padding-right: 1rem;
-    background: #000000 !important;
-    background-color: #000000 !important;
+    background: #ffffff !important;
+    background-color: #ffffff !important;
     border: none !important;
-    border-bottom: 2px solid #22c55e !important;
+    border-bottom: 2px solid #9ca3af !important;
     display: flex !important;
     justify-content: space-between !important;
+    visibility: visible !important;
   }
 
   .header-menubar :deep(.p-menubar-root) {
-    background: #000000 !important;
-    background-color: #000000 !important;
+    background: #ffffff !important;
+    background-color: #ffffff !important;
   }
 
   .header-menubar :deep(.p-menubar-start) {
     background: transparent !important;
   }
 
-  /* Right justify navigation and add spacing */
-  .header-menubar :deep(.p-menubar-root-list) {
-    display: flex !important;
-    justify-content: flex-end !important;
-    gap: 1.5rem !important;
-    margin-left: auto !important;
+  /* Right justify navigation and add spacing - only on desktop */
+  @media (min-width: 1024px) {
+    .header-menubar :deep(.p-menubar-root-list) {
+      display: flex !important;
+      justify-content: flex-end !important;
+      gap: 1.5rem !important;
+      margin-left: auto !important;
+    }
+
+    .header-menubar :deep(.p-menubar-root-list > li) {
+      margin-left: 0 !important;
+      margin-right: 0 !important;
+    }
   }
 
-  .header-menubar :deep(.p-menubar-root-list > li) {
-    margin-left: 0 !important;
-    margin-right: 0 !important;
-  }
-
-  /* Beta Theta Pi colors - black and green on white background */
+  /* Beta Theta Pi colors - denim blue and gray */
   .header-branding {
-    color: #000000 !important;
+    color: #6F8FAF !important;
   }
 
   .header-menubar :deep(.p-menubar-start) {
-    color: #000000 !important;
+    color: #6F8FAF !important;
   }
 
   .brand-text {
-    color: #000000 !important;
+    color: #6F8FAF !important;
   }
 
   .brand-pipe {
-    color: #22c55e !important;
+    color: #9ca3af !important;
   }
 
   .brand-alpha {
-    color: #22c55e !important;
+    color: #9ca3af !important;
   }
 
   .crest-image {
@@ -169,37 +193,108 @@
     object-fit: contain;
   }
 
-  /* Navigation links - black text on white background */
+  /* Navigation links - denim blue text on white background */
   .header-menubar :deep(.p-menubar-root-list > li > a) {
-    color: #000000 !important;
+    color: #6F8FAF !important;
   }
 
   .header-menubar :deep(.p-menubar-root-list > li > a:hover) {
-    background-color: rgba(34, 197, 94, 0.15) !important;
-    color: #000000 !important;
+    background-color: rgba(156, 163, 175, 0.2) !important;
+    color: #6F8FAF !important;
   }
 
   .header-menubar :deep(.p-menubar-root-list > li > a .pi) {
-    color: #000000 !important;
-  }
+    color: #6F8FAF !important;
+    }
 
   .active-link {
-    background-color: rgba(34, 197, 94, 0.2) !important;
+    background-color: rgba(156, 163, 175, 0.3) !important;
     border-bottom: none !important;
+    border-radius: 0.5rem !important;
+    padding: 0.5rem 1rem !important;
     font-weight: 600 !important;
-    color: #000000 !important;
+    color: #6F8FAF !important;
   }
 
   .active-link .pi {
-    color: #000000 !important;
+    color: #6F8FAF !important;
   }
 
 
+  /* Header text container - responsive sizing */
+  .header-text-container {
+    font-size: 1rem; /* Base mobile size */
+    line-height: 1.2;
+  }
+
+  @media (min-width: 640px) {
+    .header-text-container {
+      font-size: 1.25rem; /* sm */
+    }
+  }
+
+  @media (min-width: 768px) {
+    .header-text-container {
+      font-size: 1.5rem; /* md - text-2xl equivalent */
+    }
+  }
+
   /* Mobile menu styling */
   @media (max-width: 1023px) {
+    /* Make header text smaller on mobile to prevent wrapping */
+    .header-text-container {
+      font-size: 0.875rem !important; /* text-sm */
+      white-space: nowrap;
+    }
+
+    .brand-text,
+    .brand-alpha {
+      white-space: nowrap;
+    }
+
+    /* Smaller crest on mobile */
+    .crest-image {
+      height: 1.75rem !important;
+      margin-left: 0.25rem !important;
+    }
+
+    /* Let PrimeVue handle hiding the desktop menu - don't override */
+    /* Only style the mobile menu when it's visible */
+    .header-menubar :deep(.p-menubar-mobile) {
+      position: absolute !important;
+      top: 100% !important;
+      left: 0 !important;
+      right: 0 !important;
+      background: white !important;
+      z-index: 1000 !important;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1) !important;
+      margin: 0 !important;
+      padding: 1rem !important;
+      width: 100% !important;
+    }
+
+    /* Style mobile menu items when visible */
+    .header-menubar :deep(.p-menubar-mobile .p-menubar-root-list) {
+      flex-direction: column !important;
+      gap: 0.5rem !important;
+    }
+
+    .header-menubar :deep(.p-menubar-mobile .p-menubar-root-list > li > a) {
+      padding: 0.75rem 1rem !important;
+      display: flex !important;
+      align-items: center !important;
+      width: 100% !important;
+    }
+  }
+
+  /* Desktop - ensure menu shows and mobile menu is hidden */
+  @media (min-width: 1024px) {
+    :deep(.p-menubar-button) {
+      display: none !important;
+    }
+
     :deep(.p-menubar-mobile) {
-      margin-left: 1rem;
-      margin-right: 1rem;
+      display: none !important;
     }
   }
 </style>
