@@ -1,7 +1,7 @@
 steps:
   # Build backend Docker image
   - name: 'gcr.io/cloud-builders/docker'
-    args: ['build', '-t', 'gcr.io/$PROJECT_ID/verusware-backend', './backend']
+    args: ['build', '-t', 'gcr.io/$PROJECT_ID/kansas-beta-backend', './backend']
     id: 'build-backend'
 
   # Build frontend Docker image
@@ -16,20 +16,20 @@ steps:
       - '--build-arg'
       - 'VITE_API_URL=${_FRONTEND_API_URL}'
       - '--build-arg'
-      - 'VITE_APP_NAME=${_APP_NAME:-Verusware}'
+      - 'VITE_APP_NAME=${_APP_NAME:-Kansas Beta}'
       - '--build-arg'
       - 'VITE_APP_VERSION=${_APP_VERSION:-1.0.0}'
       - '-t'
-      - 'gcr.io/$PROJECT_ID/verusware-frontend'
+      - 'gcr.io/$PROJECT_ID/kansas-beta-frontend'
       - './frontend'
     id: 'build-frontend'
     env:
       - 'VITE_API_URL=${_FRONTEND_API_URL}'
-      - 'VITE_APP_NAME=${_APP_NAME:-Verusware}'
+      - 'VITE_APP_NAME=${_APP_NAME:-Kansas Beta}'
 
   # Push backend image
   - name: 'gcr.io/cloud-builders/docker'
-    args: ['push', 'gcr.io/$PROJECT_ID/verusware-backend']
+    args: ['push', 'gcr.io/$PROJECT_ID/kansas-beta-backend']
     id: 'push-backend'
     waitFor: ['build-backend']
 
@@ -48,8 +48,8 @@ steps:
     waitFor: ['push-backend']
     env:
       - 'NODE_ENV=production'
-      - 'DATABASE_HOST=/cloudsql/$PROJECT_ID:us-central1:verusware-db'
-      - 'DATABASE_NAME=${_DATABASE_NAME:-verusware}'
+      - 'DATABASE_HOST=/cloudsql/$PROJECT_ID:us-central1:${_DATABASE_INSTANCE:-kansas-beta-db}'
+      - 'DATABASE_NAME=${_DATABASE_NAME:-kansas_beta}'
       - 'DATABASE_USER=${_DATABASE_USER:-postgres}'
       - 'GCP_SECRET_MANAGER_ENABLED=true'
       - 'GCP_PROJECT_ID=$PROJECT_ID'
@@ -62,7 +62,7 @@ steps:
 
   # Push frontend image
   - name: 'gcr.io/cloud-builders/docker'
-    args: ['push', 'gcr.io/$PROJECT_ID/verusware-frontend']
+    args: ['push', 'gcr.io/$PROJECT_ID/kansas-beta-frontend']
     id: 'push-frontend'
     waitFor: ['build-frontend']
 
@@ -72,9 +72,9 @@ steps:
     args:
       - 'run'
       - 'deploy'
-      - 'verusware-backend'
+      - 'kansas-beta-backend'
       - '--image'
-      - 'gcr.io/$PROJECT_ID/verusware-backend'
+      - 'gcr.io/$PROJECT_ID/kansas-beta-backend'
       - '--region'
       - 'us-central1'
       - '--platform'
@@ -91,7 +91,7 @@ steps:
       - '--max-instances'
       - '10'
       - '--add-cloudsql-instances'
-      - '$PROJECT_ID:us-central1:verusware-db'
+      - '$PROJECT_ID:us-central1:${_DATABASE_INSTANCE:-kansas-beta-db}'
     id: 'deploy-backend'
     waitFor: ['run-migrations']
 
@@ -101,9 +101,9 @@ steps:
     args:
       - 'run'
       - 'deploy'
-      - 'verusware-frontend'
+      - 'kansas-beta-frontend'
       - '--image'
-      - 'gcr.io/$PROJECT_ID/verusware-frontend'
+      - 'gcr.io/$PROJECT_ID/kansas-beta-frontend'
       - '--region'
       - 'us-central1'
       - '--platform'
@@ -123,8 +123,8 @@ steps:
     waitFor: ['push-frontend']
 
 images:
-  - 'gcr.io/$PROJECT_ID/verusware-backend'
-  - 'gcr.io/$PROJECT_ID/verusware-frontend'
+  - 'gcr.io/$PROJECT_ID/kansas-beta-backend'
+  - 'gcr.io/$PROJECT_ID/kansas-beta-frontend'
 
 options:
   machineType: 'E2_HIGHCPU_8'
@@ -133,10 +133,11 @@ options:
 timeout: '1200s'
 
 substitutions:
-  _FRONTEND_API_URL: 'https://api.verusware.com'
-  _APP_NAME: 'Verusware'
+  _FRONTEND_API_URL: ''  # Will be set dynamically based on backend URL
+  _APP_NAME: 'Kansas Beta'
   _APP_VERSION: '1.0.0'
-  _DATABASE_NAME: 'verusware'
+  _DATABASE_NAME: 'kansas_beta'
+  _DATABASE_INSTANCE: 'kansas-beta-db'
   _DATABASE_USER: 'postgres'
   # _DATABASE_PASSWORD should be set via Secret Manager or Cloud Build secrets
 

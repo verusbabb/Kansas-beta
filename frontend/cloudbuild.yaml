@@ -6,22 +6,22 @@ steps:
       - '--build-arg'
       - 'VITE_API_URL=${_FRONTEND_API_URL}'
       - '--build-arg'
-      - 'VITE_APP_NAME=Verusware'
+      - 'VITE_APP_NAME=Kansas Beta'
       - '--build-arg'
       - 'VITE_APP_VERSION=1.0.0'
       - '-t'
-      - 'gcr.io/$PROJECT_ID/verusware-frontend'
+      - 'gcr.io/$PROJECT_ID/kansas-beta-frontend'
       - '.'
     id: 'build-frontend'
 
   # Push frontend image
   - name: 'gcr.io/cloud-builders/docker'
-    args: ['push', 'gcr.io/$PROJECT_ID/verusware-frontend']
+    args: ['push', 'gcr.io/$PROJECT_ID/kansas-beta-frontend']
     id: 'push-frontend'
     waitFor: ['build-frontend']
 
 images:
-  - 'gcr.io/$PROJECT_ID/verusware-frontend'
+  - 'gcr.io/$PROJECT_ID/kansas-beta-frontend'
 
 options:
   machineType: 'E2_HIGHCPU_8'

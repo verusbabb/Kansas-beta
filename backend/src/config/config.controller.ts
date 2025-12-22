@@ -24,7 +24,7 @@ export class ConfigController {
       type: 'object',
       properties: {
         apiUrl: { type: 'string', example: 'http://localhost:3000' },
-        appName: { type: 'string', example: 'Verusware' },
+        appName: { type: 'string', example: 'Kansas Beta' },
         appVersion: { type: 'string', example: '1.0.0' },
         environment: { type: 'string', example: 'development' },
       },

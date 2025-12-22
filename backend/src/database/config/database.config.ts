@@ -35,7 +35,7 @@ const databaseConfig: { [key: string]: SequelizeConfig } = {
   development: {
     username: process.env.DATABASE_USER || 'postgres',
     password: process.env.DATABASE_PASSWORD,
-    database: process.env.DATABASE_NAME || 'verusware',
+    database: process.env.DATABASE_NAME || 'kansas_beta',
     host: process.env.DATABASE_HOST || 'localhost',
     port: parseInt(process.env.DATABASE_PORT || '5432', 10),
     dialect: 'postgres',
@@ -44,7 +44,7 @@ const databaseConfig: { [key: string]: SequelizeConfig } = {
   production: {
     username: process.env.DATABASE_USER,
     password: process.env.DATABASE_PASSWORD, // Will be loaded from Secret Manager
-    database: process.env.DATABASE_NAME || 'verusware',
+    database: process.env.DATABASE_NAME || 'kansas_beta',
     host: process.env.DATABASE_HOST, // Will be Cloud SQL socket path
     port: parseInt(process.env.DATABASE_PORT || '5432', 10),
     dialect: 'postgres',
@@ -59,7 +59,7 @@ const databaseConfig: { [key: string]: SequelizeConfig } = {
   test: {
     username: process.env.DATABASE_USER || 'postgres',
     password: process.env.DATABASE_PASSWORD,
-    database: process.env.DATABASE_NAME || 'verusware_test',
+    database: process.env.DATABASE_NAME || 'kansas_beta_test',
     host: process.env.DATABASE_HOST || 'localhost',
     port: parseInt(process.env.DATABASE_PORT || '5432', 10),
     dialect: 'postgres',

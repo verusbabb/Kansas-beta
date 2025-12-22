@@ -64,23 +64,25 @@ async function bootstrap() {
 
   // Swagger/OpenAPI Documentation
   const swaggerConfig = new DocumentBuilder()
-    .setTitle('Verusware API')
-    .setDescription('API documentation for Verusware backend')
+    .setTitle('Kansas Beta API')
+    .setDescription('API documentation for Beta Theta Pi Alpha Nu Chapter backend')
     .setVersion('1.0')
     .addTag('Health', 'Health check endpoints')
     .build();
 
   const document = SwaggerModule.createDocument(app, swaggerConfig);
   SwaggerModule.setup('api', app, document, {
-    customSiteTitle: 'Verusware API Docs',
+    customSiteTitle: 'Kansas Beta API Docs',
     customCss: '.swagger-ui .topbar { display: none }', // Hide Swagger branding
   });
 
   // Enable CORS for frontend
   const allowedOrigins = [
-    'https://verusware.com',
-    'https://www.verusware.com',
-    config.frontend.url, // Keep existing URL for development
+    config.frontend.url, // Frontend URL from config
+    // Allow Cloud Run frontend URLs (wildcard pattern for flexibility)
+    ...(config.app.env === 'production' 
+      ? ['https://*.run.app', 'https://*.a.run.app'] 
+      : []),
   ].filter(Boolean); // Remove any undefined values
 
   app.enableCors({
@@ -88,11 +90,19 @@ async function bootstrap() {
       // Allow requests with no origin (like mobile apps or curl requests)
       if (!origin) return callback(null, true);
       
+      // Check exact match
       if (allowedOrigins.includes(origin)) {
-        callback(null, true);
-      } else {
-        callback(new Error('Not allowed by CORS'));
+        return callback(null, true);
       }
+      
+      // Check Cloud Run URL patterns in production
+      if (config.app.env === 'production') {
+        if (origin.match(/^https:\/\/.*\.run\.app$/) || origin.match(/^https:\/\/.*\.a\.run\.app$/)) {
+          return callback(null, true);
+        }
+      }
+      
+      callback(new Error('Not allowed by CORS'));
     },
     credentials: true,
   });

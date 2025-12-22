@@ -7,7 +7,7 @@
         <h1 class="text-4xl md:text-6xl lg:text-7xl font-bold mb-6">
           Beta Theta Pi
         </h1>
-        <h2 class="text-2xl md:text-4xl lg:text-5xl font-semibold mb-4 text-green-500">
+        <h2 class="text-2xl md:text-4xl lg:text-5xl font-semibold mb-4 text-gray-300">
           Alpha Nu Chapter
         </h2>
         <p class="text-lg md:text-xl lg:text-2xl mb-8 max-w-3xl">
@@ -19,7 +19,7 @@
             icon="pi pi-users" 
             @click="$router.push('/rush')"
             size="large"
-            class="bg-green-600 hover:bg-green-700 border-green-600"
+            class="bg-gray-400 hover:bg-gray-500 border-gray-400"
           />
           <Button 
             label="Contact Us" 
@@ -27,7 +27,7 @@
             @click="$router.push('/contact')"
             size="large"
             outlined
-            class="border-white text-white hover:bg-white hover:text-black"
+            class="border-white text-white hover:bg-white hover:text-[#6F8FAF]"
           />
         </div>
       </div>
@@ -40,14 +40,14 @@
           <h2 class="text-3xl md:text-4xl font-bold text-surface-900 mb-4">
             Building Better Men
           </h2>
-          <div class="w-24 h-1 bg-green-600 mx-auto mb-6"></div>
+          <div class="w-24 h-1 bg-gray-400 mx-auto mb-6"></div>
         </div>
         
         <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
           <Card class="text-center">
             <template #content>
               <div class="flex flex-col items-center">
-                <i class="pi pi-users text-5xl text-green-600 mb-4"></i>
+                <i class="pi pi-users text-5xl text-[#6F8FAF] mb-4"></i>
                 <h3 class="text-xl font-bold mb-3">Brotherhood</h3>
                 <p class="text-surface-700">
                   Forging lifelong bonds of friendship and mutual support among our members.
@@ -59,7 +59,7 @@
           <Card class="text-center">
             <template #content>
               <div class="flex flex-col items-center">
-                <i class="pi pi-graduation-cap text-5xl text-green-600 mb-4"></i>
+                <i class="pi pi-graduation-cap text-5xl text-[#6F8FAF] mb-4"></i>
                 <h3 class="text-xl font-bold mb-3">Scholarship</h3>
                 <p class="text-surface-700">
                   Committed to academic excellence and intellectual growth.
@@ -71,7 +71,7 @@
           <Card class="text-center">
             <template #content>
               <div class="flex flex-col items-center">
-                <i class="pi pi-heart text-5xl text-green-600 mb-4"></i>
+                <i class="pi pi-heart text-5xl text-[#6F8FAF] mb-4"></i>
                 <h3 class="text-xl font-bold mb-3">Service</h3>
                 <p class="text-surface-700">
                   Giving back to our community and making a positive impact.
@@ -96,40 +96,40 @@
           <Card class="cursor-pointer hover:shadow-lg transition-shadow" @click="$router.push('/rush')">
             <template #content>
               <div class="text-center">
-                <i class="pi pi-users text-4xl text-green-600 mb-3"></i>
+                <i class="pi pi-users text-4xl text-[#6F8FAF] mb-3"></i>
                 <h3 class="text-lg font-bold mb-2">Rush</h3>
                 <p class="text-sm text-surface-600">Join our brotherhood</p>
               </div>
-            </template>
+      </template>
           </Card>
 
           <Card class="cursor-pointer hover:shadow-lg transition-shadow" @click="$router.push('/newsletters')">
             <template #content>
-              <div class="text-center">
-                <i class="pi pi-book text-4xl text-green-600 mb-3"></i>
+        <div class="text-center">
+                <i class="pi pi-book text-4xl text-[#6F8FAF] mb-3"></i>
                 <h3 class="text-lg font-bold mb-2">Newsletters</h3>
                 <p class="text-sm text-surface-600">Stay updated</p>
-              </div>
+            </div>
             </template>
           </Card>
 
           <Card class="cursor-pointer hover:shadow-lg transition-shadow" @click="$router.push('/members')">
             <template #content>
               <div class="text-center">
-                <i class="pi pi-id-card text-4xl text-green-600 mb-3"></i>
-                <h3 class="text-lg font-bold mb-2">Members</h3>
-                <p class="text-sm text-surface-600">Meet our brothers</p>
-              </div>
+                <i class="pi pi-id-card text-4xl text-[#6F8FAF] mb-3"></i>
+                <h3 class="text-lg font-bold mb-2">People</h3>
+                <p class="text-sm text-surface-600">Members, Alumni, Advisors & Leadership Teams</p>
+            </div>
             </template>
           </Card>
 
           <Card class="cursor-pointer hover:shadow-lg transition-shadow" @click="$router.push('/contact')">
             <template #content>
               <div class="text-center">
-                <i class="pi pi-envelope text-4xl text-green-600 mb-3"></i>
+                <i class="pi pi-envelope text-4xl text-[#6F8FAF] mb-3"></i>
                 <h3 class="text-lg font-bold mb-2">Contact</h3>
                 <p class="text-sm text-surface-600">Get in touch</p>
-              </div>
+          </div>
             </template>
           </Card>
         </div>
@@ -146,7 +146,7 @@
 <style scoped>
   .hero-container {
     min-height: 70vh;
-    background: linear-gradient(135deg, rgba(0, 0, 0, 0.3) 0%, rgba(0, 0, 0, 0.2) 50%, rgba(0, 0, 0, 0.3) 100%);
+    background: linear-gradient(135deg, rgba(111, 143, 175, 0.3) 0%, rgba(111, 143, 175, 0.2) 50%, rgba(111, 143, 175, 0.3) 100%);
     background-image: url('/kansas_beta.jpeg');
     background-size: cover;
     background-position: center;
@@ -161,9 +161,9 @@
     bottom: 0;
     background: linear-gradient(
       to bottom,
-      rgba(0, 0, 0, 0.4) 0%,
-      rgba(0, 0, 0, 0.3) 50%,
-      rgba(0, 0, 0, 0.4) 100%
+      rgba(111, 143, 175, 0.5) 0%,
+      rgba(111, 143, 175, 0.4) 50%,
+      rgba(111, 143, 175, 0.5) 100%
     );
   }
 

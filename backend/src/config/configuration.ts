@@ -34,7 +34,7 @@ export default registerAs('config', (): AppConfig => {
     app: {
       env: (env.NODE_ENV as Environment) || Environment.Development,
       port: env.PORT ? parseInt(env.PORT, 10) : 3000,
-      name: 'Verusware',
+      name: 'Kansas Beta',
     },
     frontend: {
       url: env.FRONTEND_URL || 'http://localhost:5173',

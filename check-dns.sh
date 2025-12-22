@@ -1,6 +1,11 @@
 #!/bin/bash
 
-# Check DNS propagation and site availability for verusware.com
+# Check DNS propagation and site availability
+# Update DOMAIN and API_DOMAIN variables below with your custom domains
+
+# Configuration - Update these with your domains
+DOMAIN="${DOMAIN:-yourdomain.com}"
+API_DOMAIN="${API_DOMAIN:-api.yourdomain.com}"
 
 # Colors
 GREEN='\033[0;32m'
@@ -10,11 +15,12 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 echo -e "${BLUE}🔍 Checking DNS propagation and site availability...${NC}"
+echo -e "${YELLOW}Checking domains: ${DOMAIN} and ${API_DOMAIN}${NC}"
 echo ""
 
-# Check DNS for verusware.com
-echo -e "${BLUE}Checking DNS for verusware.com...${NC}"
-DNS_RESULT=$(dig +short verusware.com A 2>/dev/null | head -1)
+# Check DNS for frontend domain
+echo -e "${BLUE}Checking DNS for ${DOMAIN}...${NC}"
+DNS_RESULT=$(dig +short ${DOMAIN} A 2>/dev/null | head -1)
 
 if [ -n "$DNS_RESULT" ]; then
   echo -e "${GREEN}✅ DNS is resolving: ${DNS_RESULT}${NC}"
@@ -35,8 +41,8 @@ fi
 echo ""
 
 # Check if site is accessible via HTTPS
-echo -e "${BLUE}Checking if https://verusware.com is accessible...${NC}"
-HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" --max-time 10 https://verusware.com 2>/dev/null)
+echo -e "${BLUE}Checking if https://${DOMAIN} is accessible...${NC}"
+HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" --max-time 10 https://${DOMAIN} 2>/dev/null)
 
 if [ "$HTTP_CODE" = "200" ]; then
   echo -e "${GREEN}✅ Site is live! (HTTP ${HTTP_CODE})${NC}"
@@ -52,8 +58,8 @@ fi
 echo ""
 
 # Check API endpoint
-echo -e "${BLUE}Checking if https://api.verusware.com is accessible...${NC}"
-API_CODE=$(curl -s -o /dev/null -w "%{http_code}" --max-time 10 https://api.verusware.com/health 2>/dev/null)
+echo -e "${BLUE}Checking if https://${API_DOMAIN} is accessible...${NC}"
+API_CODE=$(curl -s -o /dev/null -w "%{http_code}" --max-time 10 https://${API_DOMAIN}/health 2>/dev/null)
 
 if [ "$API_CODE" = "200" ]; then
   echo -e "${GREEN}✅ API is live! (HTTP ${API_CODE})${NC}"
@@ -68,10 +74,11 @@ echo ""
 # Summary
 if [ "$HTTP_CODE" = "200" ] && [ "$API_CODE" = "200" ]; then
   echo -e "${GREEN}🎉 Everything is working! Your site is live!${NC}"
-  echo -e "${BLUE}Frontend: https://verusware.com${NC}"
-  echo -e "${BLUE}Backend: https://api.verusware.com${NC}"
+  echo -e "${BLUE}Frontend: https://${DOMAIN}${NC}"
+  echo -e "${BLUE}Backend: https://${API_DOMAIN}${NC}"
 else
   echo -e "${YELLOW}⏳ Still waiting for DNS/SSL...${NC}"
   echo -e "${YELLOW}   This can take up to an hour. Check again in a few minutes.${NC}"
+  echo -e "${YELLOW}   Or update DOMAIN and API_DOMAIN variables in this script.${NC}"
 fi
 

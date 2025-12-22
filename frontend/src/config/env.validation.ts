@@ -29,7 +29,7 @@ export function getEnvConfig(): EnvConfig {
 
   return {
     apiUrl: apiUrl || 'http://localhost:3000',
-    appName: import.meta.env.VITE_APP_NAME || 'Verusware',
+    appName: import.meta.env.VITE_APP_NAME || 'Kansas Beta',
     appVersion: import.meta.env.VITE_APP_VERSION || '1.0.0',
     mode: import.meta.env.MODE,
     isDev: import.meta.env.DEV,

@@ -1,48 +1,64 @@
 <template>
   <div class="bg-surface-0 min-h-screen">
     <!-- Hero Section -->
-    <div class="bg-gradient-to-r from-black via-gray-900 to-black text-white py-16 px-6">
+    <div class="bg-gradient-to-r from-[#5A7A9F] via-[#6F8FAF] to-[#5A7A9F] text-white py-16 px-6">
       <div class="max-w-6xl mx-auto text-center">
         <h1 class="text-4xl md:text-5xl font-bold mb-4">Chapter Newsletters</h1>
         <p class="text-xl md:text-2xl text-gray-300 mb-6">
           Stay updated with Alpha Nu Chapter news and events
         </p>
-        <div class="w-32 h-1 bg-green-600 mx-auto"></div>
+        <div class="w-32 h-1 bg-gray-400 mx-auto"></div>
       </div>
     </div>
 
     <!-- Main Content -->
     <div class="max-w-6xl mx-auto px-6 py-12">
+      <!-- Intro Statement -->
+      <div class="mb-8 text-center">
+        <p class="text-lg text-surface-700 max-w-3xl mx-auto">
+          Stay connected with the Alpha Nu Chapter through our quarterly newsletters. 
+          Each edition features chapter updates, member highlights, upcoming events, and news from our brotherhood.
+        </p>
+      </div>
+
       <!-- Newsletter List -->
-      <div v-if="newsletters.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+      <div v-if="sortedNewsletters.length > 0" class="space-y-4">
         <Card 
-          v-for="newsletter in newsletters" 
+          v-for="newsletter in sortedNewsletters" 
           :key="newsletter.id"
-          class="cursor-pointer hover:shadow-lg transition-shadow"
-          @click="openNewsletter(newsletter)"
+          class="hover:shadow-md transition-shadow"
         >
-          <template #header>
-            <div class="bg-green-600 text-white p-4 text-center">
-              <i class="pi pi-file-pdf text-4xl mb-2"></i>
-              <div class="text-sm font-semibold">{{ newsletter.month }} {{ newsletter.year }}</div>
-            </div>
-          </template>
-          <template #title>
-            {{ newsletter.title }}
-          </template>
-          <template #subtitle>
-            Published {{ formatDate(newsletter.publishedDate) }}
-          </template>
           <template #content>
-            <p class="text-surface-700 line-clamp-3">{{ newsletter.summary }}</p>
-          </template>
-          <template #footer>
-            <Button 
-              label="Read More" 
-              icon="pi pi-arrow-right" 
-              text
-              class="w-full"
-            />
+            <div class="flex flex-col md:flex-row gap-4">
+              <!-- Newsletter Icon/Thumbnail -->
+              <div class="flex-shrink-0">
+                <div class="bg-gradient-to-br from-[#5A7A9F] to-[#6F8FAF] text-white p-6 rounded-lg text-center min-w-[120px]">
+                  <i class="pi pi-file-pdf text-4xl mb-2 block"></i>
+                  <div class="text-sm font-semibold capitalize">{{ newsletter.season }}</div>
+                  <div class="text-lg font-bold">{{ newsletter.year }}</div>
+                </div>
+              </div>
+
+              <!-- Newsletter Info -->
+              <div class="flex-1 flex flex-col justify-between">
+                <div>
+                  <h3 class="text-xl font-bold text-surface-900 mb-2">
+                    {{ formatNewsletterTitle(newsletter) }}
+                  </h3>
+                  <p class="text-surface-600 mb-4">
+                    {{ formatNewsletterDescription(newsletter) }}
+                  </p>
+                </div>
+                <div class="flex gap-2">
+                  <Button
+                    label="View Newsletter"
+                    icon="pi pi-external-link"
+                    @click="openNewsletter(newsletter)"
+                    class="bg-[#6F8FAF] hover:bg-[#5A7A9F]"
+                  />
+                </div>
+              </div>
+            </div>
           </template>
         </Card>
       </div>
@@ -54,66 +70,39 @@
         <p class="text-surface-600">Check back soon for chapter updates and news.</p>
       </div>
 
-      <!-- Newsletter Modal -->
-      <Dialog 
-        v-model:visible="selectedNewsletter" 
-        :header="selectedNewsletter?.title"
-        :style="{ width: '90vw', maxWidth: '800px' }"
-        :modal="true"
-      >
-        <div v-if="selectedNewsletter" class="newsletter-content">
-          <div class="mb-4 text-surface-600">
-            <i class="pi pi-calendar mr-2"></i>
-            {{ formatDate(selectedNewsletter.publishedDate) }}
-          </div>
-          <div class="mb-6">
-            <h3 class="text-xl font-bold mb-3">Summary</h3>
-            <p class="text-surface-700">{{ selectedNewsletter.summary }}</p>
-          </div>
-          <div v-if="selectedNewsletter.pdfUrl" class="text-center">
-            <Button 
-              label="Download PDF" 
-              icon="pi pi-download"
-              @click="downloadNewsletter(selectedNewsletter)"
-              class="bg-green-600 hover:bg-green-700"
-            />
-          </div>
-        </div>
-      </Dialog>
     </div>
   </div>
 </template>
 
 <script setup>
-  import { ref, onMounted } from 'vue'
+  import { onMounted, computed } from 'vue'
   import Card from 'primevue/card'
   import Button from 'primevue/button'
-  import Dialog from 'primevue/dialog'
   import { useNewsletterStore } from '@/stores/newsletter'
 
   const newsletterStore = useNewsletterStore()
-  const newsletters = ref([])
-  const selectedNewsletter = ref(null)
+
+  // Use sorted newsletters from store getter
+  const sortedNewsletters = computed(() => newsletterStore.sortedNewsletters)
 
   onMounted(async () => {
     // Load newsletters from store (will connect to backend later)
     await newsletterStore.fetchNewsletters()
-    newsletters.value = newsletterStore.newsletters
   })
 
-  const formatDate = (dateString) => {
-    if (!dateString) return 'Date TBD'
-    const date = new Date(dateString)
-    return date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
+  const formatNewsletterTitle = (newsletter) => {
+    const seasonCapitalized = newsletter.season.charAt(0).toUpperCase() + newsletter.season.slice(1)
+    return `${seasonCapitalized} ${newsletter.year} Newsletter`
+  }
+
+  const formatNewsletterDescription = (newsletter) => {
+    return `Read the ${newsletter.season} ${newsletter.year} newsletter to stay updated with chapter news, events, and member highlights.`
   }
 
   const openNewsletter = (newsletter) => {
-    selectedNewsletter.value = newsletter
-  }
-
-  const downloadNewsletter = (newsletter) => {
-    if (newsletter.pdfUrl) {
-      window.open(newsletter.pdfUrl, '_blank')
+    // Open newsletter link in new tab
+    if (newsletter.link) {
+      window.open(newsletter.link, '_blank')
     }
   }
 </script>

@@ -1,13 +1,13 @@
 <template>
   <div class="bg-surface-0 min-h-screen">
     <!-- Hero Section -->
-    <div class="bg-gradient-to-r from-black via-gray-900 to-black text-white py-16 px-6">
+    <div class="bg-gradient-to-r from-[#5A7A9F] via-[#6F8FAF] to-[#5A7A9F] text-white py-16 px-6">
       <div class="max-w-6xl mx-auto text-center">
         <h1 class="text-4xl md:text-5xl font-bold mb-4">Rush Beta Theta Pi</h1>
         <p class="text-xl md:text-2xl text-gray-300 mb-6">
           Join the Alpha Nu Chapter at the University of Kansas
         </p>
-        <div class="w-32 h-1 bg-green-600 mx-auto"></div>
+        <div class="w-32 h-1 bg-gray-400 mx-auto"></div>
       </div>
     </div>
 
@@ -20,7 +20,7 @@
           <Card>
             <template #content>
               <div class="flex items-start gap-4">
-                <i class="pi pi-check-circle text-3xl text-green-600"></i>
+                <i class="pi pi-check-circle text-3xl text-gray-500"></i>
                 <div>
                   <h3 class="text-xl font-bold mb-2">Lifelong Brotherhood</h3>
                   <p class="text-surface-700">
@@ -34,7 +34,7 @@
           <Card>
             <template #content>
               <div class="flex items-start gap-4">
-                <i class="pi pi-check-circle text-3xl text-green-600"></i>
+                <i class="pi pi-check-circle text-3xl text-gray-500"></i>
                 <div>
                   <h3 class="text-xl font-bold mb-2">Academic Excellence</h3>
                   <p class="text-surface-700">
@@ -48,7 +48,7 @@
           <Card>
             <template #content>
               <div class="flex items-start gap-4">
-                <i class="pi pi-check-circle text-3xl text-green-600"></i>
+                <i class="pi pi-check-circle text-3xl text-gray-500"></i>
                 <div>
                   <h3 class="text-xl font-bold mb-2">Leadership Development</h3>
                   <p class="text-surface-700">
@@ -62,7 +62,7 @@
           <Card>
             <template #content>
               <div class="flex items-start gap-4">
-                <i class="pi pi-check-circle text-3xl text-green-600"></i>
+                <i class="pi pi-check-circle text-3xl text-gray-500"></i>
                 <div>
                   <h3 class="text-xl font-bold mb-2">Professional Network</h3>
                   <p class="text-surface-700">
@@ -80,7 +80,7 @@
         <h2 class="text-3xl font-bold text-surface-900 mb-8 text-center">Rush Events</h2>
         <Timeline :value="rushEvents" align="alternate" class="w-full">
           <template #marker="slotProps">
-            <span class="flex w-2rem h-2rem align-items-center justify-content-center text-white border-circle bg-green-600 z-1">
+            <span class="flex w-2rem h-2rem align-items-center justify-content-center text-white border-circle bg-gray-500 z-1">
               <i :class="slotProps.item.icon"></i>
             </span>
           </template>
@@ -117,7 +117,7 @@
           icon="pi pi-envelope"
           @click="$router.push('/contact')"
           size="large"
-          class="bg-green-600 hover:bg-green-700"
+          class="bg-gray-500 hover:bg-gray-600"
         />
       </div>
     </div>
@@ -142,8 +142,8 @@
 
 <style scoped>
   :deep(.p-timeline-event-marker) {
-    background-color: #22c55e;
-    border-color: #22c55e;
+    background-color: #9ca3af;
+    border-color: #9ca3af;
   }
 </style>
 

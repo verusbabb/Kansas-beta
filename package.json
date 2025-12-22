@@ -1,8 +1,8 @@
 {
-  "name": "verusware",
+  "name": "kansas-beta",
   "version": "1.0.0",
   "private": true,
-  "description": "Verusware monorepo",
+  "description": "Kansas Beta - Beta Theta Pi Alpha Nu Chapter website",
   "scripts": {
     "prepare": "husky install",
     "install:all": "npm install && cd backend && npm install && cd ../frontend && npm install",

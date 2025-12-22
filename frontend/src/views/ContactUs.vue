@@ -1,13 +1,13 @@
 <template>
   <div class="bg-surface-0 min-h-screen">
     <!-- Hero Section -->
-    <div class="bg-gradient-to-r from-black via-gray-900 to-black text-white py-16 px-6">
+    <div class="bg-gradient-to-r from-[#5A7A9F] via-[#6F8FAF] to-[#5A7A9F] text-white py-16 px-6">
       <div class="max-w-6xl mx-auto text-center">
         <h1 class="text-4xl md:text-5xl font-bold mb-4">Contact Us</h1>
         <p class="text-xl md:text-2xl text-gray-300 mb-6">
           Get in touch with the Alpha Nu Chapter
         </p>
-        <div class="w-32 h-1 bg-green-600 mx-auto"></div>
+        <div class="w-32 h-1 bg-gray-400 mx-auto"></div>
       </div>
     </div>
 
@@ -78,7 +78,7 @@
                 icon="pi pi-send"
                 :loading="isSubmitting"
                 :disabled="isSubmitting"
-                class="bg-green-600 hover:bg-green-700"
+                class="bg-gray-500 hover:bg-gray-600"
               />
             </form>
           </template>
@@ -93,7 +93,7 @@
             <template #content>
               <div class="flex flex-col gap-4">
                 <div class="flex items-start gap-3">
-                  <i class="pi pi-map-marker text-2xl text-green-600 mt-1"></i>
+                  <i class="pi pi-map-marker text-2xl text-[#6F8FAF] mt-1"></i>
                   <div>
                     <h3 class="font-bold mb-1">Address</h3>
                     <p class="text-surface-700">
@@ -105,17 +105,17 @@
                 </div>
 
                 <div class="flex items-start gap-3">
-                  <i class="pi pi-envelope text-2xl text-green-600 mt-1"></i>
+                  <i class="pi pi-envelope text-2xl text-[#6F8FAF] mt-1"></i>
                   <div>
                     <h3 class="font-bold mb-1">Email</h3>
-                    <a href="mailto:contact@betathetapi-ku.org" class="text-green-600 hover:underline">
+                    <a href="mailto:contact@betathetapi-ku.org" class="text-[#6F8FAF] hover:underline">
                       contact@betathetapi-ku.org
                     </a>
                   </div>
                 </div>
 
                 <div class="flex items-start gap-3">
-                  <i class="pi pi-phone text-2xl text-green-600 mt-1"></i>
+                  <i class="pi pi-phone text-2xl text-[#6F8FAF] mt-1"></i>
                   <div>
                     <h3 class="font-bold mb-1">Phone</h3>
                     <p class="text-surface-700">(785) XXX-XXXX</p>
@@ -132,11 +132,11 @@
             <template #content>
               <div class="flex flex-col gap-4">
                 <div v-for="leader in leadershipContacts" :key="leader.role" class="flex items-start gap-3">
-                  <i :class="leader.icon" class="text-xl text-green-600 mt-1"></i>
+                  <i :class="leader.icon" class="text-xl text-[#6F8FAF] mt-1"></i>
                   <div>
                     <h3 class="font-bold">{{ leader.role }}</h3>
                     <p class="text-surface-700">{{ leader.name }}</p>
-                    <a v-if="leader.email" :href="`mailto:${leader.email}`" class="text-green-600 hover:underline text-sm">
+                    <a v-if="leader.email" :href="`mailto:${leader.email}`" class="text-[#6F8FAF] hover:underline text-sm">
                       {{ leader.email }}
                     </a>
                   </div>
