@@ -4,6 +4,8 @@ interface ImportMetaEnv {
   readonly VITE_API_URL?: string
   readonly VITE_APP_NAME?: string
   readonly VITE_APP_VERSION?: string
+  readonly VITE_AUTH0_DOMAIN?: string
+  readonly VITE_AUTH0_CLIENT_ID?: string
   readonly MODE: string
   readonly DEV: boolean
   readonly PROD: boolean
