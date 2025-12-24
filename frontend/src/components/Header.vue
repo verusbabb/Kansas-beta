@@ -5,12 +5,18 @@
     <div>
       <Menubar :model="items" class="header-menubar" :autoDisplay="false" :mobileBreakpoint="1024">
         <template #start>
-          <div class="flex items-center gap-3 header-branding">
-            <div class="header-text-container font-bold flex items-center gap-2">
-              <span class="brand-text">Beta Theta Pi</span>
-              <span class="mx-1 md:mx-2 brand-pipe">|</span>
-              <span class="brand-alpha">Alpha Nu</span>
-              <img src="/crest.webp" alt="Beta Theta Pi Crest" class="crest-image" />
+          <div class="header-top-row">
+            <div class="flex items-center gap-3 header-branding">
+              <div class="header-text-container font-bold flex items-center gap-2">
+                <span class="brand-text">Beta Theta Pi</span>
+                <span class="mx-1 md:mx-2 brand-pipe">|</span>
+                <span class="brand-alpha">Alpha Nu</span>
+                <img src="/crest.webp" alt="Beta Theta Pi Crest" class="crest-image" />
+              </div>
+            </div>
+            <div v-if="isAuth0Configured" class="auth-buttons">
+              <LogoutButton v-if="isAuthenticated" />
+              <LoginButton v-else />
             </div>
           </div>
         </template>
@@ -70,12 +76,34 @@
 </template>
 
 <script setup>
-  import { ref } from "vue";
+  import { ref, computed } from "vue";
+  import { env } from '@/config/env';
+  import { useAuth0 } from '@auth0/auth0-vue';
   import {
     Badge,
     Menubar,
     Toast,
   } from "primevue";
+  import LoginButton from './LoginButton.vue';
+  import LogoutButton from './LogoutButton.vue';
+
+  // Check if Auth0 is configured
+  const isAuth0Configured = env.auth0Domain && env.auth0ClientId;
+  
+  // Use Auth0 composable (plugin must be registered in main.ts)
+  // If plugin isn't registered (env vars not set), this will cause an error
+  // but buttons won't show anyway due to isAuth0Configured check
+  let auth0;
+  let isAuthenticated = computed(() => false);
+  
+  try {
+    auth0 = useAuth0();
+    isAuthenticated = computed(() => isAuth0Configured && (auth0?.isAuthenticated.value ?? false));
+  } catch (error) {
+    // Auth0 plugin not registered - this is expected if env vars aren't set
+    // Buttons won't show due to isAuth0Configured check above
+    console.debug('Auth0 not available (this is normal if VITE_AUTH0_DOMAIN and VITE_AUTH0_CLIENT_ID are not set)');
+  }
 
   const items = ref([
     {
@@ -132,22 +160,43 @@
   .header-menubar :deep(.p-menubar) {
     padding-left: 1rem;
     padding-right: 1rem;
+    padding-top: 0.75rem;
+    padding-bottom: 0.75rem;
     background: #ffffff !important;
     background-color: #ffffff !important;
     border: none !important;
     border-bottom: 2px solid #9ca3af !important;
     display: flex !important;
-    justify-content: space-between !important;
+    flex-direction: column !important;
     visibility: visible !important;
   }
-
+  
+  /* Container for start and navigation */
+  .header-menubar :deep(.p-menubar-start-container),
+  .header-menubar :deep(.p-menubar-root-list-container) {
+    width: 100%;
+  }
+  
   .header-menubar :deep(.p-menubar-root) {
     background: #ffffff !important;
     background-color: #ffffff !important;
+    width: 100% !important;
+    display: flex !important;
+    flex-direction: column !important;
   }
 
   .header-menubar :deep(.p-menubar-start) {
     background: transparent !important;
+    width: 100% !important;
+    margin-bottom: 0.75rem !important;
+  }
+  
+  /* Header top row - contains branding and auth buttons */
+  .header-top-row {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    width: 100% !important;
   }
 
   /* Right justify navigation and add spacing - only on desktop */
@@ -156,13 +205,15 @@
       display: flex !important;
       justify-content: flex-end !important;
       gap: 1.5rem !important;
-      margin-left: auto !important;
+      width: 100% !important;
+      padding-top: 0.5rem !important;
     }
 
     .header-menubar :deep(.p-menubar-root-list > li) {
       margin-left: 0 !important;
       margin-right: 0 !important;
     }
+    
   }
 
   /* Beta Theta Pi colors - denim blue and gray */
@@ -172,6 +223,14 @@
 
   .header-menubar :deep(.p-menubar-start) {
     color: #6F8FAF !important;
+  }
+
+  /* Auth buttons container */
+  .auth-buttons {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-left: auto;
   }
 
   .brand-text {
@@ -284,6 +343,11 @@
       display: flex !important;
       align-items: center !important;
       width: 100% !important;
+    }
+
+    /* Auth buttons on mobile - hide from end slot and show in mobile menu if needed */
+    .auth-buttons {
+      margin-left: 0.5rem;
     }
   }
 
