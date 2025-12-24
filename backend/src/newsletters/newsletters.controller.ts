@@ -7,12 +7,19 @@ import {
   Delete,
   HttpCode,
   HttpStatus,
+  UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiParam } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiBearerAuth } from '@nestjs/swagger';
 import { PinoLogger } from 'nestjs-pino';
 import { NewslettersService } from './newsletters.service';
 import { CreateNewsletterDto } from './dto/create-newsletter.dto';
 import { NewsletterResponseDto } from './dto/newsletter-response.dto';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../auth/decorators/roles.decorator';
+import { UserLookupInterceptor } from '../auth/interceptors/user-lookup.interceptor';
+import { UserRole } from '../database/entities/user.entity';
 
 @ApiTags('Newsletters')
 @Controller('newsletters')
@@ -25,9 +32,13 @@ export class NewslettersController {
   }
 
   @Post()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseInterceptors(UserLookupInterceptor)
+  @Roles(UserRole.EDITOR, UserRole.ADMIN)
   @HttpCode(HttpStatus.CREATED)
+  @ApiBearerAuth()
   @ApiOperation({
-    summary: 'Create a new newsletter',
+    summary: 'Create a new newsletter (editor/admin only)',
     description: 'Add a new newsletter with link, season, and year',
   })
   @ApiResponse({
@@ -38,6 +49,14 @@ export class NewslettersController {
   @ApiResponse({
     status: 400,
     description: 'Invalid input data',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized',
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden - Editor or Admin role required',
   })
   async create(@Body() createNewsletterDto: CreateNewsletterDto): Promise<NewsletterResponseDto> {
     this.logger.debug('Creating newsletter', createNewsletterDto);
@@ -84,9 +103,13 @@ export class NewslettersController {
   }
 
   @Delete(':id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseInterceptors(UserLookupInterceptor)
+  @Roles(UserRole.EDITOR, UserRole.ADMIN)
   @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiBearerAuth()
   @ApiOperation({
-    summary: 'Delete a newsletter',
+    summary: 'Delete a newsletter (editor/admin only)',
     description: 'Soft delete a newsletter by its UUID',
   })
   @ApiParam({
@@ -97,6 +120,14 @@ export class NewslettersController {
   @ApiResponse({
     status: 204,
     description: 'Newsletter deleted successfully',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized',
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden - Editor or Admin role required',
   })
   @ApiResponse({
     status: 404,

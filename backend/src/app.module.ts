@@ -7,6 +7,8 @@ import { DatabaseModule } from './database/database.module';
 import { HealthController } from './health/health.controller';
 import { ConfigController } from './config/config.controller';
 import { NewslettersModule } from './newsletters/newsletters.module';
+import { AuthModule } from './auth/auth.module';
+import { UsersModule } from './users/users.module';
 import { createLoggerConfig } from './config/logger.config';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { AppConfig } from './config/configuration';
@@ -15,7 +17,9 @@ import { AppConfig } from './config/configuration';
   imports: [
     ConfigModule, // Load configuration (must be first)
     DatabaseModule, // Database connection (requires ConfigModule)
+    AuthModule, // Authentication and authorization
     NewslettersModule, // Newsletters API
+    UsersModule, // Users management API
     LoggerModule.forRootAsync({
       inject: [ConfigService],
       useFactory: (configService: ConfigService<AppConfig>) => {
