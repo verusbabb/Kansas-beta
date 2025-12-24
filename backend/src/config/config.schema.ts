@@ -57,5 +57,14 @@ export class EnvironmentVariables {
   @IsString()
   @IsOptional()
   GCP_SECRET_MANAGER_ENABLED?: string;
+
+  // Auth0
+  @IsString()
+  @IsOptional()
+  AUTH0_DOMAIN?: string;
+
+  @IsString()
+  @IsOptional()
+  AUTH0_AUDIENCE?: string;
 }
 

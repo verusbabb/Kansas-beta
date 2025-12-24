@@ -25,6 +25,10 @@ export interface AppConfig {
     projectId?: string;
     secretManagerEnabled: boolean;
   };
+  auth0: {
+    domain?: string;
+    audience?: string;
+  };
 }
 
 export default registerAs('config', (): AppConfig => {
@@ -53,6 +57,10 @@ export default registerAs('config', (): AppConfig => {
     gcp: {
       projectId: env.GCP_PROJECT_ID,
       secretManagerEnabled: env.GCP_SECRET_MANAGER_ENABLED === 'true',
+    },
+    auth0: {
+      domain: env.AUTH0_DOMAIN,
+      audience: env.AUTH0_AUDIENCE,
     },
   };
 });

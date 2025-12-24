@@ -5,6 +5,7 @@ import { ConfigService } from '@nestjs/config';
 import { AppConfig } from '../config/configuration';
 import { GuestList } from './entities/guest-list.entity';
 import { Newsletter } from './entities/newsletter.entity';
+import { User } from './entities/user.entity';
 
 @Module({
   imports: [
@@ -62,13 +63,13 @@ import { Newsletter } from './entities/newsletter.entity';
         sequelizeConfig.logging = config.app.env === 'production' ? false : console.log;
 
         // Explicitly add models for sequelize-typescript
-        sequelizeConfig.models = [GuestList, Newsletter];
+        sequelizeConfig.models = [GuestList, Newsletter, User];
 
         return sequelizeConfig;
       },
     }),
     // Register models explicitly (excludes base.entity which is not a model)
-    SequelizeModule.forFeature([GuestList, Newsletter]),
+    SequelizeModule.forFeature([GuestList, Newsletter, User]),
   ],
   exports: [SequelizeModule],
 })

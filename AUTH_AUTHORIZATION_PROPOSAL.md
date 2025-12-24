@@ -486,13 +486,24 @@ AUTH0_AUDIENCE=your-api-identifier  # API identifier from Auth0 dashboard
 ```
 
 ### Auth0 Dashboard Configuration
-1. **API**: Create an API in Auth0 (for audience)
-2. **Application**: Enable "Authorization Code" flow (already done)
+
+1. **Create API** (REQUIRED - Do NOT use Management API):
+   - Go to Auth0 Dashboard → Applications → APIs
+   - Click "Create API"
+   - Name: "Kansas Beta API" (or your preferred name)
+   - Identifier: `https://kansas-beta-api` (must be URL format, but doesn't need to actually exist)
+   - Signing Algorithm: RS256
+   - **Copy the Identifier** - this is your `AUTH0_AUDIENCE` environment variable
+   - **Important**: Do NOT use the default Management API identifier
+
+2. **Application**: Enable "Authorization Code" flow (already done if you've set up Auth0)
+
 3. **Social Connections** (optional): 
    - Google login can be enabled/disabled based on your preference
    - **Security Note**: Social logins (like Google) will auto-create Auth0 users if they don't exist
    - **Our backend protection**: Even if Auth0 auto-creates users, our database check prevents unauthorized access
    - **Recommendation**: You can enable Google login - it's convenient for users, and backend security still applies
+
 4. **Rules/Actions** (optional): Add email to token if needed (usually included by default)
 
 ## Open Questions / Decisions Needed
