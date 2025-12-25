@@ -89,9 +89,7 @@ export class DatabaseModule implements OnModuleInit {
             // Sync models - creates tables if they don't exist
             // alter: true will update existing tables to match models
             await this.sequelize.sync({ alter: true });
-            console.log('✓ Database models synchronized');
           } catch (error) {
-            console.error('✗ Database sync failed:', error);
             // Don't throw - allow app to continue (might be connection issue)
           }
         }

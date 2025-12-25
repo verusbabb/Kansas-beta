@@ -1,4 +1,4 @@
-import { Injectable, CanActivate, ExecutionContext, ForbiddenException } from '@nestjs/common';
+import { Injectable, CanActivate, ExecutionContext, ForbiddenException, Logger } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { UserRole } from '../../database/entities/user.entity';
 import { ROLES_KEY } from '../decorators/roles.decorator';
@@ -10,6 +10,8 @@ import { ROLES_KEY } from '../decorators/roles.decorator';
  */
 @Injectable()
 export class RolesGuard implements CanActivate {
+  private readonly logger = new Logger(RolesGuard.name);
+
   constructor(private reflector: Reflector) {}
 
   canActivate(context: ExecutionContext): boolean {
@@ -33,7 +35,9 @@ export class RolesGuard implements CanActivate {
     const hasRole = requiredRoles.some((role) => user.role === role);
 
     if (!hasRole) {
-      throw new ForbiddenException(`Access denied. Required roles: ${requiredRoles.join(', ')}`);
+      throw new ForbiddenException(
+        `Access denied. Your role: ${user.role}. Required roles: ${requiredRoles.join(', ')}`,
+      );
     }
 
     return true;

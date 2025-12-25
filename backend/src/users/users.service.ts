@@ -20,8 +20,6 @@ export class UsersService {
    * Create a new user
    */
   async create(createUserDto: CreateUserDto): Promise<UserResponseDto> {
-    this.logger.debug('Creating user', { email: createUserDto.email, role: createUserDto.role });
-
     // Check if user with email already exists
     const existingUser = await this.userModel.findOne({
       where: { email: createUserDto.email },
@@ -40,8 +38,6 @@ export class UsersService {
         auth0Id: null, // Will be set when user signs up in Auth0
       });
 
-      this.logger.info('User created successfully', { id: user.id, email: user.email });
-
       return this.toResponseDto(user);
     } catch (error) {
       this.logger.error('Failed to create user', error);
@@ -53,14 +49,10 @@ export class UsersService {
    * Get all users
    */
   async findAll(): Promise<UserResponseDto[]> {
-    this.logger.debug('Fetching all users');
-
     try {
       const users = await this.userModel.findAll({
         order: [['email', 'ASC']],
       });
-
-      this.logger.debug(`Found ${users.length} users`);
 
       return users.map((user) => this.toResponseDto(user));
     } catch (error) {
@@ -73,8 +65,6 @@ export class UsersService {
    * Get a user by ID
    */
   async findOne(id: string): Promise<UserResponseDto> {
-    this.logger.debug('Fetching user', { id });
-
     try {
       const user = await this.userModel.findByPk(id);
 
@@ -96,8 +86,6 @@ export class UsersService {
    * Get current user by Auth0 ID
    */
   async findByAuth0Id(auth0Id: string): Promise<UserResponseDto | null> {
-    this.logger.debug('Fetching user by Auth0 ID', { auth0Id });
-
     try {
       const user = await this.userModel.findOne({
         where: { auth0Id },
@@ -118,8 +106,6 @@ export class UsersService {
    * Update a user
    */
   async update(id: string, updateUserDto: UpdateUserDto): Promise<UserResponseDto> {
-    this.logger.debug('Updating user', { id, updateUserDto });
-
     try {
       const user = await this.userModel.findByPk(id);
 
@@ -146,8 +132,6 @@ export class UsersService {
 
       await user.save();
 
-      this.logger.info('User updated successfully', { id: user.id });
-
       return this.toResponseDto(user);
     } catch (error) {
       if (error instanceof NotFoundException || error instanceof ConflictException) {
@@ -162,7 +146,6 @@ export class UsersService {
    * Delete a user (soft delete)
    */
   async remove(id: string): Promise<void> {
-    this.logger.debug('Deleting user', { id });
 
     try {
       const user = await this.userModel.findByPk(id);

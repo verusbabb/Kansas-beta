@@ -30,13 +30,25 @@ const app = createApp(App)
 
 // Configure Auth0 only if credentials are provided
 if (env.auth0Domain && env.auth0ClientId) {
-  app.use(createAuth0({
+  const auth0Config: any = {
     domain: env.auth0Domain,
     clientId: env.auth0ClientId,
     authorizationParams: {
-      redirect_uri: window.location.origin
-    }
-  }))
+      redirect_uri: window.location.origin,
+    },
+    cacheLocation: 'localstorage',
+  }
+
+  // Only add audience if it's configured (required for access tokens)
+  if (env.auth0Audience) {
+    auth0Config.authorizationParams.audience = env.auth0Audience
+    console.log('Auth0 configured with audience:', env.auth0Audience)
+  } else {
+    console.warn('⚠️ VITE_AUTH0_AUDIENCE not set. Access tokens may not work correctly.')
+    console.warn('Set VITE_AUTH0_AUDIENCE to your API identifier (e.g., https://kansas-beta-api)')
+  }
+
+  app.use(createAuth0(auth0Config))
 } else {
   console.warn('Auth0 credentials not configured. Authentication features will be disabled.')
   console.warn('Set VITE_AUTH0_DOMAIN and VITE_AUTH0_CLIENT_ID in your .env file to enable Auth0.')

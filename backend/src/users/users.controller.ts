@@ -9,7 +9,6 @@ import {
   HttpCode,
   HttpStatus,
   UseGuards,
-  UseInterceptors,
 } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { PinoLogger } from 'nestjs-pino';
@@ -19,9 +18,9 @@ import { UpdateUserDto } from './dto/update-user.dto';
 import { UserResponseDto } from './dto/user-response.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
+import { UserLookupGuard } from '../auth/guards/user-lookup.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
-import { UserLookupInterceptor } from '../auth/interceptors/user-lookup.interceptor';
 import { UserRole } from '../database/entities/user.entity';
 import { User } from '../database/entities/user.entity';
 
@@ -37,8 +36,7 @@ export class UsersController {
   }
 
   @Post()
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @UseInterceptors(UserLookupInterceptor)
+  @UseGuards(JwtAuthGuard, UserLookupGuard, RolesGuard)
   @Roles(UserRole.ADMIN)
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Create a new user (admin only)' })
@@ -51,13 +49,11 @@ export class UsersController {
   @ApiResponse({ status: HttpStatus.FORBIDDEN, description: 'Forbidden - Admin role required' })
   @ApiResponse({ status: HttpStatus.CONFLICT, description: 'User with email already exists' })
   async create(@Body() createUserDto: CreateUserDto): Promise<UserResponseDto> {
-    this.logger.debug('Creating user', createUserDto);
     return this.usersService.create(createUserDto);
   }
 
   @Get('me')
-  @UseGuards(JwtAuthGuard)
-  @UseInterceptors(UserLookupInterceptor)
+  @UseGuards(JwtAuthGuard, UserLookupGuard)
   @ApiOperation({ summary: 'Get current user profile' })
   @ApiResponse({
     status: HttpStatus.OK,
@@ -66,13 +62,11 @@ export class UsersController {
   })
   @ApiResponse({ status: HttpStatus.UNAUTHORIZED, description: 'Unauthorized' })
   async getCurrentUser(@CurrentUser() user: User): Promise<UserResponseDto> {
-    this.logger.debug('Fetching current user', { id: user.id });
     return this.usersService.findOne(user.id);
   }
 
   @Get()
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @UseInterceptors(UserLookupInterceptor)
+  @UseGuards(JwtAuthGuard, UserLookupGuard, RolesGuard)
   @Roles(UserRole.ADMIN)
   @ApiOperation({ summary: 'Get all users (admin only)' })
   @ApiResponse({
@@ -82,13 +76,11 @@ export class UsersController {
   })
   @ApiResponse({ status: HttpStatus.FORBIDDEN, description: 'Forbidden - Admin role required' })
   async findAll(): Promise<UserResponseDto[]> {
-    this.logger.debug('Fetching all users');
     return this.usersService.findAll();
   }
 
   @Get(':id')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @UseInterceptors(UserLookupInterceptor)
+  @UseGuards(JwtAuthGuard, UserLookupGuard, RolesGuard)
   @Roles(UserRole.ADMIN)
   @ApiOperation({ summary: 'Get a user by ID (admin only)' })
   @ApiResponse({
@@ -99,13 +91,11 @@ export class UsersController {
   @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'User not found' })
   @ApiResponse({ status: HttpStatus.FORBIDDEN, description: 'Forbidden - Admin role required' })
   async findOne(@Param('id') id: string): Promise<UserResponseDto> {
-    this.logger.debug(`Fetching user with ID: ${id}`);
     return this.usersService.findOne(id);
   }
 
   @Patch(':id')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @UseInterceptors(UserLookupInterceptor)
+  @UseGuards(JwtAuthGuard, UserLookupGuard, RolesGuard)
   @Roles(UserRole.ADMIN)
   @ApiOperation({ summary: 'Update a user (admin only)' })
   @ApiResponse({
@@ -119,13 +109,11 @@ export class UsersController {
     @Param('id') id: string,
     @Body() updateUserDto: UpdateUserDto,
   ): Promise<UserResponseDto> {
-    this.logger.debug(`Updating user with ID: ${id}`, updateUserDto);
     return this.usersService.update(id, updateUserDto);
   }
 
   @Delete(':id')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @UseInterceptors(UserLookupInterceptor)
+  @UseGuards(JwtAuthGuard, UserLookupGuard, RolesGuard)
   @Roles(UserRole.ADMIN)
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Delete a user by ID (admin only, soft delete)' })
@@ -136,7 +124,6 @@ export class UsersController {
   @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'User not found' })
   @ApiResponse({ status: HttpStatus.FORBIDDEN, description: 'Forbidden - Admin role required' })
   async remove(@Param('id') id: string): Promise<void> {
-    this.logger.debug(`Deleting user with ID: ${id}`);
     await this.usersService.remove(id);
   }
 }

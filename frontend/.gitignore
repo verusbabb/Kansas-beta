@@ -28,3 +28,11 @@ dist-ssr
 .env.local
 .env.*.local
 
+# Instructional documentation (keep only standard README.md files)
+AUTH_IMPLEMENTATION.md
+AUTH0_INTEGRATION.md
+AUTH_*.md
+*_INTEGRATION.md
+*_SETUP.md
+*_GUIDE.md
+

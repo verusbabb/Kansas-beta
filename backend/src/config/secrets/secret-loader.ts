@@ -43,28 +43,16 @@ export async function loadSecretsFromManager(
   const secretsToLoad = secretNames || Object.keys(SECRET_MAPPINGS);
   
   try {
-    console.log(`Loading ${secretsToLoad.length} secrets from GCP Secret Manager...`);
     const secrets = await loadSecrets(secretsToLoad, projectId);
     
     // Set as environment variables so ConfigService can pick them up
-    let loadedCount = 0;
     for (const [secretName, secretValue] of Object.entries(secrets)) {
       if (secretValue) {
         const envVarName = SECRET_MAPPINGS[secretName];
         if (envVarName) {
           process.env[envVarName] = secretValue;
-          console.log(`✓ Loaded secret: ${secretName} -> ${envVarName}`);
-          loadedCount++;
-        } else {
-          console.warn(`⚠ Secret ${secretName} has no mapping, skipping`);
         }
       }
-    }
-    
-    if (loadedCount > 0) {
-      console.log(`✓ Successfully loaded ${loadedCount} secret(s) from GCP Secret Manager`);
-    } else {
-      console.warn(`⚠ No secrets were loaded from Secret Manager`);
     }
     
     return secrets;
@@ -85,16 +73,12 @@ export async function initializeSecrets(
   enabled = false,
 ): Promise<void> {
   if (!enabled || !projectId) {
-    console.log('Secret Manager disabled, using .env files');
     return;
   }
 
   try {
     await loadSecretsFromManager(projectId);
-    console.log('✓ All secrets loaded from GCP Secret Manager');
   } catch (error) {
-    console.error('⚠ Failed to load secrets from Secret Manager, falling back to .env files');
-    console.error('Error:', error);
     // Don't throw - allow fallback to .env files
     // In production, you might want to throw here to fail fast
     if (process.env.NODE_ENV === 'production') {

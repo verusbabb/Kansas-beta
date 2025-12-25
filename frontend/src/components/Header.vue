@@ -14,8 +14,8 @@
                 <img src="/crest.webp" alt="Beta Theta Pi Crest" class="crest-image" />
               </div>
             </div>
-            <div v-if="isAuth0Configured" class="auth-buttons">
-              <LogoutButton v-if="isAuthenticated" />
+            <div v-if="isAuth0Configured" class="auth-buttons flex items-center gap-3">
+              <UserProfile v-if="isAuthenticated && authStore.user" />
               <LoginButton v-else />
             </div>
           </div>
@@ -86,6 +86,8 @@
   } from "primevue";
   import LoginButton from './LoginButton.vue';
   import LogoutButton from './LogoutButton.vue';
+  import UserProfile from './UserProfile.vue';
+  import { useAuthStore } from '@/stores/auth';
 
   // Check if Auth0 is configured
   const isAuth0Configured = env.auth0Domain && env.auth0ClientId;
@@ -104,6 +106,9 @@
     // Buttons won't show due to isAuth0Configured check above
     console.debug('Auth0 not available (this is normal if VITE_AUTH0_DOMAIN and VITE_AUTH0_CLIENT_ID are not set)');
   }
+
+  // Get auth store for user info
+  const authStore = useAuthStore();
 
   const items = ref([
     {
