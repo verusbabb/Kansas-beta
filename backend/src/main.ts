@@ -26,8 +26,6 @@ async function bootstrap() {
       const { initializeSecrets } = await import('./config/secrets/secret-loader');
       await initializeSecrets(projectId, true);
     } catch (error) {
-      console.error('⚠ Warning: Could not load secrets from Secret Manager:', error);
-      console.error('⚠ Falling back to .env files');
       // Continue with .env fallback
     }
   }

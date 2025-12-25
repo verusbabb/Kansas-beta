@@ -8,7 +8,6 @@ import {
   HttpCode,
   HttpStatus,
   UseGuards,
-  UseInterceptors,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiBearerAuth } from '@nestjs/swagger';
 import { PinoLogger } from 'nestjs-pino';
@@ -17,8 +16,8 @@ import { CreateNewsletterDto } from './dto/create-newsletter.dto';
 import { NewsletterResponseDto } from './dto/newsletter-response.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
+import { UserLookupGuard } from '../auth/guards/user-lookup.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
-import { UserLookupInterceptor } from '../auth/interceptors/user-lookup.interceptor';
 import { UserRole } from '../database/entities/user.entity';
 
 @ApiTags('Newsletters')
@@ -32,8 +31,7 @@ export class NewslettersController {
   }
 
   @Post()
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @UseInterceptors(UserLookupInterceptor)
+  @UseGuards(JwtAuthGuard, UserLookupGuard, RolesGuard)
   @Roles(UserRole.EDITOR, UserRole.ADMIN)
   @HttpCode(HttpStatus.CREATED)
   @ApiBearerAuth()
@@ -59,7 +57,6 @@ export class NewslettersController {
     description: 'Forbidden - Editor or Admin role required',
   })
   async create(@Body() createNewsletterDto: CreateNewsletterDto): Promise<NewsletterResponseDto> {
-    this.logger.debug('Creating newsletter', createNewsletterDto);
     return this.newslettersService.create(createNewsletterDto);
   }
 
@@ -74,7 +71,6 @@ export class NewslettersController {
     type: [NewsletterResponseDto],
   })
   async findAll(): Promise<NewsletterResponseDto[]> {
-    this.logger.debug('Fetching all newsletters');
     return this.newslettersService.findAll();
   }
 
@@ -98,13 +94,11 @@ export class NewslettersController {
     description: 'Newsletter not found',
   })
   async findOne(@Param('id') id: string): Promise<NewsletterResponseDto> {
-    this.logger.debug('Fetching newsletter', { id });
     return this.newslettersService.findOne(id);
   }
 
   @Delete(':id')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @UseInterceptors(UserLookupInterceptor)
+  @UseGuards(JwtAuthGuard, UserLookupGuard, RolesGuard)
   @Roles(UserRole.EDITOR, UserRole.ADMIN)
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiBearerAuth()
@@ -134,7 +128,6 @@ export class NewslettersController {
     description: 'Newsletter not found',
   })
   async remove(@Param('id') id: string): Promise<void> {
-    this.logger.debug('Deleting newsletter', { id });
     return this.newslettersService.remove(id);
   }
 }

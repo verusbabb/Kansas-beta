@@ -30,6 +30,8 @@ CLEANUP_*.md
 TROUBLESHOOTING.md
 DEBUGGING.md
 NOTES.md
+AUTH_*.md
+*_PROPOSAL.md
 
 # Logs
 *.log

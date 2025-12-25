@@ -3,6 +3,20 @@ import { env } from '@/config/env'
 import { useToastStore } from '@/stores/toast'
 
 /**
+ * Token getter function - set by auth store
+ * This allows the API client to get tokens without directly importing Auth0
+ */
+let tokenGetter: (() => Promise<string | null>) | null = null
+
+/**
+ * Set the token getter function
+ * Called by auth store on initialization
+ */
+export function setTokenGetter(getter: () => Promise<string | null>) {
+  tokenGetter = getter
+}
+
+/**
  * Create and configure Axios instance
  */
 const apiClient: AxiosInstance = axios.create({
@@ -15,15 +29,54 @@ const apiClient: AxiosInstance = axios.create({
 
 /**
  * Request interceptor
+ * Adds Auth0 access token to requests when available
  */
 apiClient.interceptors.request.use(
-  (config: InternalAxiosRequestConfig) => {
-    // Add auth token if available (for future use)
-    const token = localStorage.getItem('auth_token')
-    if (token && config.headers) {
-      config.headers.Authorization = `Bearer ${token}`
+  async (config: InternalAxiosRequestConfig) => {
+    // Get access token if token getter is available
+    if (tokenGetter) {
+      try {
+        const token = await tokenGetter()
+        if (token && config.headers) {
+          config.headers.Authorization = `Bearer ${token}`
+          
+          // Debug: Log what token is being sent (first/last chars only)
+          if (import.meta.env.DEV) {
+            const isJWT = token.split('.').length === 3
+            console.debug('Adding token to request', {
+              url: config.url,
+              tokenLength: token.length,
+              tokenPreview: `${token.substring(0, 20)}...${token.substring(token.length - 20)}`,
+              isJWT,
+            })
+            
+            // Try to decode to verify it's a valid JWT with audience
+            if (isJWT) {
+              try {
+                const payload = JSON.parse(atob(token.split('.')[1]))
+                console.debug('Token being sent has:', {
+                  aud: payload.aud,
+                  iss: payload.iss,
+                  sub: payload.sub?.substring(0, 20) + '...',
+                })
+              } catch (e) {
+                console.warn('Could not decode token payload')
+              }
+            } else {
+              console.warn('⚠️ Token does not appear to be a JWT!')
+            }
+          }
+        } else {
+          if (import.meta.env.DEV) {
+            console.debug('No token available for request', { url: config.url })
+          }
+        }
+      } catch (error) {
+        // Token fetch failed - continue without token (for public endpoints)
+        console.warn('Could not get access token:', error)
+      }
     }
-
+    
     // Add request ID for tracing
     config.headers['X-Request-ID'] = crypto.randomUUID()
 

@@ -13,6 +13,7 @@ interface EnvConfig {
   appVersion: string
   auth0Domain?: string
   auth0ClientId?: string
+  auth0Audience?: string
   mode: string
   isDev: boolean
   isProd: boolean
@@ -31,6 +32,7 @@ export function getEnvConfig(): EnvConfig {
 
   const auth0Domain = import.meta.env.VITE_AUTH0_DOMAIN
   const auth0ClientId = import.meta.env.VITE_AUTH0_CLIENT_ID
+  const auth0Audience = import.meta.env.VITE_AUTH0_AUDIENCE
 
   return {
     apiUrl: apiUrl || 'http://localhost:3000',
@@ -38,6 +40,7 @@ export function getEnvConfig(): EnvConfig {
     appVersion: import.meta.env.VITE_APP_VERSION || '1.0.0',
     auth0Domain,
     auth0ClientId,
+    auth0Audience,
     mode: import.meta.env.MODE,
     isDev: import.meta.env.DEV,
     isProd: import.meta.env.PROD,

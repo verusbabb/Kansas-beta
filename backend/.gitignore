@@ -39,3 +39,11 @@ lerna-debug.log*
 .env.local
 .env.*.local
 
+# Instructional documentation (keep only standard README.md files)
+AUTH_IMPLEMENTATION.md
+ADDING_NEW_TABLES.md
+ENV_SETUP.md
+ENV_*.md
+*_SETUP.md
+*_GUIDE.md
+
