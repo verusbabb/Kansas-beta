@@ -17,6 +17,7 @@ export interface UserResponseDto {
   auth0Id: string | null
   createdAt: string
   updatedAt: string
+  isProtected?: boolean
 }
 
 export interface CreateUserDto {

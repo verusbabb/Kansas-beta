@@ -3,6 +3,7 @@ import { createPinia } from 'pinia'
 import PrimeVue from 'primevue/config'
 import Material from '@primevue/themes/material'
 import Ripple from 'primevue/ripple'
+import Tooltip from 'primevue/tooltip'
 import ToastService from 'primevue/toastservice'
 import ConfirmationService from 'primevue/confirmationservice'
 import 'primeicons/primeicons.css'
@@ -67,5 +68,6 @@ app.use(PrimeVue, {
 app.use(ToastService)
 app.use(ConfirmationService)
 app.directive('ripple', Ripple)
+app.directive('tooltip', Tooltip)
 
 app.mount('#app')

@@ -51,5 +51,11 @@ export class UserResponseDto {
     example: '2023-10-27T10:00:00.000Z',
   })
   updatedAt!: Date;
+
+  @ApiProperty({
+    description: 'Whether this user is protected from editing/deletion',
+    example: false,
+  })
+  isProtected!: boolean;
 }
 
