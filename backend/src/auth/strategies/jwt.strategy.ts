@@ -7,15 +7,21 @@ import { AppConfig } from '../../config/configuration';
 
 /**
  * JWT Payload interface from Auth0 token
+ * Includes custom claims added by Auth0 Action
  */
 export interface JwtPayload {
   sub: string; // Auth0 user ID (format: "auth0|xxxxx" or "google-oauth2|xxxxx")
-  email?: string;
+  email?: string; // Standard email claim (may not be in access tokens)
   email_verified?: boolean;
   aud: string | string[]; // Audience (API identifier)
   iss: string; // Issuer (Auth0 domain)
   iat?: number;
   exp?: number;
+  // Custom claims added by Auth0 Action (namespace: https://kansas-beta-api)
+  'https://kansas-beta-api/email'?: string; // Email from custom claim (always present)
+  'https://kansas-beta-api/email_verified'?: boolean; // Email verified status
+  // Allow other custom claims
+  [key: string]: any;
 }
 
 /**
@@ -69,8 +75,8 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
    * This method is called after the token is validated
    * Return value is attached to request.user
    * 
-   * Note: Email is optional in access tokens. If missing, it will be fetched
-   * from Auth0 userinfo endpoint or looked up by auth0Id in the guard.
+   * Note: Email is available via custom claim 'https://kansas-beta-api/email'
+   * added by Auth0 Action. Falls back to standard 'email' claim if custom claim not present.
    */
   async validate(payload: JwtPayload): Promise<JwtPayload> {
     if (!payload.sub) {
