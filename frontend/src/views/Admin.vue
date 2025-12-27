@@ -238,7 +238,7 @@
             <template #title>
               <div class="flex items-center gap-2">
                 <i class="pi pi-users text-[#6F8FAF]"></i>
-                <span>Add site admin</span>
+                <span>Manage site admins</span>
               </div>
             </template>
             <template #content>
@@ -354,7 +354,7 @@
             <template #title>
               <div class="flex items-center gap-2">
                 <i class="pi pi-list text-[#6F8FAF]"></i>
-                <span>Users ({{ activeUsers.length }})</span>
+                <span>Users with Admin or Editor Privileges ({{ activeUsers.length }})</span>
               </div>
             </template>
             <template #content>
@@ -1326,7 +1326,7 @@
     },
     {
       id: 'users',
-      label: 'Add site admin',
+      label: 'Manage site admins',
       icon: 'pi pi-users'
     },
     {
