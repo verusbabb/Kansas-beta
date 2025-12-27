@@ -6,24 +6,21 @@ import {
   Logger,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
-import { ConfigService } from '@nestjs/config';
-import { HttpService } from '@nestjs/axios';
-import { firstValueFrom } from 'rxjs';
-import { AxiosError } from 'axios';
 import { User } from '../../database/entities/user.entity';
 import { JwtPayload } from '../strategies/jwt.strategy';
-import { AppConfig } from '../../config/configuration';
 
 /**
  * User Lookup Guard
  * After JWT validation, this guard:
- * 1. Extracts auth0Id (sub) and optional email from JWT payload
+ * 1. Extracts auth0Id (sub) and email from JWT payload (custom claim)
  * 2. Looks up user in database by auth0Id (if linked) or email
- * 3. If email not in token, fetches from Auth0 userinfo endpoint
- * 4. Links Auth0 account if auth0_id is NULL (first login)
- * 5. Replaces request.user with User entity
+ * 3. Links Auth0 account if auth0_id is NULL (first login)
+ * 4. Replaces request.user with User entity
  * 
  * Must be used after JwtAuthGuard and before RolesGuard
+ * 
+ * Email is obtained from custom claim 'https://kansas-beta-api/email' added by Auth0 Action.
+ * Falls back to standard 'email' claim if custom claim not present.
  */
 @Injectable()
 export class UserLookupGuard implements CanActivate {
@@ -32,8 +29,6 @@ export class UserLookupGuard implements CanActivate {
   constructor(
     @InjectModel(User)
     private userModel: typeof User,
-    private configService: ConfigService<AppConfig>,
-    private httpService: HttpService,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -47,7 +42,22 @@ export class UserLookupGuard implements CanActivate {
     }
 
     const auth0Id = jwtPayload.sub;
-    let email = jwtPayload.email;
+    
+    // Get email from custom claim (added by Auth0 Action) or fall back to standard claim
+    const email = jwtPayload['https://kansas-beta-api/email'] || jwtPayload.email;
+
+    if (!email) {
+      // Email should always be present via custom claim from Auth0 Action
+      // If missing, it's a configuration issue
+      this.logger.error('Email not found in token', {
+        auth0Id,
+        hasCustomClaim: !!jwtPayload['https://kansas-beta-api/email'],
+        hasStandardClaim: !!jwtPayload.email,
+      });
+      throw new ForbiddenException(
+        'Invalid token: missing email claim. Please ensure Auth0 Action is configured correctly.',
+      );
+    }
 
     try {
       // Strategy 1: Look up by auth0Id first (for users who have already linked)
@@ -61,97 +71,46 @@ export class UserLookupGuard implements CanActivate {
         return true;
       }
 
-      // Strategy 2: If email is in token, look up by email (for first-time login)
-      if (email) {
-        user = await this.userModel.findOne({
-          where: { email },
-        });
+      // Strategy 2: Look up by email (for first-time login or pre-created users)
+      user = await this.userModel.findOne({
+        where: { email },
+      });
 
-        if (user) {
-          // Security check: If auth0_id exists and doesn't match, prevent account hijacking
-          if (user.auth0Id && user.auth0Id !== auth0Id) {
-            throw new ForbiddenException('Account email is already linked to a different Auth0 account.');
-          }
-
-          // First-time login: Link Auth0 account to database user
-          if (!user.auth0Id && auth0Id) {
-            user.auth0Id = auth0Id;
-            await user.save();
-          }
-
-          request.user = user;
-          return true;
+      if (user) {
+        // Security check: If auth0_id exists and doesn't match, prevent account hijacking
+        if (user.auth0Id && user.auth0Id !== auth0Id) {
+          throw new ForbiddenException('Account email is already linked to a different Auth0 account.');
         }
-      }
 
-      // Strategy 3: Email not in token and user not found - fetch email from Auth0 userinfo
-      if (!email) {
-        email = await this.fetchEmailFromAuth0(auth0Id, request.headers.authorization);
-        
-        if (email) {
-          // Try lookup by email again
-          user = await this.userModel.findOne({
-            where: { email },
-          });
-
-          if (user) {
-            // Security check
-            if (user.auth0Id && user.auth0Id !== auth0Id) {
-              throw new ForbiddenException('Account email is already linked to a different Auth0 account.');
-            }
-
-            // Link Auth0 account
-            if (!user.auth0Id && auth0Id) {
-              user.auth0Id = auth0Id;
-              await user.save();
-            }
-
-            request.user = user;
-            return true;
-          }
+        // First-time login: Link Auth0 account to database user
+        if (!user.auth0Id && auth0Id) {
+          user.auth0Id = auth0Id;
+          await user.save();
+          this.logger.log('Linked Auth0 account to user', { email, auth0Id });
         }
+
+        request.user = user;
+        return true;
       }
 
       // User not found in database
-      throw new ForbiddenException('Account not authorized. Please contact an administrator.');
+      this.logger.warn('User not found in database', {
+        auth0Id,
+        email,
+      });
+      throw new ForbiddenException(
+        'Account not authorized. Please contact an administrator. Your account may need to be created in the system first.',
+      );
     } catch (error) {
       if (error instanceof ForbiddenException) {
         throw error;
       }
-      this.logger.error('Error in user lookup', error);
-      throw new ForbiddenException('Error authenticating user');
-    }
-  }
-
-  /**
-   * Fetch user email from Auth0 userinfo endpoint
-   * Uses NestJS HttpService for better integration and error handling
-   */
-  private async fetchEmailFromAuth0(auth0Id: string, authorizationHeader?: string): Promise<string | null> {
-    try {
-      const config = this.configService.get<AppConfig>('config', { infer: true })!;
-      const auth0Domain = config.auth0?.domain;
-
-      if (!auth0Domain || !authorizationHeader) {
-        return null;
-      }
-
-      const url = `https://${auth0Domain}/userinfo`;
-      
-      // HttpService returns an Observable, convert to Promise using firstValueFrom
-      const response = await firstValueFrom(
-        this.httpService.get<{ email?: string }>(url, {
-          headers: {
-            Authorization: authorizationHeader,
-            'Content-Type': 'application/json',
-          },
-        }),
-      );
-
-      return response.data?.email || null;
-    } catch (error) {
-      // Silently fail - user lookup will continue with other strategies
-      return null;
+      this.logger.error('Error in user lookup', {
+        error: error instanceof Error ? error.message : String(error),
+        auth0Id,
+        email,
+      });
+      throw new ForbiddenException('Error authenticating user. Please try again or contact support.');
     }
   }
 }

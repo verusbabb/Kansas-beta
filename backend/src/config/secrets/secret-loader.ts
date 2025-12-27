@@ -23,6 +23,10 @@ const SECRET_MAPPINGS: Record<string, string> = {
   // JWT secrets
   'jwt-secret': 'JWT_SECRET',
   
+  // Auth0 secrets
+  'auth0-domain': 'AUTH0_DOMAIN',
+  'auth0-audience': 'AUTH0_AUDIENCE',
+  
   // Add more mappings as needed
   // 'api-key': 'API_KEY',
   // 'third-party-secret': 'THIRD_PARTY_SECRET',

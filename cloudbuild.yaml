@@ -4,28 +4,31 @@ steps:
     args: ['build', '-t', 'gcr.io/$PROJECT_ID/kansas-beta-backend', './backend']
     id: 'build-backend'
 
+
   # Build frontend Docker image
   # Note: Frontend env vars are baked into the build at build time
-  # They can come from:
-  # 1. Cloud Build substitution variables (--substitutions)
-  # 2. Secret Manager (accessed during build)
-  # 3. Environment variables set in this step
+  # VITE_API_URL: Uses _FRONTEND_API_URL substitution (provided by deploy.sh)
+  # For full deployments, deploy.sh fetches the backend URL before starting the build
+  # For frontend-only deployments, deploy.sh also fetches and passes the URL
   - name: 'gcr.io/cloud-builders/docker'
     args:
       - 'build'
       - '--build-arg'
       - 'VITE_API_URL=${_FRONTEND_API_URL}'
       - '--build-arg'
-      - 'VITE_APP_NAME=${_APP_NAME:-Kansas Beta}'
+      - 'VITE_APP_NAME=${_APP_NAME}'
       - '--build-arg'
-      - 'VITE_APP_VERSION=${_APP_VERSION:-1.0.0}'
+      - 'VITE_APP_VERSION=${_APP_VERSION}'
+      - '--build-arg'
+      - 'VITE_AUTH0_DOMAIN=${_VITE_AUTH0_DOMAIN}'
+      - '--build-arg'
+      - 'VITE_AUTH0_CLIENT_ID=${_VITE_AUTH0_CLIENT_ID}'
+      - '--build-arg'
+      - 'VITE_AUTH0_AUDIENCE=${_VITE_AUTH0_AUDIENCE}'
       - '-t'
       - 'gcr.io/$PROJECT_ID/kansas-beta-frontend'
       - './frontend'
     id: 'build-frontend'
-    env:
-      - 'VITE_API_URL=${_FRONTEND_API_URL}'
-      - 'VITE_APP_NAME=${_APP_NAME:-Kansas Beta}'
 
   # Push backend image
   - name: 'gcr.io/cloud-builders/docker'
@@ -35,7 +38,9 @@ steps:
 
   # Run database migrations
   # This step runs migrations before deploying the app
-  # Uses Node.js to run migrations with Cloud SQL connection
+  # Uses ts-node to run TypeScript migrations directly (no build needed)
+  # DATABASE_PASSWORD is injected from Secret Manager via secretEnv
+  # Uses Cloud SQL Proxy for TCP connection (more reliable in Cloud Build)
   - name: 'node:20'
     entrypoint: 'bash'
     args:
@@ -43,22 +48,117 @@ steps:
       - |
         cd backend
         npm ci --production=false
+        
+        # Download and start Cloud SQL Proxy
+        echo "Downloading Cloud SQL Proxy..."
+        wget -q https://storage.googleapis.com/cloud-sql-connectors/cloud-sql-proxy/v2.8.0/cloud-sql-proxy.linux.amd64 -O cloud-sql-proxy
+        chmod +x cloud-sql-proxy
+        
+        echo "Starting Cloud SQL Proxy in background..."
+        ./cloud-sql-proxy $PROJECT_ID:us-central1:${_DATABASE_INSTANCE} --port=5432 > /tmp/cloud-sql-proxy.log 2>&1 &
+        PROXY_PID=$$!
+        
+        # Wait for proxy to be ready (check log for success message)
+        echo "Waiting for Cloud SQL Proxy to be ready..."
+        for i in {1..30}; do
+          if grep -q "ready for new connections" /tmp/cloud-sql-proxy.log 2>/dev/null; then
+            echo "Cloud SQL Proxy is ready!"
+            # Give it a moment to fully initialize
+            sleep 2
+            break
+          fi
+          echo "Attempt $$i/30: Proxy not ready, waiting..."
+          sleep 1
+        done
+        
+        if ! grep -q "ready for new connections" /tmp/cloud-sql-proxy.log 2>/dev/null; then
+          echo "ERROR: Cloud SQL Proxy failed to start"
+          echo "Proxy logs:"
+          cat /tmp/cloud-sql-proxy.log || true
+          kill $$PROXY_PID 2>/dev/null || true
+          exit 1
+        fi
+        
+        echo "Running migrations..."
         npm run migration:run
+        MIGRATION_EXIT=$$?
+        
+        # Clean up proxy
+        kill $$PROXY_PID 2>/dev/null || true
+        exit $$MIGRATION_EXIT
     id: 'run-migrations'
     waitFor: ['push-backend']
     env:
       - 'NODE_ENV=production'
-      - 'DATABASE_HOST=/cloudsql/$PROJECT_ID:us-central1:${_DATABASE_INSTANCE:-kansas-beta-db}'
-      - 'DATABASE_NAME=${_DATABASE_NAME:-kansas_beta}'
-      - 'DATABASE_USER=${_DATABASE_USER:-postgres}'
+      - 'DATABASE_HOST=127.0.0.1'
+      - 'DATABASE_PORT=5432'
+      - 'DATABASE_NAME=${_DATABASE_NAME}'
+      - 'DATABASE_USER=${_DATABASE_USER}'
       - 'GCP_SECRET_MANAGER_ENABLED=true'
       - 'GCP_PROJECT_ID=$PROJECT_ID'
-    # Connect to Cloud SQL instance via Unix socket
-    volumes:
-      - name: 'cloudsql'
-        path: /cloudsql
-    # Note: DATABASE_PASSWORD should be loaded from Secret Manager
-    # The migration script will use Secret Manager to get the password
+    secretEnv: ['DATABASE_PASSWORD']
+
+  # Run database seeders
+  # This step runs seeders after migrations to populate initial data
+  # Uses ts-node to run TypeScript seeders directly (no build needed)
+  # DATABASE_PASSWORD is injected from Secret Manager via secretEnv
+  # Uses Cloud SQL Proxy for TCP connection (more reliable in Cloud Build)
+  - name: 'node:20'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        cd backend
+        npm ci --production=false
+        
+        # Download and start Cloud SQL Proxy
+        echo "Downloading Cloud SQL Proxy..."
+        wget -q https://storage.googleapis.com/cloud-sql-connectors/cloud-sql-proxy/v2.8.0/cloud-sql-proxy.linux.amd64 -O cloud-sql-proxy
+        chmod +x cloud-sql-proxy
+        
+        echo "Starting Cloud SQL Proxy in background..."
+        ./cloud-sql-proxy $PROJECT_ID:us-central1:${_DATABASE_INSTANCE} --port=5432 > /tmp/cloud-sql-proxy.log 2>&1 &
+        PROXY_PID=$$!
+        
+        # Wait for proxy to be ready (check log for success message)
+        echo "Waiting for Cloud SQL Proxy to be ready..."
+        for i in {1..30}; do
+          if grep -q "ready for new connections" /tmp/cloud-sql-proxy.log 2>/dev/null; then
+            echo "Cloud SQL Proxy is ready!"
+            # Give it a moment to fully initialize
+            sleep 2
+            break
+          fi
+          echo "Attempt $$i/30: Proxy not ready, waiting..."
+          sleep 1
+        done
+        
+        if ! grep -q "ready for new connections" /tmp/cloud-sql-proxy.log 2>/dev/null; then
+          echo "ERROR: Cloud SQL Proxy failed to start"
+          echo "Proxy logs:"
+          cat /tmp/cloud-sql-proxy.log || true
+          kill $$PROXY_PID 2>/dev/null || true
+          exit 1
+        fi
+        
+        echo "Running seeders..."
+        npm run seed:run
+        SEEDER_EXIT=$$?
+        
+        # Clean up proxy
+        kill $$PROXY_PID 2>/dev/null || true
+        exit $$SEEDER_EXIT
+    id: 'run-seeders'
+    waitFor: ['run-migrations']
+    env:
+      - 'NODE_ENV=production'
+      - 'DATABASE_HOST=127.0.0.1'
+      - 'DATABASE_PORT=5432'
+      - 'DATABASE_NAME=${_DATABASE_NAME}'
+      - 'DATABASE_USER=${_DATABASE_USER}'
+      - 'GCP_SECRET_MANAGER_ENABLED=true'
+      - 'GCP_PROJECT_ID=$PROJECT_ID'
+    secretEnv: ['DATABASE_PASSWORD']
 
   # Push frontend image
   - name: 'gcr.io/cloud-builders/docker'
@@ -91,9 +191,9 @@ steps:
       - '--max-instances'
       - '10'
       - '--add-cloudsql-instances'
-      - '$PROJECT_ID:us-central1:${_DATABASE_INSTANCE:-kansas-beta-db}'
+      - '$PROJECT_ID:us-central1:${_DATABASE_INSTANCE}'
     id: 'deploy-backend'
-    waitFor: ['run-migrations']
+    waitFor: ['run-seeders']
 
   # Deploy frontend to Cloud Run
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
@@ -133,11 +233,19 @@ options:
 timeout: '1200s'
 
 substitutions:
-  _FRONTEND_API_URL: ''  # Will be set dynamically based on backend URL
+  _FRONTEND_API_URL: ''  # Optional: Will be fetched from Cloud Run if not provided
   _APP_NAME: 'Kansas Beta'
   _APP_VERSION: '1.0.0'
   _DATABASE_NAME: 'kansas_beta'
   _DATABASE_INSTANCE: 'kansas-beta-db'
   _DATABASE_USER: 'postgres'
-  # _DATABASE_PASSWORD should be set via Secret Manager or Cloud Build secrets
+  _VITE_AUTH0_DOMAIN: ''  # Optional: Set via --substitutions or will be empty
+  _VITE_AUTH0_CLIENT_ID: ''  # Optional: Set via --substitutions or will be empty
+  _VITE_AUTH0_AUDIENCE: ''  # Optional: Set via --substitutions or will be empty
+  # DATABASE_PASSWORD is injected from Secret Manager via availableSecrets below
+
+availableSecrets:
+  secretManager:
+    - versionName: projects/$PROJECT_ID/secrets/database-password/versions/latest
+      env: 'DATABASE_PASSWORD'
 

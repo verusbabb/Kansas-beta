@@ -9,6 +9,12 @@ steps:
       - 'VITE_APP_NAME=Kansas Beta'
       - '--build-arg'
       - 'VITE_APP_VERSION=1.0.0'
+      - '--build-arg'
+      - 'VITE_AUTH0_DOMAIN=${_VITE_AUTH0_DOMAIN}'
+      - '--build-arg'
+      - 'VITE_AUTH0_CLIENT_ID=${_VITE_AUTH0_CLIENT_ID}'
+      - '--build-arg'
+      - 'VITE_AUTH0_AUDIENCE=${_VITE_AUTH0_AUDIENCE}'
       - '-t'
       - 'gcr.io/$PROJECT_ID/kansas-beta-frontend'
       - '.'
@@ -31,4 +37,7 @@ timeout: '1200s'
 
 substitutions:
   _FRONTEND_API_URL: 'http://localhost:3000'
+  _VITE_AUTH0_DOMAIN: ''  # Set via --substitutions or Secret Manager
+  _VITE_AUTH0_CLIENT_ID: ''  # Set via --substitutions or Secret Manager
+  _VITE_AUTH0_AUDIENCE: ''  # Set via --substitutions or Secret Manager
 
