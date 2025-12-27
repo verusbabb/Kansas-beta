@@ -110,48 +110,57 @@
   // Get auth store for user info
   const authStore = useAuthStore();
 
-  const items = ref([
-    {
-      label: "Home",
-      icon: "pi pi-home",
-      routerLink: "/",
-    },
-    {
-      label: "Rush",
-      icon: "pi pi-users",
-      routerLink: "/rush",
-    },
-    {
-      label: "NewsLetters",
-      icon: "pi pi-book",
-      routerLink: "/newsletters",
-    },
-    {
-      label: "Events",
-      icon: "pi pi-calendar",
-      routerLink: "/events",
-    },
-        {
-      label: "People",
-      icon: "pi pi-id-card",
-      routerLink: "/members",
-        },
-        {
-      label: "Donate",
-      icon: "pi pi-heart",
-      routerLink: "/donate",
-        },
-        {
-      label: "Contact Us",
-      icon: "pi pi-envelope",
-      routerLink: "/contact",
-    },
-    {
-      label: "Admin",
-      icon: "pi pi-cog",
-      routerLink: "/admin",
-    },
-  ]);
+  // Menu items - computed to reactively include/exclude Admin based on user role
+  const items = computed(() => {
+    const baseItems = [
+      {
+        label: "Home",
+        icon: "pi pi-home",
+        routerLink: "/",
+      },
+      {
+        label: "Rush",
+        icon: "pi pi-users",
+        routerLink: "/rush",
+      },
+      {
+        label: "NewsLetters",
+        icon: "pi pi-book",
+        routerLink: "/newsletters",
+      },
+      {
+        label: "Events",
+        icon: "pi pi-calendar",
+        routerLink: "/events",
+      },
+      {
+        label: "People",
+        icon: "pi pi-id-card",
+        routerLink: "/members",
+      },
+      {
+        label: "Donate",
+        icon: "pi pi-heart",
+        routerLink: "/donate",
+      },
+      {
+        label: "Contact Us",
+        icon: "pi pi-envelope",
+        routerLink: "/contact",
+      },
+    ];
+
+    // Only include Admin tab if user is an admin
+    if (authStore.isAdmin) {
+      baseItems.push({
+        label: "Admin",
+        icon: "pi pi-cog",
+        routerLink: "/admin",
+      });
+    }
+
+    return baseItems;
+  });
 </script>
 
 <style scoped>

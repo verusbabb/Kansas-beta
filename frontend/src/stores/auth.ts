@@ -72,9 +72,30 @@ export const useAuthStore = defineStore('auth', () => {
       user.value = null
       console.error('Failed to fetch user profile:', err)
       
-      // If 401/403, user might not exist in database yet
+      // If 401/403 from /users/me, user exists in Auth0 but not in our database
+      // Clear Auth0 session so they can try logging in again after being created
       if (err.response?.status === 401 || err.response?.status === 403) {
-        console.warn('User not authorized - may need to be created in database first')
+        const isUsersMeEndpoint = err.config?.url?.includes('/users/me') || err.response?.config?.url?.includes('/users/me')
+        
+        if (isUsersMeEndpoint && auth0) {
+          console.warn('User not found in database - clearing Auth0 session to allow fresh login after user creation')
+          
+          // Clear user profile before logout
+          clearUser()
+          
+          // Delay logout to give user time to see the error toast message
+          // The toast has a 5 second lifetime, so 3 seconds is enough to read it
+          setTimeout(() => {
+            // Logout from Auth0 to clear session, allowing user to login again after being created
+            auth0.logout({
+              logoutParams: {
+                returnTo: window.location.origin
+              }
+            })
+          }, 3000) // 3 second delay
+        } else if (!isUsersMeEndpoint) {
+          console.warn('User not authorized - may need to be created in database first')
+        }
       }
     } finally {
       loading.value = false
