@@ -24,6 +24,9 @@ export interface AppConfig {
   gcp: {
     projectId?: string;
     secretManagerEnabled: boolean;
+    storage?: {
+      bucketName?: string;
+    };
   };
   auth0: {
     domain?: string;
@@ -57,6 +60,9 @@ export default registerAs('config', (): AppConfig => {
     gcp: {
       projectId: env.GCP_PROJECT_ID,
       secretManagerEnabled: env.GCP_SECRET_MANAGER_ENABLED === 'true',
+      storage: {
+        bucketName: env.GCS_BUCKET_NAME,
+      },
     },
     auth0: {
       domain: env.AUTH0_DOMAIN,

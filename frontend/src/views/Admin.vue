@@ -52,27 +52,31 @@
             <template #content>
               <div class="flex flex-col gap-6">
                 <p class="text-surface-600">
-                  Add a new newsletter to the site. Enter the newsletter link, season, and year below.
+                  Add a new newsletter to the site. Upload a PDF file and select the season and year below.
                 </p>
                 
                 <form @submit.prevent="handleAddNewsletter" class="flex flex-col gap-5">
-                  <!-- Newsletter Link -->
+                  <!-- Newsletter File Upload -->
                   <div class="flex flex-col gap-2">
-                    <label for="newsletter-link" class="font-semibold text-surface-700">
-                      Newsletter Link <span class="text-red-500">*</span>
+                    <label for="newsletter-file" class="font-semibold text-surface-700">
+                      Newsletter PDF File <span class="text-red-500">*</span>
                     </label>
-                    <InputText
-                      id="newsletter-link"
-                      v-model="newsletterForm.link"
-                      placeholder="https://example.com/newsletter.pdf"
-                      :class="{ 'p-invalid': newsletterErrors.link }"
-                      class="w-full"
+                    <input
+                      id="newsletter-file"
+                      type="file"
+                      accept="application/pdf"
+                      @change="handleFileSelect"
+                      :class="{ 'p-invalid': newsletterErrors.file }"
+                      class="w-full p-2 border border-surface-300 rounded-md hover:border-surface-400 focus:outline-none focus:ring-2 focus:ring-[#6F8FAF] focus:border-transparent"
                     />
-                    <small v-if="newsletterErrors.link" class="p-error">
-                      {{ newsletterErrors.link }}
+                    <small v-if="newsletterErrors.file" class="p-error">
+                      {{ newsletterErrors.file }}
+                    </small>
+                    <small v-if="selectedFileName" class="text-surface-600">
+                      Selected: {{ selectedFileName }}
                     </small>
                     <small class="text-surface-500">
-                      Enter the full URL to the newsletter PDF or webpage
+                      Upload a PDF file (max 10MB)
                     </small>
                   </div>
 
@@ -132,7 +136,7 @@
                       label="Add Newsletter"
                       icon="pi pi-plus"
                       :loading="isSubmittingNewsletter"
-                      :disabled="isSubmittingNewsletter"
+                      :disabled="isSubmittingNewsletter || !isNewsletterFormValid"
                     />
                   </div>
                 </form>
@@ -182,15 +186,9 @@
                           {{ newsletter.season }} {{ newsletter.year }}
                         </div>
                       </div>
-                      <a
-                        :href="newsletter.link"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        class="text-[#6F8FAF] hover:underline truncate flex-1 min-w-0"
-                        :title="newsletter.link"
-                      >
-                        {{ newsletter.link }}
-                      </a>
+                      <span class="text-surface-700 truncate flex-1 min-w-0" :title="newsletter.filePath">
+                        {{ newsletter.filePath.split('/').pop() || newsletter.filePath }}
+                      </span>
                     </div>
                     <div class="text-sm text-surface-500">
                       Added {{ formatDate(newsletter.createdAt) }}
@@ -817,19 +815,30 @@
 
   // Newsletter form
   const newsletterForm = ref({
-    link: '',
+    file: null,
     season: null,
     year: null,
   })
 
+  const selectedFileName = ref('')
+
   const newsletterErrors = ref({
-    link: '',
+    file: '',
     season: '',
     year: '',
   })
 
   const isSubmittingNewsletter = ref(false)
   const newsletterSuccess = ref(false)
+
+  // Computed property to check if newsletter form is valid
+  const isNewsletterFormValid = computed(() => {
+    return (
+      newsletterForm.value.file !== null &&
+      newsletterForm.value.season !== null &&
+      newsletterForm.value.year !== null
+    )
+  })
 
   // Season options
   const seasonOptions = [
@@ -854,26 +863,49 @@
     return years.sort((a, b) => b - a) // Sort descending (newest first)
   })
 
+  const handleFileSelect = (event) => {
+    const target = event.target
+    const file = target.files?.[0] || null
+    
+    if (file) {
+      // Validate file type
+      if (file.type !== 'application/pdf') {
+        newsletterErrors.value.file = 'File must be a PDF'
+        newsletterForm.value.file = null
+        selectedFileName.value = ''
+        return
+      }
+      
+      // Validate file size (10MB max)
+      const maxSize = 10 * 1024 * 1024 // 10MB in bytes
+      if (file.size > maxSize) {
+        newsletterErrors.value.file = 'File size must be less than 10MB'
+        newsletterForm.value.file = null
+        selectedFileName.value = ''
+        return
+      }
+      
+      newsletterForm.value.file = file
+      selectedFileName.value = file.name
+      newsletterErrors.value.file = ''
+    } else {
+      newsletterForm.value.file = null
+      selectedFileName.value = ''
+    }
+  }
+
   const validateNewsletterForm = () => {
     newsletterErrors.value = {
-      link: '',
+      file: '',
       season: '',
       year: '',
     }
 
     let isValid = true
 
-    if (!newsletterForm.value.link || newsletterForm.value.link.trim() === '') {
-      newsletterErrors.value.link = 'Newsletter link is required'
+    if (!newsletterForm.value.file) {
+      newsletterErrors.value.file = 'Please select a PDF file'
       isValid = false
-    } else {
-      // Basic URL validation
-      try {
-        new URL(newsletterForm.value.link)
-      } catch {
-        newsletterErrors.value.link = 'Please enter a valid URL'
-        isValid = false
-      }
     }
 
     if (!newsletterForm.value.season) {
@@ -894,14 +926,18 @@
       return
     }
 
+    if (!newsletterForm.value.file) {
+      return
+    }
+
     isSubmittingNewsletter.value = true
 
     try {
-      await newsletterStore.addNewsletter({
-        link: newsletterForm.value.link.trim(),
-        season: newsletterForm.value.season,
-        year: newsletterForm.value.year,
-      })
+      await newsletterStore.addNewsletter(
+        newsletterForm.value.file,
+        newsletterForm.value.season,
+        newsletterForm.value.year,
+      )
 
       toast.add({
         severity: 'success',
@@ -931,16 +967,22 @@
 
   const resetNewsletterForm = () => {
     newsletterForm.value = {
-      link: '',
+      file: null,
       season: null,
       year: null,
     }
+    selectedFileName.value = ''
     newsletterErrors.value = {
-      link: '',
+      file: '',
       season: '',
       year: '',
     }
     newsletterSuccess.value = false
+    // Reset file input
+    const fileInput = document.getElementById('newsletter-file')
+    if (fileInput) {
+      fileInput.value = ''
+    }
   }
 
   // Get sorted newsletters from store

@@ -20,13 +20,8 @@ export class Newsletter extends BaseEntity {
   @Column({
     type: DataType.TEXT,
     allowNull: false,
-    validate: {
-      isUrl: {
-        msg: 'Link must be a valid URL',
-      },
-    },
   })
-  link!: string;
+  filePath!: string;
 
   @Column({
     type: DataType.ENUM('spring', 'summer', 'fall', 'winter'),

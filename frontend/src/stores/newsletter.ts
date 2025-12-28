@@ -3,17 +3,16 @@ import apiClient from '@/services/api'
 
 export interface Newsletter {
   id: string
-  link: string
+  filePath: string
   season: 'spring' | 'summer' | 'fall' | 'winter'
   year: number
   createdAt?: string
   updatedAt?: string
 }
 
-export interface CreateNewsletterDto {
-  link: string
-  season: 'spring' | 'summer' | 'fall' | 'winter'
-  year: number
+export interface SignedUrlResponse {
+  url: string
+  expiresInMinutes: number
 }
 
 export const useNewsletterStore = defineStore('newsletter', {
@@ -70,11 +69,21 @@ export const useNewsletterStore = defineStore('newsletter', {
       }
     },
 
-    async addNewsletter(newsletter: CreateNewsletterDto) {
+    async addNewsletter(file: File, season: 'spring' | 'summer' | 'fall' | 'winter', year: number) {
       this.loading = true
       this.error = null
       try {
-        const response = await apiClient.post<Newsletter>('/newsletters', newsletter)
+        // Create FormData for multipart/form-data upload
+        const formData = new FormData()
+        formData.append('file', file)
+        formData.append('season', season)
+        formData.append('year', year.toString())
+
+        const response = await apiClient.post<Newsletter>('/newsletters', formData, {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+        })
         const newNewsletter = response.data
         this.newsletters.push(newNewsletter)
         return newNewsletter
@@ -84,6 +93,16 @@ export const useNewsletterStore = defineStore('newsletter', {
         throw error
       } finally {
         this.loading = false
+      }
+    },
+
+    async getSignedUrl(id: string): Promise<string> {
+      try {
+        const response = await apiClient.get<SignedUrlResponse>(`/newsletters/${id}/signed-url`)
+        return response.data.url
+      } catch (error) {
+        console.error('Error fetching signed URL:', error)
+        throw error
       }
     },
 

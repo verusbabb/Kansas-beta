@@ -12,6 +12,13 @@ build/
 .env.local
 .env.*.local
 
+# Google Cloud Service Account Keys
+*-gcs-key.json
+*-service-account*.json
+*service-account*.json
+gcs-key.json
+service-account-key.json
+
 # IDE
 .vscode/
 .idea/

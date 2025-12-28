@@ -30,6 +30,9 @@ const SECRET_MAPPINGS: Record<string, string> = {
   // User management
   'master-user-emails': 'MASTER_USER_EMAILS',
   
+  // Google Cloud Storage
+  'gcs-bucket-name': 'GCS_BUCKET_NAME',
+  
   // Add more mappings as needed
   // 'api-key': 'API_KEY',
   // 'third-party-secret': 'THIRD_PARTY_SECRET',

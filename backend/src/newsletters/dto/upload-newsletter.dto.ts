@@ -1,14 +1,7 @@
-import { IsString, IsEnum, IsInt, Min, Max } from 'class-validator';
+import { IsEnum, IsInt, Min, Max } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
-export class CreateNewsletterDto {
-  @ApiProperty({
-    description: 'File path to the newsletter PDF in Cloud Storage',
-    example: 'newsletters/2024/spring/newsletter.pdf',
-  })
-  @IsString()
-  filePath!: string;
-
+export class UploadNewsletterDto {
   @ApiProperty({
     description: 'Season of the newsletter',
     enum: ['spring', 'summer', 'fall', 'winter'],

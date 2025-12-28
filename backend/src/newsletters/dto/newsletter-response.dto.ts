@@ -8,10 +8,10 @@ export class NewsletterResponseDto {
   id!: string;
 
   @ApiProperty({
-    description: 'URL to the newsletter PDF or webpage',
-    example: 'https://example.com/newsletters/spring-2024.pdf',
+    description: 'File path to the newsletter PDF in Cloud Storage',
+    example: 'newsletters/2024/spring/newsletter.pdf',
   })
-  link!: string;
+  filePath!: string;
 
   @ApiProperty({
     description: 'Season of the newsletter',

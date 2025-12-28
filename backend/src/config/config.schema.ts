@@ -1,4 +1,4 @@
-import { IsEnum, IsNumber, IsOptional, IsString, IsUrl, Min, Max } from 'class-validator';
+import { IsEnum, IsNumber, IsOptional, IsString, IsUrl, Min, Max, IsBoolean } from 'class-validator';
 
 export enum Environment {
   Development = 'development',
@@ -66,5 +66,10 @@ export class EnvironmentVariables {
   @IsString()
   @IsOptional()
   AUTH0_AUDIENCE?: string;
+
+  // Google Cloud Storage
+  @IsString()
+  @IsOptional()
+  GCS_BUCKET_NAME?: string;
 }
 

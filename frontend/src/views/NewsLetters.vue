@@ -99,10 +99,15 @@
     return `Read the ${newsletter.season} ${newsletter.year} newsletter to stay updated with chapter news, events, and member highlights.`
   }
 
-  const openNewsletter = (newsletter) => {
-    // Open newsletter link in new tab
-    if (newsletter.link) {
-      window.open(newsletter.link, '_blank')
+  const openNewsletter = async (newsletter) => {
+    try {
+      // Fetch signed URL from backend
+      const signedUrl = await newsletterStore.getSignedUrl(newsletter.id)
+      // Open signed URL in new tab
+      window.open(signedUrl, '_blank')
+    } catch (error) {
+      console.error('Error opening newsletter:', error)
+      // You could show a toast error here if desired
     }
   }
 </script>

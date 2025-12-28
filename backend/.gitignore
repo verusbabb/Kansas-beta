@@ -39,6 +39,13 @@ lerna-debug.log*
 .env.local
 .env.*.local
 
+# Google Cloud Service Account Keys
+*-gcs-key.json
+*-service-account*.json
+*service-account*.json
+gcs-key.json
+service-account-key.json
+
 # Instructional documentation (keep only standard README.md files)
 AUTH_IMPLEMENTATION.md
 ADDING_NEW_TABLES.md
