@@ -76,7 +76,7 @@
                       Selected: {{ selectedFileName }}
                     </small>
                     <small class="text-surface-500">
-                      Upload a PDF file (max 10MB)
+                      Upload a PDF file (max 20MB)
                     </small>
                   </div>
 
@@ -848,19 +848,18 @@
     { label: 'Winter', value: 'winter' },
   ]
 
-  // Year options - past 5 years, current year, and 1 future year
+  // Year options - from 1990 to current year + 1 (for future newsletters)
   const yearOptions = computed(() => {
     const currentYear = new Date().getFullYear()
     const years = []
-    // Past 5 years
-    for (let i = 5; i >= 1; i--) {
-      years.push(currentYear - i)
+    const startYear = 1990
+    const endYear = currentYear + 1 // Include next year for future newsletters
+    
+    // Generate years from 1990 to current year + 1
+    for (let year = endYear; year >= startYear; year--) {
+      years.push(year)
     }
-    // Current year
-    years.push(currentYear)
-    // Future year
-    years.push(currentYear + 1)
-    return years.sort((a, b) => b - a) // Sort descending (newest first)
+    return years // Already sorted descending (newest first)
   })
 
   const handleFileSelect = (event) => {
@@ -876,10 +875,10 @@
         return
       }
       
-      // Validate file size (10MB max)
-      const maxSize = 10 * 1024 * 1024 // 10MB in bytes
+      // Validate file size (20MB max)
+      const maxSize = 20 * 1024 * 1024 // 20MB in bytes
       if (file.size > maxSize) {
-        newsletterErrors.value.file = 'File size must be less than 10MB'
+        newsletterErrors.value.file = 'File size must be less than 20MB'
         newsletterForm.value.file = null
         selectedFileName.value = ''
         return

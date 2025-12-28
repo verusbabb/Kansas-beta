@@ -21,8 +21,14 @@
         </p>
       </div>
 
+      <!-- Loading State -->
+      <div v-if="newsletterStore.loading" class="text-center py-16">
+        <i class="pi pi-spin pi-spinner text-6xl text-[#6F8FAF] mb-4"></i>
+        <p class="text-lg text-surface-600">Loading newsletters...</p>
+      </div>
+
       <!-- Newsletter List -->
-      <div v-if="sortedNewsletters.length > 0" class="space-y-4">
+      <div v-else-if="sortedNewsletters.length > 0" class="space-y-4">
         <Card 
           v-for="newsletter in sortedNewsletters" 
           :key="newsletter.id"

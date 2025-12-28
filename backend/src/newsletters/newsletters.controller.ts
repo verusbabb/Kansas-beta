@@ -96,7 +96,7 @@ export class NewslettersController {
     @UploadedFile(
       new ParseFilePipe({
         validators: [
-          new MaxFileSizeValidator({ maxSize: 10 * 1024 * 1024 }), // 10MB max
+          new MaxFileSizeValidator({ maxSize: 20 * 1024 * 1024 }), // 20MB max
           new FileTypeValidator({ fileType: 'application/pdf' }),
         ],
       }),
