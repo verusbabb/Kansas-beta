@@ -50,9 +50,20 @@ router.beforeEach(async (to, _from, next) => {
     return
   }
 
+  // Wait for Auth0 to finish initializing (checking authentication state)
+  // This is important on page refresh - Auth0 needs time to check localStorage/sessionStorage
+  if (auth0 && 'isLoading' in auth0 && auth0.isLoading) {
+    let attempts = 0
+    const maxAttempts = 100 // 5 seconds max wait (100 * 50ms)
+    while (auth0.isLoading.value && attempts < maxAttempts) {
+      await new Promise(resolve => setTimeout(resolve, 50))
+      attempts++
+    }
+  }
+
   // Check if user is authenticated
   if (!auth0 || !auth0.isAuthenticated.value) {
-    // Redirect to login
+    // Redirect to login, preserving the intended destination
     await auth0.loginWithRedirect({
       appState: { targetUrl: to.fullPath },
     })

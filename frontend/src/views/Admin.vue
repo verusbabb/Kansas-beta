@@ -23,7 +23,7 @@
                 <button
                   v-for="item in navItems"
                   :key="item.id"
-                  @click="activeSection = item.id"
+                  @click="setActiveSection(item.id)"
                   :class="[
                     'flex items-center gap-3 p-3 rounded-lg text-left transition-colors',
                     activeSection === item.id
@@ -702,13 +702,22 @@
   import apiClient from '@/services/api'
   import { UserRole } from '@/types/user'
   import AdminCalendarEvents from '@/components/AdminCalendarEvents.vue'
+  import { useRoute, useRouter } from 'vue-router'
 
   const healthStore = useHealthStore()
   const newsletterStore = useNewsletterStore()
   const toast = useToast()
   const confirm = useConfirm()
+  const route = useRoute()
+  const router = useRouter()
   
-  const activeSection = ref('overview')
+  // Initialize activeSection from URL query parameter or default to 'overview'
+  const validSectionIds = ['overview', 'newsletter', 'users', 'member', 'alumni', 'rush', 'health', 'settings']
+  const sectionFromQuery = route.query.section
+  const initialSection = (sectionFromQuery && typeof sectionFromQuery === 'string' && validSectionIds.includes(sectionFromQuery))
+    ? sectionFromQuery
+    : 'overview'
+  const activeSection = ref(initialSection)
   const isCheckingHealth = ref(false)
   const healthStatus = ref(null)
   const healthError = ref(null)
@@ -971,6 +980,12 @@
 
   // Get sorted newsletters from store
   const sortedNewsletters = computed(() => newsletterStore.sortedNewsletters)
+
+  // Function to set active section and update URL
+  const setActiveSection = (section) => {
+    activeSection.value = section
+    router.push({ query: { ...route.query, section } })
+  }
 
   // Fetch newsletters when newsletter section is active
   watch(activeSection, async (newSection) => {

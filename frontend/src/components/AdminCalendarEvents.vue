@@ -553,6 +553,12 @@ onMounted(async () => {
   overflow: hidden;
 }
 
+/* Hide the incorrectly rendered toolbar content in p-editor-toolbar */
+/* The functional Quill toolbar is in the ql-toolbar.ql-snow div, so hide the duplicate ql-formats */
+:deep(.p-editor-toolbar > span.ql-formats) {
+  display: none !important;
+}
+
 /* Style lists in event descriptions */
 :deep(ul),
 :deep(ol) {
