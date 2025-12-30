@@ -3,7 +3,7 @@
     <!-- Hero Section -->
     <div class="bg-gradient-to-r from-[#5A7A9F] via-[#6F8FAF] to-[#5A7A9F] text-white py-16 px-6">
       <div class="max-w-6xl mx-auto text-center">
-        <h1 class="text-4xl md:text-5xl font-bold mb-4">Chapter Events</h1>
+        <h1 class="text-4xl md:text-5xl font-bold mb-4">Chapter Calendar</h1>
         <p class="text-xl md:text-2xl text-gray-300 mb-6">
           Upcoming events and activities for Alpha Nu Chapter
         </p>

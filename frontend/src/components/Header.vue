@@ -129,7 +129,7 @@
         routerLink: "/newsletters",
       },
       {
-        label: "Events",
+        label: "Calendar",
         icon: "pi pi-calendar",
         routerLink: "/events",
       },

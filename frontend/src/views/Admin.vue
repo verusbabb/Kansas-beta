@@ -215,7 +215,7 @@
             <template #title>
               <div class="flex items-center gap-2">
                 <i class="pi pi-user-plus text-[#6F8FAF]"></i>
-                <span>Add Member</span>
+                <span>Add/Manage Members</span>
               </div>
             </template>
             <template #content>
@@ -236,7 +236,7 @@
             <template #title>
               <div class="flex items-center gap-2">
                 <i class="pi pi-users text-[#6F8FAF]"></i>
-                <span>Manage site admins</span>
+                <span>Add/Manage Site Admins</span>
               </div>
             </template>
             <template #content>
@@ -542,7 +542,7 @@
             <template #title>
               <div class="flex items-center gap-2">
                 <i class="pi pi-id-card text-[#6F8FAF]"></i>
-                <span>Add Alumni</span>
+                <span>Add/Manage Calendar</span>
               </div>
             </template>
             <template #content>
@@ -1367,17 +1367,17 @@
     },
     {
       id: 'users',
-      label: 'Manage site admins',
+      label: 'Add/Manage Site Admins',
       icon: 'pi pi-users'
     },
     {
       id: 'member',
-      label: 'Add Member',
+      label: 'Add/Manage Members',
       icon: 'pi pi-user-plus'
     },
     {
       id: 'alumni',
-      label: 'Add Alumni',
+      label: 'Add/Manage Calendar',
       icon: 'pi pi-id-card'
     },
     {

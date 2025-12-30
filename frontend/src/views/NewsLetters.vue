@@ -38,10 +38,28 @@
             <div class="flex flex-col md:flex-row gap-4">
               <!-- Newsletter Icon/Thumbnail -->
               <div class="flex-shrink-0">
-                <div class="bg-gradient-to-br from-[#5A7A9F] to-[#6F8FAF] text-white p-6 rounded-lg text-center min-w-[120px]">
-                  <i class="pi pi-file-pdf text-4xl mb-2 block"></i>
-                  <div class="text-sm font-semibold capitalize">{{ newsletter.season }}</div>
-                  <div class="text-lg font-bold">{{ newsletter.year }}</div>
+                <div class="newsletter-icon-card">
+                  <!-- Blue Header Section (matching newsletter header) -->
+                  <div class="newsletter-icon-header">
+                    <div class="header-content">
+                      <img 
+                        src="/crest.webp" 
+                        alt="Beta Theta Pi Crest" 
+                        class="crest-mini"
+                        @error="$event.target.style.display = 'none'"
+                      />
+                      <div class="header-text">ALPHA NU</div>
+                    </div>
+                  </div>
+                  
+                  <!-- White Body Section -->
+                  <div class="newsletter-icon-body">
+                    <!-- Red Banner (matching newsletter banner) -->
+                    <div class="red-banner">{{ newsletter.season.toUpperCase() }}</div>
+                    
+                    <!-- Year Display -->
+                    <div class="year-display">{{ newsletter.year }}</div>
+                  </div>
                 </div>
               </div>
 
@@ -124,6 +142,103 @@
     -webkit-line-clamp: 3;
     -webkit-box-orient: vertical;
     overflow: hidden;
+  }
+
+  /* Newsletter Icon Card - Document-like appearance */
+  .newsletter-icon-card {
+    min-width: 120px;
+    max-width: 140px;
+    background: white;
+    border-radius: 6px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1), 0 2px 4px rgba(0, 0, 0, 0.06);
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+
+  .newsletter-icon-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15), 0 4px 6px rgba(0, 0, 0, 0.1);
+  }
+
+  /* Blue Header Section (matching newsletter header gradient) */
+  .newsletter-icon-header {
+    background: linear-gradient(to bottom, #5A7A9F, #6F8FAF);
+    padding: 8px 6px;
+    text-align: center;
+    position: relative;
+  }
+
+  .header-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+  }
+
+  .crest-mini {
+    width: 24px;
+    height: 24px;
+    object-fit: contain;
+    filter: brightness(0) invert(1); /* Make crest white to stand out on blue */
+  }
+
+  .header-text {
+    font-family: 'Georgia', 'Times New Roman', serif;
+    font-size: 10px;
+    font-weight: bold;
+    letter-spacing: 0.5px;
+    color: white;
+    text-transform: uppercase;
+  }
+
+  /* White Body Section */
+  .newsletter-icon-body {
+    padding: 8px 6px;
+    text-align: center;
+    background: white;
+  }
+
+  /* Red Banner (matching newsletter red banner) */
+  .red-banner {
+    background: #DC2626;
+    color: white;
+    font-size: 8px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    padding: 3px 5px;
+    margin-bottom: 6px;
+    border-radius: 2px;
+    text-transform: uppercase;
+  }
+
+  /* Year Display */
+  .year-display {
+    font-size: 18px;
+    font-weight: bold;
+    color: #1f2937;
+    font-family: 'Georgia', 'Times New Roman', serif;
+  }
+
+  /* Responsive adjustments */
+  @media (max-width: 768px) {
+    .newsletter-icon-card {
+      min-width: 100px;
+      max-width: 120px;
+    }
+
+    .header-text {
+      font-size: 9px;
+    }
+
+    .year-display {
+      font-size: 16px;
+    }
+
+    .red-banner {
+      font-size: 7px;
+      padding: 2px 4px;
+    }
   }
 </style>
 
