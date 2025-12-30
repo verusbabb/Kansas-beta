@@ -205,6 +205,7 @@
               v-model="eventForm.description"
               editorStyle="height: 200px"
               :class="{ 'p-invalid': eventErrors.description }"
+              :modules="editorModules"
             />
             <small v-if="eventErrors.description" class="p-error">
               {{ eventErrors.description }}
@@ -263,6 +264,18 @@ import { useCalendarEventStore } from '@/stores/calendarEvent'
 const calendarEventStore = useCalendarEventStore()
 const confirm = useConfirm()
 const toast = useToast()
+
+// Configure Editor toolbar to ensure proper list handling
+const editorModules = {
+  toolbar: [
+    [{ 'header': [1, 2, 3, false] }],
+    ['bold', 'italic', 'underline', 'strike'],
+    [{ 'list': 'ordered' }, { 'list': 'bullet' }],
+    [{ 'indent': '-1' }, { 'indent': '+1' }],
+    ['link'],
+    ['clean']
+  ]
+}
 
 const editingEvent = ref(null)
 const isSubmitting = ref(false)
@@ -538,6 +551,36 @@ onMounted(async () => {
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+}
+
+/* Style lists in event descriptions */
+:deep(ul),
+:deep(ol) {
+  margin-left: 1.5rem;
+  margin-top: 0.5rem;
+  margin-bottom: 0.5rem;
+  padding-left: 1rem;
+}
+
+:deep(ul) {
+  list-style-type: disc;
+}
+
+:deep(ol) {
+  list-style-type: decimal;
+}
+
+:deep(li) {
+  margin-top: 0.25rem;
+  margin-bottom: 0.25rem;
+}
+
+:deep(ul ul),
+:deep(ol ol),
+:deep(ul ol),
+:deep(ol ul) {
+  margin-top: 0.25rem;
+  margin-bottom: 0.25rem;
 }
 </style>
 

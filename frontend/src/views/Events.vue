@@ -509,4 +509,34 @@ onMounted(async () => {
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
+
+/* Style lists in event descriptions */
+:deep(ul),
+:deep(ol) {
+  margin-left: 1.5rem;
+  margin-top: 0.5rem;
+  margin-bottom: 0.5rem;
+  padding-left: 1rem;
+}
+
+:deep(ul) {
+  list-style-type: disc;
+}
+
+:deep(ol) {
+  list-style-type: decimal;
+}
+
+:deep(li) {
+  margin-top: 0.25rem;
+  margin-bottom: 0.25rem;
+}
+
+:deep(ul ul),
+:deep(ol ol),
+:deep(ul ol),
+:deep(ol ul) {
+  margin-top: 0.25rem;
+  margin-bottom: 0.25rem;
+}
 </style>
