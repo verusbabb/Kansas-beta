@@ -134,3 +134,4 @@ Or for a full deployment:
 2. Check that deployment script is fetching the secret correctly
 3. Verify the secret is passed as a build argument to the frontend build
 
+
