@@ -9,6 +9,7 @@ import { ConfigController } from './config/config.controller';
 import { NewslettersModule } from './newsletters/newsletters.module';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
+import { CalendarEventsModule } from './calendar-events/calendar-events.module';
 import { createLoggerConfig } from './config/logger.config';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { AppConfig } from './config/configuration';
@@ -20,6 +21,7 @@ import { AppConfig } from './config/configuration';
     AuthModule, // Authentication and authorization
     NewslettersModule, // Newsletters API
     UsersModule, // Users management API
+    CalendarEventsModule, // Calendar events API
     LoggerModule.forRootAsync({
       inject: [ConfigService],
       useFactory: (configService: ConfigService<AppConfig>) => {

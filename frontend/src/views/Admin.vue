@@ -537,26 +537,10 @@
             </form>
           </Dialog>
 
-          <!-- Add Alumni Section -->
-          <Card v-if="activeSection === 'alumni'" class="mb-6">
-            <template #title>
-              <div class="flex items-center gap-2">
-                <i class="pi pi-id-card text-[#6F8FAF]"></i>
-                <span>Add/Manage Calendar</span>
-              </div>
-            </template>
-            <template #content>
-              <div class="flex flex-col gap-4">
-                <p class="text-surface-600">
-                  Add a new alumnus to the alumni directory.
-                </p>
-                <!-- Alumni form will go here -->
-                <div class="text-center py-8 text-surface-500">
-                  Alumni form coming soon...
-                </div>
-              </div>
-            </template>
-          </Card>
+          <!-- Calendar Events Section -->
+          <div v-if="activeSection === 'alumni'">
+            <AdminCalendarEvents />
+          </div>
 
           <!-- Manage Rush Events Section -->
           <Card v-if="activeSection === 'rush'" class="mb-6">
@@ -717,6 +701,7 @@
   import { useToast } from 'primevue/usetoast'
   import apiClient from '@/services/api'
   import { UserRole } from '@/types/user'
+  import AdminCalendarEvents from '@/components/AdminCalendarEvents.vue'
 
   const healthStore = useHealthStore()
   const newsletterStore = useNewsletterStore()

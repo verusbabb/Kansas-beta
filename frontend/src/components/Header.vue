@@ -173,7 +173,7 @@
   /* Add padding inside the Menubar */
   .header-menubar :deep(.p-menubar) {
     padding-left: 1rem;
-    padding-right: 1rem;
+    padding-right: 1.5rem;
     padding-top: 0.75rem;
     padding-bottom: 0.75rem;
     background: #ffffff !important;
@@ -221,11 +221,17 @@
       gap: 1.5rem !important;
       width: 100% !important;
       padding-top: 0.5rem !important;
+      padding-right: 0.75rem !important;
     }
 
     .header-menubar :deep(.p-menubar-root-list > li) {
       margin-left: 0 !important;
       margin-right: 0 !important;
+    }
+    
+    /* Add margin to last navigation item for extra spacing from edge */
+    .header-menubar :deep(.p-menubar-root-list > li:last-child > a) {
+      margin-right: 0.25rem !important;
     }
     
   }
