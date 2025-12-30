@@ -29,7 +29,7 @@ const router = createRouter({
 })
 
 // Route guard for protected routes
-router.beforeEach(async (to, from, next) => {
+router.beforeEach(async (to, _from, next) => {
   const requiresAuth = to.matched.some(record => record.meta.requiresAuth)
   const requiredRole = to.meta.requiredRole as string[] | undefined
 

@@ -134,7 +134,10 @@ export const useAuthStore = defineStore('auth', () => {
         }
       }
       
-      const token = await auth0.getAccessTokenSilently(options)
+      const tokenResult = await auth0.getAccessTokenSilently(options)
+      
+      // Ensure we have a string token (getAccessTokenSilently can return string or object)
+      const token = typeof tokenResult === 'string' ? tokenResult : tokenResult?.access_token || null
       
       // Debug: Log token info (first/last chars only for security)
       if (token) {
@@ -178,7 +181,7 @@ export const useAuthStore = defineStore('auth', () => {
         console.warn('getAccessTokenSilently returned null or empty token')
       }
       
-      return token
+      return token as string | null
     } catch (err: any) {
       console.error('Failed to get access token:', {
         error: err.message || err,
