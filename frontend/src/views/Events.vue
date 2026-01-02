@@ -511,7 +511,7 @@ onMounted(async () => {
 }
 
 /* Style lists in event descriptions */
-:deep(ul),
+/* :deep(ul),
 :deep(ol) {
   margin-left: 1.5rem;
   margin-top: 0.5rem;
@@ -538,5 +538,5 @@ onMounted(async () => {
 :deep(ol ul) {
   margin-top: 0.25rem;
   margin-bottom: 0.25rem;
-}
+} */
 </style>

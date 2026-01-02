@@ -19,6 +19,7 @@
     "primeicons": "^7.0.0",
     "primevue": "^4.3.9",
     "quill": "^2.0.3",
+    "tailwindcss-primeui": "^0.6.1",
     "vue": "^3.3.4",
     "vue-router": "^4.2.5"
   },

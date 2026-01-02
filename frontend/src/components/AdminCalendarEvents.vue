@@ -223,7 +223,10 @@
               icon="pi pi-check"
               :loading="isSubmitting"
               :disabled="isSubmitting || !isFormValid"
-              class="bg-[#6F8FAF] hover:bg-[#5A7A9F]"
+              :class="[
+                'bg-[#6F8FAF] hover:bg-[#5A7A9F]',
+                (isSubmitting || !isFormValid) && '!cursor-not-allowed'
+              ]"
             />
             <Button
               v-if="editingEvent"
@@ -587,6 +590,12 @@ onMounted(async () => {
 :deep(ol ul) {
   margin-top: 0.25rem;
   margin-bottom: 0.25rem;
+}
+
+/* Force cursor-not-allowed on disabled submit button */
+:deep(button[type="submit"]:disabled),
+:deep(button[type="submit"].p-disabled) {
+  cursor: not-allowed !important;
 }
 </style>
 

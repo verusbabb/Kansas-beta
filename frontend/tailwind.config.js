@@ -1,4 +1,6 @@
 /** @type {import('tailwindcss').Config} */
+import PrimeUI from 'tailwindcss-primeui';
+
 export default {
   content: [
     "./index.html",
@@ -7,6 +9,9 @@ export default {
   theme: {
     extend: {},
   },
-  plugins: [],
+  plugins: [PrimeUI],
+  corePlugins: {
+    preflight: false, // Disable Preflight so rendered HTML uses browser defaults
+  },
 }
 

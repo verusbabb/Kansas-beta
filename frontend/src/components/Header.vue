@@ -29,7 +29,7 @@
               custom
               v-slot="{ href, navigate, isActive }"
             >
-              <a :href="href" @click="navigate" class="flex items-center" :class="{ 'active-link': isActive }">
+              <a :href="href" @click="navigate" class="flex items-center no-underline" :class="{ 'active-link': isActive }">
                 <span :class="item.icon"></span>
                 <span class="ml-2">{{ item.label }}</span>
                 <Badge
@@ -46,7 +46,7 @@
             <a 
               v-else 
               v-ripple 
-              class="flex items-center" 
+              class="flex items-center no-underline" 
               v-bind="props.action"
             >
               <span :class="item.icon"></span>

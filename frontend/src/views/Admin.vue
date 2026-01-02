@@ -4,10 +4,10 @@
     <!-- Hero Section -->
     <div class="bg-gradient-to-r from-[#5A7A9F] via-[#6F8FAF] to-[#5A7A9F] text-white py-16 px-6">
       <div class="max-w-6xl mx-auto text-center">
-        <h1 class="text-4xl md:text-5xl font-bold mb-4">Admin Panel</h1>
-        <p class="text-xl md:text-2xl text-gray-300 mb-6">
+        <div class="text-4xl md:text-5xl font-bold mb-4">Admin Panel</div>
+        <div class="text-xl md:text-2xl text-gray-300 mb-6">
           Manage site content and configuration
-        </p>
+        </div>
         <div class="w-32 h-1 bg-gray-400 mx-auto"></div>
       </div>
     </div>
@@ -20,20 +20,24 @@
           <Card class="sticky top-4">
             <template #content>
               <nav class="flex flex-col gap-2">
-                <button
+                <Button
                   v-for="item in navItems"
                   :key="item.id"
                   @click="setActiveSection(item.id)"
                   :class="[
-                    'flex items-center gap-3 p-3 rounded-lg text-left transition-colors',
+                    'w-full justify-start !p-3',
                     activeSection === item.id
                       ? 'bg-gray-200 text-[#6F8FAF] font-semibold'
-                      : 'hover:bg-gray-100 text-gray-700'
+                      : 'hover:bg-gray-100 text-surface-700'
                   ]"
+                  text
+                  :severity="activeSection === item.id ? 'secondary' : undefined"
                 >
-                  <i :class="item.icon" class="text-lg"></i>
-                  <span>{{ item.label }}</span>
-                </button>
+                  <div class="flex items-center gap-3 w-full">
+                    <i :class="[item.icon, 'text-lg flex-shrink-0']"></i>
+                    <span class="text-left flex-1 leading-tight">{{ item.label }}</span>
+                  </div>
+                </Button>
               </nav>
             </template>
           </Card>
@@ -51,9 +55,9 @@
             </template>
             <template #content>
               <div class="flex flex-col gap-6">
-                <p class="text-surface-600">
+                <div class="text-surface-600">
                   Add a new newsletter to the site. Upload a PDF file and select the season and year below.
-                </p>
+                </div>
                 
                 <form @submit.prevent="handleAddNewsletter" class="flex flex-col gap-5">
                   <!-- Newsletter File Upload -->
@@ -165,12 +169,12 @@
             <template #content>
               <div v-if="newsletterStore.loading" class="text-center py-8">
                 <i class="pi pi-spin pi-spinner text-4xl text-[#6F8FAF]"></i>
-                <p class="mt-4 text-surface-600">Loading newsletters...</p>
+                <div class="mt-4 text-surface-600">Loading newsletters...</div>
               </div>
 
               <div v-else-if="sortedNewsletters.length === 0" class="text-center py-8">
                 <i class="pi pi-inbox text-6xl text-surface-400 mb-4"></i>
-                <p class="text-surface-600">No newsletters yet. Add one above to get started.</p>
+                <div class="text-surface-600">No newsletters yet. Add one above to get started.</div>
               </div>
 
               <div v-else class="space-y-3">
@@ -220,9 +224,9 @@
             </template>
             <template #content>
               <div class="flex flex-col gap-4">
-                <p class="text-surface-600">
+                <div class="text-surface-600">
                   Add a new active member to the chapter.
-                </p>
+                </div>
                 <!-- Member form will go here -->
                 <div class="text-center py-8 text-surface-500">
                   Member form coming soon...
@@ -241,9 +245,9 @@
             </template>
             <template #content>
               <div class="flex flex-col gap-6">
-                <p class="text-surface-600">
+                <div class="text-surface-600">
                   Add a new user with admin or editor role. Users will be able to log in after being created.
-                </p>
+                </div>
                 
                 <form @submit.prevent="handleAddUser" class="flex flex-col gap-5">
                   <!-- First Name and Last Name Row -->
@@ -358,12 +362,12 @@
             <template #content>
               <div v-if="isLoadingUsers" class="text-center py-8">
                 <i class="pi pi-spin pi-spinner text-4xl text-[#6F8FAF]"></i>
-                <p class="mt-4 text-surface-600">Loading users...</p>
+                <div class="mt-4 text-surface-600">Loading users...</div>
               </div>
 
               <div v-else-if="activeUsers.length === 0" class="text-center py-8">
                 <i class="pi pi-inbox text-6xl text-surface-400 mb-4"></i>
-                <p class="text-surface-600">No users yet. Add one above to get started.</p>
+                <div class="text-surface-600">No users yet. Add one above to get started.</div>
               </div>
 
               <div v-else class="space-y-3">
@@ -372,13 +376,13 @@
                   :key="user.id"
                   class="flex items-center justify-between p-4 border border-surface-200 rounded-lg hover:bg-surface-50 transition-colors"
                 >
-                  <div class="flex-1">
+                    <div class="flex-1">
                     <div class="flex items-center gap-3">
                       <div>
-                        <p class="font-semibold text-surface-900">
+                        <div class="font-semibold text-surface-900">
                           {{ user.firstName }} {{ user.lastName }}
-                        </p>
-                        <p class="text-sm text-surface-600">{{ user.email }}</p>
+                        </div>
+                        <div class="text-sm text-surface-600">{{ user.email }}</div>
                         <div class="flex items-center gap-2 mt-1">
                           <span
                             :class="[
@@ -552,9 +556,9 @@
             </template>
             <template #content>
               <div class="flex flex-col gap-4">
-                <p class="text-surface-600">
+                <div class="text-surface-600">
                   Add, edit, or remove rush events from the rush page.
-                </p>
+                </div>
                 <!-- Rush events management will go here -->
                 <div class="text-center py-8 text-surface-500">
                   Rush events management coming soon...
@@ -573,9 +577,9 @@
             </template>
             <template #content>
               <div class="flex flex-col gap-4">
-                <p class="text-surface-600">
+                <div class="text-surface-600">
                   Test the connection to the backend database.
-                </p>
+                </div>
                 
                 <div class="flex flex-col gap-4">
                   <Button
@@ -596,9 +600,9 @@
                               :class="healthStatus.status === 'ok' ? 'pi pi-check-circle text-green-600' : 'pi pi-times-circle text-red-600'"
                               class="text-2xl"
                             ></i>
-                            <span class="font-bold text-lg">
+                            <div class="font-bold text-lg">
                               Status: {{ healthStatus.status === 'ok' ? 'Connected' : 'Disconnected' }}
-                            </span>
+                            </div>
                           </div>
                           
                           <div v-if="healthStatus.timestamp" class="text-sm text-surface-600">
@@ -621,8 +625,8 @@
                         <div class="flex items-center gap-2 text-red-600">
                           <i class="pi pi-exclamation-triangle text-2xl"></i>
                           <div>
-                            <p class="font-bold">Connection Failed</p>
-                            <p class="text-sm text-surface-600">{{ healthError }}</p>
+                            <div class="font-bold">Connection Failed</div>
+                            <div class="text-sm text-surface-600">{{ healthError }}</div>
                           </div>
                         </div>
                       </template>
@@ -643,9 +647,9 @@
             </template>
             <template #content>
               <div class="flex flex-col gap-4">
-                <p class="text-surface-600">
+                <div class="text-surface-600">
                   Configure general site settings and preferences.
-                </p>
+                </div>
                 <!-- Settings form will go here -->
                 <div class="text-center py-8 text-surface-500">
                   Site settings coming soon...
@@ -664,17 +668,17 @@
             </template>
             <template #content>
               <div class="flex flex-col gap-4">
-                <p class="text-surface-700 mb-4">
+                <div class="text-lg text-surface-700 mb-4">
                   Welcome to the Admin Panel. Use the side navigation to manage different aspects of the site.
-                </p>
+                </div>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div class="p-4 bg-gray-50 rounded-lg">
-                    <h3 class="font-bold mb-2">Quick Stats</h3>
-                    <p class="text-sm text-surface-600">Statistics coming soon...</p>
+                    <div class="font-bold mb-2 text-lg">Quick Stats</div>
+                    <div class="text-sm text-surface-600">Statistics coming soon...</div>
                   </div>
                   <div class="p-4 bg-gray-50 rounded-lg">
-                    <h3 class="font-bold mb-2">Recent Activity</h3>
-                    <p class="text-sm text-surface-600">Activity log coming soon...</p>
+                    <div class="font-bold mb-2 text-lg">Recent Activity</div>
+                    <div class="text-sm text-surface-600">Activity log coming soon...</div>
                   </div>
                 </div>
               </div>
