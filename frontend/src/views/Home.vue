@@ -2,6 +2,15 @@
   <div class="relative min-h-screen">
     <!-- Hero Section with Background Image -->
     <div class="hero-container relative">
+      <div 
+        v-for="(image, index) in heroImages" 
+        :key="index"
+        :class="[
+          'hero-background-image',
+          index === currentImageIndex ? 'opacity-100' : 'opacity-0'
+        ]"
+        :style="{ backgroundImage: `url(${image})` }"
+      ></div>
       <div class="hero-overlay"></div>
       <div class="hero-content relative z-10 flex flex-col items-center justify-center text-center text-white px-6 py-20 lg:py-32">
         <h1 class="text-4xl md:text-6xl lg:text-7xl font-bold mb-6">
@@ -139,18 +148,67 @@
 </template>
 
 <script setup>
+  import { ref, onMounted, onUnmounted } from 'vue';
   import Button from "primevue/button";
   import Card from "primevue/card";
+
+  // Hero images array
+  const heroImages = [
+    '/kansas_beta.jpeg',
+    '/ballcourt.jpeg',
+    '/guys_1.png',
+    '/guys_2.png',
+    '/house_2.jpeg'
+  ];
+
+  // Current image index - start with random image
+  const currentImageIndex = ref(Math.floor(Math.random() * heroImages.length));
+  
+  let rotationInterval = null;
+
+  // Function to get next random image (different from current)
+  const getNextRandomImage = () => {
+    let nextIndex;
+    do {
+      nextIndex = Math.floor(Math.random() * heroImages.length);
+    } while (nextIndex === currentImageIndex.value && heroImages.length > 1);
+    return nextIndex;
+  };
+
+  // Rotate to next random image
+  const rotateImage = () => {
+    currentImageIndex.value = getNextRandomImage();
+  };
+
+  onMounted(() => {
+    // Rotate images every 5 seconds
+    rotationInterval = setInterval(rotateImage, 5000);
+  });
+
+  onUnmounted(() => {
+    if (rotationInterval) {
+      clearInterval(rotationInterval);
+    }
+  });
 </script>
 
 <style scoped>
   .hero-container {
     min-height: 70vh;
-    background: linear-gradient(135deg, rgba(111, 143, 175, 0.3) 0%, rgba(111, 143, 175, 0.2) 50%, rgba(111, 143, 175, 0.3) 100%);
-    background-image: url('/kansas_beta.jpeg');
+    position: relative;
+    overflow: hidden;
+  }
+
+  .hero-background-image {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
     background-size: cover;
     background-position: center;
-    background-blend-mode: overlay;
+    transition: opacity 1.5s ease-in-out;
+    z-index: 0;
   }
 
   .hero-overlay {
@@ -161,9 +219,9 @@
     bottom: 0;
     background: linear-gradient(
       to bottom,
-      rgba(111, 143, 175, 0.5) 0%,
-      rgba(111, 143, 175, 0.4) 50%,
-      rgba(111, 143, 175, 0.5) 100%
+      rgba(0, 0, 0, 0.2) 0%,
+      rgba(0, 0, 0, 0.1) 50%,
+      rgba(0, 0, 0, 0.2) 100%
     );
   }
 
