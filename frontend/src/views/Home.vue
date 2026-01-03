@@ -3,13 +3,13 @@
     <!-- Hero Section with Background Image -->
     <div class="hero-container relative">
       <div 
-        v-for="(image, index) in heroImages" 
+        v-for="(imageUrl, index) in heroImageUrls" 
         :key="index"
         :class="[
           'hero-background-image',
           index === currentImageIndex ? 'opacity-100' : 'opacity-0'
         ]"
-        :style="{ backgroundImage: `url(${image})` }"
+        :style="{ backgroundImage: `url(${imageUrl})` }"
       ></div>
       <div class="hero-overlay"></div>
       <div class="hero-content relative z-10 flex flex-col items-center justify-center text-center text-white px-6 py-20 lg:py-32">
@@ -147,42 +147,77 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
   import { ref, onMounted, onUnmounted } from 'vue';
   import Button from "primevue/button";
   import Card from "primevue/card";
+  import { useHeroImageStore } from '@/stores/heroImage';
 
-  // Hero images array
-  const heroImages = [
-    '/kansas_beta.jpeg',
-    '/ballcourt.jpeg',
-    '/guys_1.png',
-    '/guys_2.png',
-    '/house_2.jpeg'
-  ];
+  const heroImageStore = useHeroImageStore();
+
+  // Hero image URLs (signed URLs from GCS)
+  const heroImageUrls = ref<string[]>([]);
+  const imageUrlCache = ref<Record<string, string>>({});
 
   // Current image index - start with random image
-  const currentImageIndex = ref(Math.floor(Math.random() * heroImages.length));
+  const currentImageIndex = ref(0);
   
-  let rotationInterval = null;
+  let rotationInterval: any = null;
 
   // Function to get next random image (different from current)
   const getNextRandomImage = () => {
+    if (heroImageUrls.value.length <= 1) return 0;
     let nextIndex;
     do {
-      nextIndex = Math.floor(Math.random() * heroImages.length);
-    } while (nextIndex === currentImageIndex.value && heroImages.length > 1);
+      nextIndex = Math.floor(Math.random() * heroImageUrls.value.length);
+    } while (nextIndex === currentImageIndex.value && heroImageUrls.value.length > 1);
     return nextIndex;
   };
 
   // Rotate to next random image
   const rotateImage = () => {
-    currentImageIndex.value = getNextRandomImage();
+    if (heroImageUrls.value.length > 0) {
+      currentImageIndex.value = getNextRandomImage();
+    }
   };
 
-  onMounted(() => {
-    // Rotate images every 5 seconds
-    rotationInterval = setInterval(rotateImage, 5000);
+  // Load signed URLs for carousel images
+  const loadCarouselImageUrls = async () => {
+    try {
+      await heroImageStore.fetchCarouselImages();
+      
+      // Load signed URLs for all carousel images
+      const urls: string[] = [];
+      for (const image of heroImageStore.carouselImages) {
+        try {
+          const url = await heroImageStore.getSignedUrl(image.id);
+          urls.push(url);
+          imageUrlCache.value[image.id] = url;
+        } catch (error) {
+          console.error(`Error loading image URL for ${image.id}:`, error);
+        }
+      }
+      
+      heroImageUrls.value = urls;
+      
+      // Set initial random index if we have images
+      if (urls.length > 0) {
+        currentImageIndex.value = Math.floor(Math.random() * urls.length);
+      }
+    } catch (error) {
+      console.error('Error loading carousel images:', error);
+      // Fallback to empty array
+      heroImageUrls.value = [];
+    }
+  };
+
+  onMounted(async () => {
+    await loadCarouselImageUrls();
+    
+    // Rotate images every 5 seconds if we have images
+    if (heroImageUrls.value.length > 1) {
+      rotationInterval = setInterval(rotateImage, 5000);
+    }
   });
 
   onUnmounted(() => {
