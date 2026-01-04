@@ -2,6 +2,24 @@
   <div class="relative min-h-screen">
     <!-- Hero Section with Background Image -->
     <div class="hero-container relative">
+      <!-- Loading state -->
+      <div 
+        v-if="isLoadingImages && heroImageUrls.length === 0"
+        class="absolute inset-0 bg-gradient-to-r from-[#5A7A9F] via-[#6F8FAF] to-[#5A7A9F] flex items-center justify-center z-0"
+      >
+        <div class="text-white text-center">
+          <i class="pi pi-spin pi-spinner text-4xl mb-2"></i>
+          <div class="text-sm">Loading images...</div>
+        </div>
+      </div>
+      
+      <!-- Error state (only show if we tried and failed) -->
+      <div 
+        v-else-if="imageLoadError && heroImageUrls.length === 0"
+        class="absolute inset-0 bg-gradient-to-r from-[#5A7A9F] via-[#6F8FAF] to-[#5A7A9F] z-0"
+      ></div>
+      
+      <!-- Hero images -->
       <div 
         v-for="(imageUrl, index) in heroImageUrls" 
         :key="index"
@@ -158,6 +176,8 @@
   // Hero image URLs (signed URLs from GCS)
   const heroImageUrls = ref<string[]>([]);
   const imageUrlCache = ref<Record<string, string>>({});
+  const isLoadingImages = ref(true);
+  const imageLoadError = ref(false);
 
   // Current image index - start with random image
   const currentImageIndex = ref(0);
@@ -181,21 +201,39 @@
     }
   };
 
-  // Load signed URLs for carousel images
-  const loadCarouselImageUrls = async () => {
+  // Load signed URLs for carousel images with retry logic
+  const loadCarouselImageUrls = async (retryCount = 0) => {
+    const maxRetries = 3;
+    isLoadingImages.value = true;
+    imageLoadError.value = false;
+
     try {
       await heroImageStore.fetchCarouselImages();
       
-      // Load signed URLs for all carousel images
-      const urls: string[] = [];
-      for (const image of heroImageStore.carouselImages) {
+      if (heroImageStore.carouselImages.length === 0) {
+        isLoadingImages.value = false;
+        return;
+      }
+      
+      // Load signed URLs for all carousel images in parallel
+      const urlPromises = heroImageStore.carouselImages.map(async (image) => {
         try {
           const url = await heroImageStore.getSignedUrl(image.id);
-          urls.push(url);
           imageUrlCache.value[image.id] = url;
+          return url;
         } catch (error) {
           console.error(`Error loading image URL for ${image.id}:`, error);
+          return null;
         }
+      });
+      
+      const urls = (await Promise.all(urlPromises)).filter((url): url is string => url !== null);
+      
+      if (urls.length === 0 && retryCount < maxRetries) {
+        // Retry if we got images but failed to get URLs
+        console.log(`Retrying image URL fetch (attempt ${retryCount + 1}/${maxRetries})...`);
+        await new Promise(resolve => setTimeout(resolve, 1000 * (retryCount + 1))); // Exponential backoff
+        return loadCarouselImageUrls(retryCount + 1);
       }
       
       heroImageUrls.value = urls;
@@ -203,11 +241,23 @@
       // Set initial random index if we have images
       if (urls.length > 0) {
         currentImageIndex.value = Math.floor(Math.random() * urls.length);
+      } else {
+        imageLoadError.value = true;
       }
     } catch (error) {
       console.error('Error loading carousel images:', error);
-      // Fallback to empty array
-      heroImageUrls.value = [];
+      
+      if (retryCount < maxRetries) {
+        // Retry on error
+        console.log(`Retrying carousel image fetch (attempt ${retryCount + 1}/${maxRetries})...`);
+        await new Promise(resolve => setTimeout(resolve, 1000 * (retryCount + 1))); // Exponential backoff
+        return loadCarouselImageUrls(retryCount + 1);
+      } else {
+        imageLoadError.value = true;
+        heroImageUrls.value = [];
+      }
+    } finally {
+      isLoadingImages.value = false;
     }
   };
 
