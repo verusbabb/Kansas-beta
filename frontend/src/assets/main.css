@@ -26,4 +26,19 @@ body {
   .p-toast .p-toast-message {
     max-width: 100% !important;
   }
+
+  /* Mobile menu item spacing - add padding/margin for better touch targets */
+  .p-menubar-mobile .p-menubar-root-list > li {
+    margin-top: 0.25rem !important;
+    margin-bottom: 0.25rem !important;
+  }
+
+  .p-menubar-mobile .p-menubar-root-list > li > a,
+  .p-menubar-mobile .p-menuitem-link,
+  .p-menubar-mobile a,
+  .p-menubar-mobile .p-menubar-root-list li a,
+  .p-menubar-mobile ul li a {
+    padding-top: 0.75rem !important;
+    padding-bottom: 0.75rem !important;
+  }
 }

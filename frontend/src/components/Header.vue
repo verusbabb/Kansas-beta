@@ -355,11 +355,22 @@
     /* Style mobile menu items when visible */
     .header-menubar :deep(.p-menubar-mobile .p-menubar-root-list) {
       flex-direction: column !important;
-      gap: 0.5rem !important;
+      gap: 0 !important;
     }
 
-    .header-menubar :deep(.p-menubar-mobile .p-menubar-root-list > li > a) {
-      padding: 0.75rem 1rem !important;
+    .header-menubar :deep(.p-menubar-mobile .p-menubar-root-list > li) {
+      margin: 0 !important;
+      margin-top: 0.5rem !important;
+      margin-bottom: 0.5rem !important;
+    }
+
+    /* Target all links in mobile menu - both router-link and regular links */
+    .header-menubar :deep(.p-menubar-mobile .p-menubar-root-list > li > a),
+    .header-menubar :deep(.p-menubar-mobile a) {
+      padding-top: 0.875rem !important;
+      padding-bottom: 0.875rem !important;
+      padding-left: 1rem !important;
+      padding-right: 1rem !important;
       display: flex !important;
       align-items: center !important;
       width: 100% !important;

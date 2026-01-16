@@ -2,12 +2,13 @@
   <div class="relative min-h-screen">
     <!-- Hero Section with Background Image -->
     <div class="hero-container relative">
-      <!-- Loading state -->
+      <!-- Loading/placeholder background - always show until images are ready -->
       <div 
-        v-if="isLoadingImages && heroImageUrls.length === 0"
-        class="absolute inset-0 bg-gradient-to-r from-[#5A7A9F] via-[#6F8FAF] to-[#5A7A9F] flex items-center justify-center z-0"
+        v-if="isLoadingImages || loadedImages.length === 0"
+        class="absolute inset-0 bg-gradient-to-r from-[#5A7A9F] via-[#6F8FAF] to-[#5A7A9F] z-0"
+        :class="{ 'flex items-center justify-center': isLoadingImages && heroImageUrls.length === 0 }"
       >
-        <div class="text-white text-center">
+        <div v-if="isLoadingImages && heroImageUrls.length === 0" class="text-white text-center">
           <i class="pi pi-spin pi-spinner text-4xl mb-2"></i>
           <div class="text-sm">Loading images...</div>
         </div>
@@ -19,9 +20,9 @@
         class="absolute inset-0 bg-gradient-to-r from-[#5A7A9F] via-[#6F8FAF] to-[#5A7A9F] z-0"
       ></div>
       
-      <!-- Hero images -->
+      <!-- Hero images - only show when actually loaded -->
       <div 
-        v-for="(imageUrl, index) in heroImageUrls" 
+        v-for="(imageUrl, index) in loadedImages" 
         :key="index"
         :class="[
           'hero-background-image',
@@ -175,6 +176,8 @@
 
   // Hero image URLs (signed URLs from GCS)
   const heroImageUrls = ref<string[]>([]);
+  // Images that have actually been loaded/preloaded
+  const loadedImages = ref<string[]>([]);
   const imageUrlCache = ref<Record<string, string>>({});
   const isLoadingImages = ref(true);
   const imageLoadError = ref(false);
@@ -186,18 +189,57 @@
 
   // Function to get next random image (different from current)
   const getNextRandomImage = () => {
-    if (heroImageUrls.value.length <= 1) return 0;
+    if (loadedImages.value.length <= 1) return 0;
     let nextIndex;
     do {
-      nextIndex = Math.floor(Math.random() * heroImageUrls.value.length);
-    } while (nextIndex === currentImageIndex.value && heroImageUrls.value.length > 1);
+      nextIndex = Math.floor(Math.random() * loadedImages.value.length);
+    } while (nextIndex === currentImageIndex.value && loadedImages.value.length > 1);
     return nextIndex;
   };
 
   // Rotate to next random image
   const rotateImage = () => {
-    if (heroImageUrls.value.length > 0) {
+    if (loadedImages.value.length > 0) {
       currentImageIndex.value = getNextRandomImage();
+    }
+  };
+
+  // Preload an image and return a promise that resolves when it's loaded
+  const preloadImage = (url: string): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => resolve(url);
+      img.onerror = reject;
+      img.src = url;
+    });
+  };
+
+  // Preload all images before showing them
+  const preloadImages = async (urls: string[]) => {
+    if (urls.length === 0) return;
+    
+    try {
+      // Preload at least the first image before showing anything
+      await preloadImage(urls[0]);
+      loadedImages.value = [urls[0]];
+      
+      // Preload remaining images in background
+      const remainingUrls = urls.slice(1);
+      const preloadPromises = remainingUrls.map(url => 
+        preloadImage(url).catch(err => {
+          console.error('Failed to preload image:', url, err);
+          return null;
+        })
+      );
+      
+      const loaded = await Promise.all(preloadPromises);
+      // Add successfully loaded images
+      const successfulUrls = loaded.filter((url): url is string => url !== null);
+      loadedImages.value = [urls[0], ...successfulUrls];
+    } catch (error) {
+      console.error('Error preloading first image:', error);
+      // Fallback: show URLs anyway if preloading fails
+      loadedImages.value = urls;
     }
   };
 
@@ -238,9 +280,13 @@
       
       heroImageUrls.value = urls;
       
-      // Set initial random index if we have images
+      // Preload images before showing them
       if (urls.length > 0) {
-        currentImageIndex.value = Math.floor(Math.random() * urls.length);
+        await preloadImages(urls);
+        // Set initial random index after preloading
+        if (loadedImages.value.length > 0) {
+          currentImageIndex.value = Math.floor(Math.random() * loadedImages.value.length);
+        }
       } else {
         imageLoadError.value = true;
       }
@@ -265,7 +311,7 @@
     await loadCarouselImageUrls();
     
     // Rotate images every 5 seconds if we have images
-    if (heroImageUrls.value.length > 1) {
+    if (loadedImages.value.length > 1) {
       rotationInterval = setInterval(rotateImage, 5000);
     }
   });
