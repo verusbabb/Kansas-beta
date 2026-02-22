@@ -115,7 +115,7 @@
                 <!-- Event names -->
                 <div v-if="getEventsForDay(day).length > 0" class="flex flex-col gap-0.5 mt-auto overflow-hidden">
                   <div
-                    v-for="(event, idx) in getEventsForDay(day).slice(0, 2)"
+                    v-for="event in getEventsForDay(day).slice(0, 2)"
                     :key="event.id"
                     :class="[
                       'text-xs truncate px-1 py-0.5 rounded',
@@ -509,34 +509,4 @@ onMounted(async () => {
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
-
-/* Style lists in event descriptions */
-/* :deep(ul),
-:deep(ol) {
-  margin-left: 1.5rem;
-  margin-top: 0.5rem;
-  margin-bottom: 0.5rem;
-  padding-left: 1rem;
-}
-
-:deep(ul) {
-  list-style-type: disc;
-}
-
-:deep(ol) {
-  list-style-type: decimal;
-}
-
-:deep(li) {
-  margin-top: 0.25rem;
-  margin-bottom: 0.25rem;
-}
-
-:deep(ul ul),
-:deep(ol ol),
-:deep(ul ol),
-:deep(ol ul) {
-  margin-top: 0.25rem;
-  margin-bottom: 0.25rem;
-} */
 </style>

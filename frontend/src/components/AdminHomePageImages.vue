@@ -377,7 +377,7 @@ const handleSaveCarousel = async () => {
 
   try {
     const imageIds = Object.entries(localCarouselSelection.value)
-      .filter(([_, isSelected]) => isSelected)
+      .filter(([, isSelected]) => isSelected)
       .map(([id]) => id)
 
     await heroImageStore.bulkUpdateCarousel(imageIds)

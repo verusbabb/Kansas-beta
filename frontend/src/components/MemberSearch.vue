@@ -81,9 +81,6 @@ import Card from 'primevue/card'
 import InputText from 'primevue/inputtext'
 import Select from 'primevue/select'
 import Avatar from 'primevue/avatar'
-import { useMemberStore } from '@/stores/member'
-
-const memberStore = useMemberStore()
 
 const searchQuery = ref('')
 const yearFilter = ref(null)
@@ -96,7 +93,7 @@ const yearOptions = ref(
 
 // Placeholder search results - will be replaced with actual search logic
 const searchResults = computed(() => {
-  // TODO: Implement actual search logic using memberStore
+  // TODO: Implement actual search logic using member store
   return []
 })
 </script>
