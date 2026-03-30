@@ -88,7 +88,7 @@ const navItems = [
   },
   {
     id: 'member-search',
-    label: 'Member Search',
+    label: 'Members',
     icon: 'pi pi-search'
   }
 ]

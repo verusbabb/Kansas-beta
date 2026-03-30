@@ -11,6 +11,7 @@ import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { CalendarEventsModule } from './calendar-events/calendar-events.module';
 import { HeroImagesModule } from './hero-images/hero-images.module';
+import { PeopleModule } from './people/people.module';
 import { createLoggerConfig } from './config/logger.config';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { AppConfig } from './config/configuration';
@@ -24,6 +25,7 @@ import { AppConfig } from './config/configuration';
     UsersModule, // Users management API
     CalendarEventsModule, // Calendar events API
     HeroImagesModule, // Hero images API
+    PeopleModule, // Chapter directory (members/parents)
     LoggerModule.forRootAsync({
       inject: [ConfigService],
       useFactory: (configService: ConfigService<AppConfig>) => {

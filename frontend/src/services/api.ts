@@ -16,6 +16,24 @@ export function setTokenGetter(getter: () => Promise<string | null>) {
   tokenGetter = getter
 }
 
+/** Use this instead of importing `isAxiosError` elsewhere — matches errors from this `apiClient` reliably. */
+export function isAxiosRejection(payload: unknown): boolean {
+  return axios.isAxiosError(payload)
+}
+
+/** Safe on http:// and older browsers; randomUUID() throws outside a secure context. */
+function newRequestId(): string {
+  try {
+    const c = globalThis.crypto
+    if (c && typeof c.randomUUID === 'function') {
+      return c.randomUUID()
+    }
+  } catch {
+    /* fall through */
+  }
+  return `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`
+}
+
 /**
  * Create and configure Axios instance
  */
@@ -78,7 +96,7 @@ apiClient.interceptors.request.use(
     }
     
     // Add request ID for tracing
-    config.headers['X-Request-ID'] = crypto.randomUUID()
+    config.headers['X-Request-ID'] = newRequestId()
 
     return config
   },

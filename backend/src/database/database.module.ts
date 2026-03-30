@@ -8,6 +8,7 @@ import { Newsletter } from './entities/newsletter.entity';
 import { User } from './entities/user.entity';
 import { CalendarEvent } from './entities/calendar-event.entity';
 import { HeroImage } from './entities/hero-image.entity';
+import { Person } from './entities/person.entity';
 
 @Module({
   imports: [
@@ -65,13 +66,13 @@ import { HeroImage } from './entities/hero-image.entity';
         sequelizeConfig.logging = config.app.env === 'production' ? false : console.log;
 
         // Explicitly add models for sequelize-typescript
-        sequelizeConfig.models = [GuestList, Newsletter, User, CalendarEvent, HeroImage];
+        sequelizeConfig.models = [GuestList, Newsletter, User, CalendarEvent, HeroImage, Person];
 
         return sequelizeConfig;
       },
     }),
     // Register models explicitly (excludes base.entity which is not a model)
-    SequelizeModule.forFeature([GuestList, Newsletter, User, CalendarEvent, HeroImage]),
+    SequelizeModule.forFeature([GuestList, Newsletter, User, CalendarEvent, HeroImage, Person]),
   ],
   exports: [SequelizeModule],
 })

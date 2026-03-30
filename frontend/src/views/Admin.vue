@@ -101,24 +101,7 @@
           <AdminNewsletters v-if="activeSection === 'newsletter'" />
 
           <!-- Member Section -->
-          <Card v-if="activeSection === 'member'" class="mb-6">
-            <template #title>
-              <div class="flex items-center gap-2">
-                <i class="pi pi-user-plus text-[#6F8FAF]"></i>
-                <span>Add/Manage Members</span>
-              </div>
-            </template>
-            <template #content>
-              <div class="flex flex-col gap-4">
-                <div class="text-surface-600">
-                  Add a new active member to the chapter.
-                </div>
-                <div class="text-center py-8 text-surface-500">
-                  Member form coming soon...
-                </div>
-              </div>
-            </template>
-          </Card>
+          <AdminAddPerson v-if="activeSection === 'member'" />
 
           <!-- Users Section -->
           <AdminUsers v-if="activeSection === 'users'" />
@@ -176,6 +159,7 @@ import AdminHealthCheck from '@/components/AdminHealthCheck.vue'
 import AdminOverview from '@/components/AdminOverview.vue'
 import AdminExecTeam from '@/components/AdminExecTeam.vue'
 import AdminHomePageImages from '@/components/AdminHomePageImages.vue'
+import AdminAddPerson from '@/components/AdminAddPerson.vue'
 
 const route = useRoute()
 const router = useRouter()
