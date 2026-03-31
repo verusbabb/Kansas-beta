@@ -121,10 +121,10 @@
               <Column field="phone" header="Phone" sortable>
                 <template #body="{ data }">
                   <span
-                    v-if="data.phone && String(data.phone).trim()"
+                    v-if="formatUsPhoneForDisplay(data.phone)"
                     class="text-surface-800 whitespace-nowrap"
                   >
-                    {{ data.phone }}
+                    {{ formatUsPhoneForDisplay(data.phone) }}
                   </span>
                   <span v-else class="text-surface-400">—</span>
                 </template>
@@ -388,6 +388,8 @@
             optionLabel="label"
             optionValue="value"
             filter
+            filterMatchMode="startsWith"
+            :filterFields="['label', 'value']"
             filterPlaceholder="Search state"
             placeholder="Select state"
             :class="{ 'p-invalid': editErrors.state }"
@@ -505,6 +507,7 @@ import { usePersonRelationshipsStore } from '@/stores/personRelationships'
 import { personRelationshipPhrase } from '@/utils/personRelationshipPhrase'
 import { PERSON_RELATIONSHIP_TYPE_OPTIONS } from '@/constants/relationshipTypes'
 import { US_STATE_CODE_SET, US_STATE_OPTIONS, normalizeUsStateForSelect } from '@/constants/usStates'
+import { formatUsPhoneForDisplay, usPhoneDigits } from '@/utils/usPhone'
 
 const props = withDefaults(
   defineProps<{
@@ -840,12 +843,17 @@ function formatAddress(p: PersonResponse): string {
 function matchesSearch(person: PersonResponse, q: string): boolean {
   if (!q) return true
   const needle = q.toLowerCase().trim()
+  const phoneRaw = person.phone ?? ''
+  const phoneDigits = usPhoneDigits(phoneRaw)
+  const phoneFormatted = formatUsPhoneForDisplay(phoneRaw)
   const hay = [
     person.firstName,
     person.lastName,
     `${person.firstName} ${person.lastName}`,
     person.email,
-    person.phone ?? '',
+    phoneRaw,
+    phoneDigits,
+    phoneFormatted,
     person.city,
     person.state,
     person.zip,
@@ -919,7 +927,7 @@ function openEditDialog(p: PersonResponse) {
     state: normalizeUsStateForSelect(p.state),
     zip: p.zip,
     email: p.email,
-    phone: p.phone ?? '',
+    phone: formatUsPhoneForDisplay(p.phone ?? ''),
     pledgeClassYear: p.pledgeClassYear ?? null,
   }
   clearEditErrors()

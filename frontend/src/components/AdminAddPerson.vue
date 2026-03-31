@@ -125,6 +125,8 @@
                 optionLabel="label"
                 optionValue="value"
                 filter
+                filterMatchMode="startsWith"
+                :filterFields="['label', 'value']"
                 filterPlaceholder="Search state"
                 placeholder="Select state"
                 :class="{ 'p-invalid': errors.state }"

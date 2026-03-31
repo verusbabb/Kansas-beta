@@ -11,6 +11,7 @@ import { Person } from '../database/entities/person.entity'
 import { PersonRelationship } from '../database/entities/person-relationship.entity'
 import { CreatePersonDto, PersonKindDto } from './dto/create-person.dto'
 import { UpdatePersonDto } from './dto/update-person.dto'
+import { normalizeUsPhoneForStorage } from '../common/utils/us-phone'
 import { PersonResponseDto } from './dto/person-response.dto'
 
 @Injectable()
@@ -141,7 +142,7 @@ export class PeopleService {
         existing.state = dto.state.toUpperCase()
         existing.zip = dto.zip
         existing.email = dto.email.toLowerCase().trim()
-        existing.phone = dto.phone?.trim() || null
+        existing.phone = normalizeUsPhoneForStorage(dto.phone)
         existing.pledgeClassYear = pledgeClassYear
         existing.isMember = isMember
         existing.isParent = isParent
@@ -160,7 +161,7 @@ export class PeopleService {
       state: dto.state.toUpperCase(),
       zip: dto.zip,
       email: dto.email.toLowerCase().trim(),
-      phone: dto.phone?.trim() || null,
+      phone: normalizeUsPhoneForStorage(dto.phone),
       pledgeClassYear,
       isMember,
       isParent,
@@ -218,8 +219,7 @@ export class PeopleService {
     if (dto.zip !== undefined) person.zip = dto.zip
     if (dto.email !== undefined) person.email = dto.email.toLowerCase().trim()
     if (dto.phone !== undefined) {
-      person.phone =
-        dto.phone == null || !String(dto.phone).trim() ? null : String(dto.phone).trim()
+      person.phone = normalizeUsPhoneForStorage(dto.phone)
     }
 
     person.isMember = isMember
