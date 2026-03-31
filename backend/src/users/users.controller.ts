@@ -9,20 +9,20 @@ import {
   HttpCode,
   HttpStatus,
   UseGuards,
-} from '@nestjs/common';
-import { ApiOperation, ApiResponse, ApiTags, ApiBearerAuth } from '@nestjs/swagger';
-import { PinoLogger } from 'nestjs-pino';
-import { UsersService } from './users.service';
-import { CreateUserDto } from './dto/create-user.dto';
-import { UpdateUserDto } from './dto/update-user.dto';
-import { UserResponseDto } from './dto/user-response.dto';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { RolesGuard } from '../auth/guards/roles.guard';
-import { UserLookupGuard } from '../auth/guards/user-lookup.guard';
-import { Roles } from '../auth/decorators/roles.decorator';
-import { CurrentUser } from '../auth/decorators/current-user.decorator';
-import { UserRole } from '../database/entities/user.entity';
-import { User } from '../database/entities/user.entity';
+} from '@nestjs/common'
+import { ApiOperation, ApiResponse, ApiTags, ApiBearerAuth } from '@nestjs/swagger'
+import { PinoLogger } from 'nestjs-pino'
+import { UsersService } from './users.service'
+import { CreateUserDto } from './dto/create-user.dto'
+import { UpdateUserDto } from './dto/update-user.dto'
+import { UserResponseDto } from './dto/user-response.dto'
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard'
+import { RolesGuard } from '../auth/guards/roles.guard'
+import { UserLookupGuard } from '../auth/guards/user-lookup.guard'
+import { Roles } from '../auth/decorators/roles.decorator'
+import { CurrentUser } from '../auth/decorators/current-user.decorator'
+import { UserRole } from '../database/entities/user.entity'
+import { User } from '../database/entities/user.entity'
 
 @ApiTags('Users')
 @Controller('users')
@@ -32,7 +32,7 @@ export class UsersController {
     private readonly usersService: UsersService,
     private readonly logger: PinoLogger,
   ) {
-    this.logger.setContext(UsersController.name);
+    this.logger.setContext(UsersController.name)
   }
 
   @Post()
@@ -49,7 +49,7 @@ export class UsersController {
   @ApiResponse({ status: HttpStatus.FORBIDDEN, description: 'Forbidden - Admin role required' })
   @ApiResponse({ status: HttpStatus.CONFLICT, description: 'User with email already exists' })
   async create(@Body() createUserDto: CreateUserDto): Promise<UserResponseDto> {
-    return this.usersService.create(createUserDto);
+    return this.usersService.create(createUserDto)
   }
 
   @Get('me')
@@ -62,7 +62,7 @@ export class UsersController {
   })
   @ApiResponse({ status: HttpStatus.UNAUTHORIZED, description: 'Unauthorized' })
   async getCurrentUser(@CurrentUser() user: User): Promise<UserResponseDto> {
-    return this.usersService.findOne(user.id);
+    return this.usersService.findOne(user.id)
   }
 
   @Get()
@@ -76,7 +76,7 @@ export class UsersController {
   })
   @ApiResponse({ status: HttpStatus.FORBIDDEN, description: 'Forbidden - Admin role required' })
   async findAll(): Promise<UserResponseDto[]> {
-    return this.usersService.findAll();
+    return this.usersService.findAll()
   }
 
   @Get(':id')
@@ -91,7 +91,7 @@ export class UsersController {
   @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'User not found' })
   @ApiResponse({ status: HttpStatus.FORBIDDEN, description: 'Forbidden - Admin role required' })
   async findOne(@Param('id') id: string): Promise<UserResponseDto> {
-    return this.usersService.findOne(id);
+    return this.usersService.findOne(id)
   }
 
   @Patch(':id')
@@ -109,7 +109,7 @@ export class UsersController {
     @Param('id') id: string,
     @Body() updateUserDto: UpdateUserDto,
   ): Promise<UserResponseDto> {
-    return this.usersService.update(id, updateUserDto);
+    return this.usersService.update(id, updateUserDto)
   }
 
   @Delete(':id')
@@ -124,7 +124,6 @@ export class UsersController {
   @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'User not found' })
   @ApiResponse({ status: HttpStatus.FORBIDDEN, description: 'Forbidden - Admin role required' })
   async remove(@Param('id') id: string): Promise<void> {
-    await this.usersService.remove(id);
+    await this.usersService.remove(id)
   }
 }
-

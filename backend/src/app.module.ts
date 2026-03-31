@@ -1,20 +1,21 @@
-import { Module } from '@nestjs/common';
-import { APP_FILTER } from '@nestjs/core';
-import { ConfigService } from '@nestjs/config';
-import { LoggerModule } from 'nestjs-pino';
-import { ConfigModule } from './config/config.module';
-import { DatabaseModule } from './database/database.module';
-import { HealthController } from './health/health.controller';
-import { ConfigController } from './config/config.controller';
-import { NewslettersModule } from './newsletters/newsletters.module';
-import { AuthModule } from './auth/auth.module';
-import { UsersModule } from './users/users.module';
-import { CalendarEventsModule } from './calendar-events/calendar-events.module';
-import { HeroImagesModule } from './hero-images/hero-images.module';
-import { PeopleModule } from './people/people.module';
-import { createLoggerConfig } from './config/logger.config';
-import { HttpExceptionFilter } from './common/filters/http-exception.filter';
-import { AppConfig } from './config/configuration';
+import { Module } from '@nestjs/common'
+import { APP_FILTER } from '@nestjs/core'
+import { ConfigService } from '@nestjs/config'
+import { LoggerModule } from 'nestjs-pino'
+import { ConfigModule } from './config/config.module'
+import { DatabaseModule } from './database/database.module'
+import { HealthController } from './health/health.controller'
+import { ConfigController } from './config/config.controller'
+import { NewslettersModule } from './newsletters/newsletters.module'
+import { AuthModule } from './auth/auth.module'
+import { UsersModule } from './users/users.module'
+import { CalendarEventsModule } from './calendar-events/calendar-events.module'
+import { HeroImagesModule } from './hero-images/hero-images.module'
+import { PeopleModule } from './people/people.module'
+import { PersonRelationshipsModule } from './person-relationships/person-relationships.module'
+import { createLoggerConfig } from './config/logger.config'
+import { HttpExceptionFilter } from './common/filters/http-exception.filter'
+import { AppConfig } from './config/configuration'
 
 @Module({
   imports: [
@@ -26,10 +27,11 @@ import { AppConfig } from './config/configuration';
     CalendarEventsModule, // Calendar events API
     HeroImagesModule, // Hero images API
     PeopleModule, // Chapter directory (members/parents)
+    PersonRelationshipsModule, // Legacy / family links between people
     LoggerModule.forRootAsync({
       inject: [ConfigService],
       useFactory: (configService: ConfigService<AppConfig>) => {
-        return createLoggerConfig(configService);
+        return createLoggerConfig(configService)
       },
     }),
   ],
@@ -42,4 +44,3 @@ import { AppConfig } from './config/configuration';
   ],
 })
 export class AppModule {}
-

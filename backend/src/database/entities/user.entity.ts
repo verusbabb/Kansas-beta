@@ -1,6 +1,6 @@
-import { Table, Column, DataType, PrimaryKey, Default, Index, Unique } from 'sequelize-typescript';
-import { BaseEntity } from './base.entity';
-import { v4 as uuidv4 } from 'uuid';
+import { Table, Column, DataType, PrimaryKey, Default, Index, Unique } from 'sequelize-typescript'
+import { BaseEntity } from './base.entity'
+import { v4 as uuidv4 } from 'uuid'
 
 /**
  * User role enum
@@ -24,7 +24,7 @@ export class User extends BaseEntity {
   @PrimaryKey
   @Default(() => uuidv4())
   @Column(DataType.UUID)
-  id!: string;
+  id!: string
 
   @Unique
   @Index
@@ -37,19 +37,19 @@ export class User extends BaseEntity {
       },
     },
   })
-  email!: string;
+  email!: string
 
   @Column({
     type: DataType.STRING,
     allowNull: false,
   })
-  firstName!: string;
+  firstName!: string
 
   @Column({
     type: DataType.STRING,
     allowNull: false,
   })
-  lastName!: string;
+  lastName!: string
 
   @Index
   @Column({
@@ -57,7 +57,7 @@ export class User extends BaseEntity {
     allowNull: false,
     defaultValue: UserRole.VIEWER,
   })
-  role!: UserRole;
+  role!: UserRole
 
   @Index
   @Column({
@@ -65,6 +65,5 @@ export class User extends BaseEntity {
     allowNull: true, // NULL until user signs up in Auth0
     unique: true,
   })
-  auth0Id!: string | null;
+  auth0Id!: string | null
 }
-

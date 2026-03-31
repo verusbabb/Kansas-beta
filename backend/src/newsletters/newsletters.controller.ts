@@ -14,21 +14,29 @@ import {
   ParseFilePipe,
   MaxFileSizeValidator,
   FileTypeValidator,
-} from '@nestjs/common';
-import { FileInterceptor } from '@nestjs/platform-express';
-import type { NewsletterFile } from './newsletters.service';
-import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiBearerAuth, ApiConsumes, ApiBody } from '@nestjs/swagger';
-import { PinoLogger } from 'nestjs-pino';
-import { NewslettersService } from './newsletters.service';
-import { CreateNewsletterDto } from './dto/create-newsletter.dto';
-import { UploadNewsletterDto } from './dto/upload-newsletter.dto';
-import { NewsletterResponseDto } from './dto/newsletter-response.dto';
-import { SignedUrlResponseDto } from './dto/signed-url-response.dto';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { RolesGuard } from '../auth/guards/roles.guard';
-import { UserLookupGuard } from '../auth/guards/user-lookup.guard';
-import { Roles } from '../auth/decorators/roles.decorator';
-import { UserRole } from '../database/entities/user.entity';
+} from '@nestjs/common'
+import { FileInterceptor } from '@nestjs/platform-express'
+import type { NewsletterFile } from './newsletters.service'
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiParam,
+  ApiBearerAuth,
+  ApiConsumes,
+  ApiBody,
+} from '@nestjs/swagger'
+import { PinoLogger } from 'nestjs-pino'
+import { NewslettersService } from './newsletters.service'
+import { CreateNewsletterDto } from './dto/create-newsletter.dto'
+import { UploadNewsletterDto } from './dto/upload-newsletter.dto'
+import { NewsletterResponseDto } from './dto/newsletter-response.dto'
+import { SignedUrlResponseDto } from './dto/signed-url-response.dto'
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard'
+import { RolesGuard } from '../auth/guards/roles.guard'
+import { UserLookupGuard } from '../auth/guards/user-lookup.guard'
+import { Roles } from '../auth/decorators/roles.decorator'
+import { UserRole } from '../database/entities/user.entity'
 
 @ApiTags('Newsletters')
 @Controller('newsletters')
@@ -37,7 +45,7 @@ export class NewslettersController {
     private readonly newslettersService: NewslettersService,
     private readonly logger: PinoLogger,
   ) {
-    this.logger.setContext(NewslettersController.name);
+    this.logger.setContext(NewslettersController.name)
   }
 
   @Post()
@@ -105,10 +113,10 @@ export class NewslettersController {
     @Body() uploadDto: UploadNewsletterDto,
   ): Promise<NewsletterResponseDto> {
     if (!file) {
-      throw new BadRequestException('File is required');
+      throw new BadRequestException('File is required')
     }
 
-    return this.newslettersService.createWithFile(file, uploadDto.season, uploadDto.year);
+    return this.newslettersService.createWithFile(file, uploadDto.season, uploadDto.year)
   }
 
   @Get()
@@ -122,7 +130,7 @@ export class NewslettersController {
     type: [NewsletterResponseDto],
   })
   async findAll(): Promise<NewsletterResponseDto[]> {
-    return this.newslettersService.findAll();
+    return this.newslettersService.findAll()
   }
 
   @Get(':id/signed-url')
@@ -144,15 +152,13 @@ export class NewslettersController {
     status: 404,
     description: 'Newsletter not found or does not have a file',
   })
-  async getSignedUrl(
-    @Param('id') id: string,
-  ): Promise<SignedUrlResponseDto> {
-    const expirationMinutes = 60; // 1 hour default
-    const url = await this.newslettersService.getSignedUrl(id, expirationMinutes);
+  async getSignedUrl(@Param('id') id: string): Promise<SignedUrlResponseDto> {
+    const expirationMinutes = 60 // 1 hour default
+    const url = await this.newslettersService.getSignedUrl(id, expirationMinutes)
     return {
       url,
       expiresInMinutes: expirationMinutes,
-    };
+    }
   }
 
   @Get(':id')
@@ -175,7 +181,7 @@ export class NewslettersController {
     description: 'Newsletter not found',
   })
   async findOne(@Param('id') id: string): Promise<NewsletterResponseDto> {
-    return this.newslettersService.findOne(id);
+    return this.newslettersService.findOne(id)
   }
 
   @Delete(':id')
@@ -209,7 +215,6 @@ export class NewslettersController {
     description: 'Newsletter not found',
   })
   async remove(@Param('id') id: string): Promise<void> {
-    return this.newslettersService.remove(id);
+    return this.newslettersService.remove(id)
   }
 }
-

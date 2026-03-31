@@ -1,10 +1,10 @@
-import { Module } from '@nestjs/common';
-import { SequelizeModule } from '@nestjs/sequelize';
-import { CalendarEventsController } from './calendar-events.controller';
-import { CalendarEventsService } from './calendar-events.service';
-import { CalendarEvent } from '../database/entities/calendar-event.entity';
-import { User } from '../database/entities/user.entity';
-import { AuthModule } from '../auth/auth.module';
+import { Module } from '@nestjs/common'
+import { SequelizeModule } from '@nestjs/sequelize'
+import { CalendarEventsController } from './calendar-events.controller'
+import { CalendarEventsService } from './calendar-events.service'
+import { CalendarEvent } from '../database/entities/calendar-event.entity'
+import { User } from '../database/entities/user.entity'
+import { AuthModule } from '../auth/auth.module'
 
 @Module({
   imports: [
@@ -16,4 +16,3 @@ import { AuthModule } from '../auth/auth.module';
   exports: [CalendarEventsService],
 })
 export class CalendarEventsModule {}
-

@@ -1,16 +1,16 @@
-import { QueryInterface, DataTypes, Sequelize } from 'sequelize';
+import { QueryInterface, DataTypes, Sequelize } from 'sequelize'
 
 /**
  * Migration: Create hero_images table
  * This migration creates the hero_images table for storing home page hero carousel images
- * 
+ *
  * Created: 2026-01-03
  * Run: npm run migration:run
  * Rollback: npm run migration:undo
  */
 export async function up(queryInterface: QueryInterface): Promise<void> {
   // Enable UUID extension if not already enabled
-  await queryInterface.sequelize.query('CREATE EXTENSION IF NOT EXISTS "uuid-ossp";');
+  await queryInterface.sequelize.query('CREATE EXTENSION IF NOT EXISTS "uuid-ossp";')
 
   await queryInterface.createTable('hero_images', {
     id: {
@@ -50,19 +50,18 @@ export async function up(queryInterface: QueryInterface): Promise<void> {
       type: DataTypes.DATE,
       allowNull: true,
     },
-  });
+  })
 
   // Add indexes for efficient queries
   await queryInterface.addIndex('hero_images', ['isInCarousel'], {
     name: 'idx_hero_images_isInCarousel',
-  });
+  })
 
   await queryInterface.addIndex('hero_images', ['uploadedBy'], {
     name: 'idx_hero_images_uploadedBy',
-  });
+  })
 }
 
 export async function down(queryInterface: QueryInterface): Promise<void> {
-  await queryInterface.dropTable('hero_images');
+  await queryInterface.dropTable('hero_images')
 }
-

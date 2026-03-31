@@ -1,6 +1,6 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { IsEmail, IsEnum, IsOptional, IsString, MinLength } from 'class-validator';
-import { UserRole } from '../../database/entities/user.entity';
+import { ApiProperty } from '@nestjs/swagger'
+import { IsEmail, IsEnum, IsOptional, IsString, MinLength } from 'class-validator'
+import { UserRole } from '../../database/entities/user.entity'
 
 export class UpdateUserDto {
   @ApiProperty({
@@ -10,7 +10,7 @@ export class UpdateUserDto {
   })
   @IsOptional()
   @IsEmail({}, { message: 'Email must be a valid email address' })
-  email?: string;
+  email?: string
 
   @ApiProperty({
     description: 'User first name',
@@ -20,7 +20,7 @@ export class UpdateUserDto {
   @IsOptional()
   @IsString()
   @MinLength(1, { message: 'First name cannot be empty' })
-  firstName?: string;
+  firstName?: string
 
   @ApiProperty({
     description: 'User last name',
@@ -30,7 +30,7 @@ export class UpdateUserDto {
   @IsOptional()
   @IsString()
   @MinLength(1, { message: 'Last name cannot be empty' })
-  lastName?: string;
+  lastName?: string
 
   @ApiProperty({
     description: 'User role',
@@ -42,6 +42,5 @@ export class UpdateUserDto {
   @IsEnum(UserRole, {
     message: 'Role must be one of: viewer, editor, admin',
   })
-  role?: UserRole;
+  role?: UserRole
 }
-

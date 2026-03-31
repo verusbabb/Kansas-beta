@@ -1,11 +1,11 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
-import { InjectModel } from '@nestjs/sequelize';
-import { PinoLogger } from 'nestjs-pino';
-import { Op } from 'sequelize';
-import { CalendarEvent } from '../database/entities/calendar-event.entity';
-import { CreateCalendarEventDto } from './dto/create-calendar-event.dto';
-import { UpdateCalendarEventDto } from './dto/update-calendar-event.dto';
-import { CalendarEventResponseDto } from './dto/calendar-event-response.dto';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common'
+import { InjectModel } from '@nestjs/sequelize'
+import { PinoLogger } from 'nestjs-pino'
+import { Op } from 'sequelize'
+import { CalendarEvent } from '../database/entities/calendar-event.entity'
+import { CreateCalendarEventDto } from './dto/create-calendar-event.dto'
+import { UpdateCalendarEventDto } from './dto/update-calendar-event.dto'
+import { CalendarEventResponseDto } from './dto/calendar-event-response.dto'
 
 @Injectable()
 export class CalendarEventsService {
@@ -14,7 +14,7 @@ export class CalendarEventsService {
     private calendarEventModel: typeof CalendarEvent,
     private readonly logger: PinoLogger,
   ) {
-    this.logger.setContext(CalendarEventsService.name);
+    this.logger.setContext(CalendarEventsService.name)
   }
 
   /**
@@ -23,28 +23,28 @@ export class CalendarEventsService {
   async create(createCalendarEventDto: CreateCalendarEventDto): Promise<CalendarEventResponseDto> {
     try {
       // Validate date range
-      const startDate = new Date(createCalendarEventDto.startDate);
-      const endDate = new Date(createCalendarEventDto.endDate);
+      const startDate = new Date(createCalendarEventDto.startDate)
+      const endDate = new Date(createCalendarEventDto.endDate)
 
       if (endDate < startDate) {
-        throw new BadRequestException('End date must be on or after start date');
+        throw new BadRequestException('End date must be on or after start date')
       }
 
       // If allDay is true, set times to null
-      const startTime = createCalendarEventDto.allDay ? null : createCalendarEventDto.startTime;
-      const endTime = createCalendarEventDto.allDay ? null : createCalendarEventDto.endTime;
+      const startTime = createCalendarEventDto.allDay ? null : createCalendarEventDto.startTime
+      const endTime = createCalendarEventDto.allDay ? null : createCalendarEventDto.endTime
 
       // Validate time range if times are provided
       if (!createCalendarEventDto.allDay && startTime && endTime) {
         if (startDate.toDateString() === endDate.toDateString()) {
           // Same day - validate end time is after start time
-          const [startHour, startMin] = startTime.split(':').map(Number);
-          const [endHour, endMin] = endTime.split(':').map(Number);
-          const startMinutes = startHour * 60 + startMin;
-          const endMinutes = endHour * 60 + endMin;
+          const [startHour, startMin] = startTime.split(':').map(Number)
+          const [endHour, endMin] = endTime.split(':').map(Number)
+          const startMinutes = startHour * 60 + startMin
+          const endMinutes = endHour * 60 + endMin
 
           if (endMinutes <= startMinutes) {
-            throw new BadRequestException('End time must be after start time for same-day events');
+            throw new BadRequestException('End time must be after start time for same-day events')
           }
         }
       }
@@ -57,15 +57,15 @@ export class CalendarEventsService {
         startTime: startTime || null,
         endTime: endTime || null,
         allDay: createCalendarEventDto.allDay,
-      });
+      })
 
-      return this.toResponseDto(calendarEvent);
+      return this.toResponseDto(calendarEvent)
     } catch (error) {
       if (error instanceof BadRequestException) {
-        throw error;
+        throw error
       }
-      this.logger.error('Failed to create calendar event', error);
-      throw error;
+      this.logger.error('Failed to create calendar event', error)
+      throw error
     }
   }
 
@@ -75,13 +75,16 @@ export class CalendarEventsService {
   async findAll(): Promise<CalendarEventResponseDto[]> {
     try {
       const events = await this.calendarEventModel.findAll({
-        order: [['startDate', 'ASC'], ['startTime', 'ASC']],
-      });
+        order: [
+          ['startDate', 'ASC'],
+          ['startTime', 'ASC'],
+        ],
+      })
 
-      return events.map((event) => this.toResponseDto(event));
+      return events.map((event) => this.toResponseDto(event))
     } catch (error) {
-      this.logger.error('Failed to fetch calendar events', error);
-      throw error;
+      this.logger.error('Failed to fetch calendar events', error)
+      throw error
     }
   }
 
@@ -90,9 +93,9 @@ export class CalendarEventsService {
    */
   async findUpcoming(): Promise<CalendarEventResponseDto[]> {
     try {
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      const todayString = today.toISOString().split('T')[0];
+      const today = new Date()
+      today.setHours(0, 0, 0, 0)
+      const todayString = today.toISOString().split('T')[0]
 
       const events = await this.calendarEventModel.findAll({
         where: {
@@ -100,13 +103,16 @@ export class CalendarEventsService {
             [Op.gte]: todayString,
           },
         },
-        order: [['startDate', 'ASC'], ['startTime', 'ASC']],
-      });
+        order: [
+          ['startDate', 'ASC'],
+          ['startTime', 'ASC'],
+        ],
+      })
 
-      return events.map((event) => this.toResponseDto(event));
+      return events.map((event) => this.toResponseDto(event))
     } catch (error) {
-      this.logger.error('Failed to fetch upcoming calendar events', error);
-      throw error;
+      this.logger.error('Failed to fetch upcoming calendar events', error)
+      throw error
     }
   }
 
@@ -115,114 +121,121 @@ export class CalendarEventsService {
    */
   async findOne(id: string): Promise<CalendarEventResponseDto> {
     try {
-      const event = await this.calendarEventModel.findByPk(id);
+      const event = await this.calendarEventModel.findByPk(id)
 
       if (!event) {
-        throw new NotFoundException(`Calendar event with ID ${id} not found`);
+        throw new NotFoundException(`Calendar event with ID ${id} not found`)
       }
 
-      return this.toResponseDto(event);
+      return this.toResponseDto(event)
     } catch (error) {
       if (error instanceof NotFoundException) {
-        throw error;
+        throw error
       }
-      this.logger.error('Failed to fetch calendar event', { id, error });
-      throw error;
+      this.logger.error('Failed to fetch calendar event', { id, error })
+      throw error
     }
   }
 
   /**
    * Update a calendar event
    */
-  async update(id: string, updateCalendarEventDto: UpdateCalendarEventDto): Promise<CalendarEventResponseDto> {
+  async update(
+    id: string,
+    updateCalendarEventDto: UpdateCalendarEventDto,
+  ): Promise<CalendarEventResponseDto> {
     try {
-      const event = await this.calendarEventModel.findByPk(id);
+      const event = await this.calendarEventModel.findByPk(id)
 
       if (!event) {
-        throw new NotFoundException(`Calendar event with ID ${id} not found`);
+        throw new NotFoundException(`Calendar event with ID ${id} not found`)
       }
 
       // Validate date range if both dates are being updated
       if (updateCalendarEventDto.startDate && updateCalendarEventDto.endDate) {
-        const startDate = new Date(updateCalendarEventDto.startDate);
-        const endDate = new Date(updateCalendarEventDto.endDate);
+        const startDate = new Date(updateCalendarEventDto.startDate)
+        const endDate = new Date(updateCalendarEventDto.endDate)
 
         if (endDate < startDate) {
-          throw new BadRequestException('End date must be on or after start date');
+          throw new BadRequestException('End date must be on or after start date')
         }
       } else if (updateCalendarEventDto.startDate) {
-        const startDate = new Date(updateCalendarEventDto.startDate);
-        const endDate = new Date(event.endDate);
+        const startDate = new Date(updateCalendarEventDto.startDate)
+        const endDate = new Date(event.endDate)
 
         if (endDate < startDate) {
-          throw new BadRequestException('End date must be on or after start date');
+          throw new BadRequestException('End date must be on or after start date')
         }
       } else if (updateCalendarEventDto.endDate) {
-        const startDate = new Date(event.startDate);
-        const endDate = new Date(updateCalendarEventDto.endDate);
+        const startDate = new Date(event.startDate)
+        const endDate = new Date(updateCalendarEventDto.endDate)
 
         if (endDate < startDate) {
-          throw new BadRequestException('End date must be on or after start date');
+          throw new BadRequestException('End date must be on or after start date')
         }
       }
 
       // Handle allDay flag
-      const allDay = updateCalendarEventDto.allDay !== undefined 
-        ? updateCalendarEventDto.allDay 
-        : event.allDay;
+      const allDay =
+        updateCalendarEventDto.allDay !== undefined ? updateCalendarEventDto.allDay : event.allDay
 
       // If allDay is true, set times to null
       // Convert event times to strings if they're Date objects
-      const eventStartTimeStr = event.startTime 
-        ? (typeof event.startTime === 'string' ? event.startTime : event.startTime.toString().substring(0, 5))
-        : null;
-      const eventEndTimeStr = event.endTime 
-        ? (typeof event.endTime === 'string' ? event.endTime : event.endTime.toString().substring(0, 5))
-        : null;
-      
-      const startTime = allDay ? null : (updateCalendarEventDto.startTime ?? eventStartTimeStr);
-      const endTime = allDay ? null : (updateCalendarEventDto.endTime ?? eventEndTimeStr);
+      const eventStartTimeStr = event.startTime
+        ? typeof event.startTime === 'string'
+          ? event.startTime
+          : event.startTime.toString().substring(0, 5)
+        : null
+      const eventEndTimeStr = event.endTime
+        ? typeof event.endTime === 'string'
+          ? event.endTime
+          : event.endTime.toString().substring(0, 5)
+        : null
+
+      const startTime = allDay ? null : (updateCalendarEventDto.startTime ?? eventStartTimeStr)
+      const endTime = allDay ? null : (updateCalendarEventDto.endTime ?? eventEndTimeStr)
 
       // Validate time range if times are provided and not all day
       if (!allDay && startTime && endTime) {
-        const startDate = updateCalendarEventDto.startDate 
-          ? new Date(updateCalendarEventDto.startDate) 
-          : new Date(event.startDate);
-        const endDate = updateCalendarEventDto.endDate 
-          ? new Date(updateCalendarEventDto.endDate) 
-          : new Date(event.endDate);
+        const startDate = updateCalendarEventDto.startDate
+          ? new Date(updateCalendarEventDto.startDate)
+          : new Date(event.startDate)
+        const endDate = updateCalendarEventDto.endDate
+          ? new Date(updateCalendarEventDto.endDate)
+          : new Date(event.endDate)
 
         if (startDate.toDateString() === endDate.toDateString()) {
-          const [startHour, startMin] = startTime.split(':').map(Number);
-          const [endHour, endMin] = endTime.split(':').map(Number);
-          const startMinutes = startHour * 60 + startMin;
-          const endMinutes = endHour * 60 + endMin;
+          const [startHour, startMin] = startTime.split(':').map(Number)
+          const [endHour, endMin] = endTime.split(':').map(Number)
+          const startMinutes = startHour * 60 + startMin
+          const endMinutes = endHour * 60 + endMin
 
           if (endMinutes <= startMinutes) {
-            throw new BadRequestException('End time must be after start time for same-day events');
+            throw new BadRequestException('End time must be after start time for same-day events')
           }
         }
       }
 
       await event.update({
         name: updateCalendarEventDto.name ?? event.name,
-        description: updateCalendarEventDto.description !== undefined 
-          ? updateCalendarEventDto.description 
-          : event.description,
+        description:
+          updateCalendarEventDto.description !== undefined
+            ? updateCalendarEventDto.description
+            : event.description,
         startDate: updateCalendarEventDto.startDate ?? event.startDate,
         endDate: updateCalendarEventDto.endDate ?? event.endDate,
         startTime: startTime || null,
         endTime: endTime || null,
         allDay,
-      });
+      })
 
-      return this.toResponseDto(event);
+      return this.toResponseDto(event)
     } catch (error) {
       if (error instanceof NotFoundException || error instanceof BadRequestException) {
-        throw error;
+        throw error
       }
-      this.logger.error('Failed to update calendar event', { id, error });
-      throw error;
+      this.logger.error('Failed to update calendar event', { id, error })
+      throw error
     }
   }
 
@@ -231,19 +244,19 @@ export class CalendarEventsService {
    */
   async remove(id: string): Promise<void> {
     try {
-      const event = await this.calendarEventModel.findByPk(id);
+      const event = await this.calendarEventModel.findByPk(id)
 
       if (!event) {
-        throw new NotFoundException(`Calendar event with ID ${id} not found`);
+        throw new NotFoundException(`Calendar event with ID ${id} not found`)
       }
 
-      await event.destroy();
+      await event.destroy()
     } catch (error) {
       if (error instanceof NotFoundException) {
-        throw error;
+        throw error
       }
-      this.logger.error('Failed to delete calendar event', { id, error });
-      throw error;
+      this.logger.error('Failed to delete calendar event', { id, error })
+      throw error
     }
   }
 
@@ -252,31 +265,33 @@ export class CalendarEventsService {
    */
   private toResponseDto(event: CalendarEvent): CalendarEventResponseDto {
     // DATEONLY fields are strings, not Date objects in Sequelize
-    const startDate = typeof event.startDate === 'string' 
-      ? event.startDate 
-      : new Date(event.startDate).toISOString().split('T')[0];
-    const endDate = typeof event.endDate === 'string' 
-      ? event.endDate 
-      : new Date(event.endDate).toISOString().split('T')[0];
+    const startDate =
+      typeof event.startDate === 'string'
+        ? event.startDate
+        : new Date(event.startDate).toISOString().split('T')[0]
+    const endDate =
+      typeof event.endDate === 'string'
+        ? event.endDate
+        : new Date(event.endDate).toISOString().split('T')[0]
 
     // TIME fields can be strings or Date objects
-    let startTime: string | undefined;
+    let startTime: string | undefined
     if (event.startTime) {
-      const timeValue = event.startTime as any;
+      const timeValue = event.startTime as any
       if (typeof timeValue === 'string') {
-        startTime = timeValue.substring(0, 5);
+        startTime = timeValue.substring(0, 5)
       } else {
-        startTime = timeValue.toString().substring(0, 5);
+        startTime = timeValue.toString().substring(0, 5)
       }
     }
 
-    let endTime: string | undefined;
+    let endTime: string | undefined
     if (event.endTime) {
-      const timeValue = event.endTime as any;
+      const timeValue = event.endTime as any
       if (typeof timeValue === 'string') {
-        endTime = timeValue.substring(0, 5);
+        endTime = timeValue.substring(0, 5)
       } else {
-        endTime = timeValue.toString().substring(0, 5);
+        endTime = timeValue.toString().substring(0, 5)
       }
     }
 
@@ -291,7 +306,6 @@ export class CalendarEventsService {
       allDay: event.allDay,
       createdAt: event.createdAt,
       updatedAt: event.updatedAt,
-    };
+    }
   }
 }
-

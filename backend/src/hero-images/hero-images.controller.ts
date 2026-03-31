@@ -15,24 +15,32 @@ import {
   ParseFilePipe,
   MaxFileSizeValidator,
   FileTypeValidator,
-} from '@nestjs/common';
-import { FileInterceptor } from '@nestjs/platform-express';
-import type { HeroImageFile } from './hero-images.service';
-import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiBearerAuth, ApiConsumes, ApiBody } from '@nestjs/swagger';
-import { PinoLogger } from 'nestjs-pino';
-import { HeroImagesService } from './hero-images.service';
-import { UploadHeroImageDto } from './dto/upload-hero-image.dto';
-import { UpdateHeroImageDto } from './dto/update-hero-image.dto';
-import { HeroImageResponseDto } from './dto/hero-image-response.dto';
-import { BulkUpdateCarouselDto } from './dto/bulk-update-carousel.dto';
-import { SignedUrlResponseDto } from '../newsletters/dto/signed-url-response.dto';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { RolesGuard } from '../auth/guards/roles.guard';
-import { UserLookupGuard } from '../auth/guards/user-lookup.guard';
-import { Roles } from '../auth/decorators/roles.decorator';
-import { CurrentUser } from '../auth/decorators/current-user.decorator';
-import { UserRole } from '../database/entities/user.entity';
-import { User } from '../database/entities/user.entity';
+} from '@nestjs/common'
+import { FileInterceptor } from '@nestjs/platform-express'
+import type { HeroImageFile } from './hero-images.service'
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiParam,
+  ApiBearerAuth,
+  ApiConsumes,
+  ApiBody,
+} from '@nestjs/swagger'
+import { PinoLogger } from 'nestjs-pino'
+import { HeroImagesService } from './hero-images.service'
+import { UploadHeroImageDto } from './dto/upload-hero-image.dto'
+import { UpdateHeroImageDto } from './dto/update-hero-image.dto'
+import { HeroImageResponseDto } from './dto/hero-image-response.dto'
+import { BulkUpdateCarouselDto } from './dto/bulk-update-carousel.dto'
+import { SignedUrlResponseDto } from '../newsletters/dto/signed-url-response.dto'
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard'
+import { RolesGuard } from '../auth/guards/roles.guard'
+import { UserLookupGuard } from '../auth/guards/user-lookup.guard'
+import { Roles } from '../auth/decorators/roles.decorator'
+import { CurrentUser } from '../auth/decorators/current-user.decorator'
+import { UserRole } from '../database/entities/user.entity'
+import { User } from '../database/entities/user.entity'
 
 @ApiTags('Hero Images')
 @Controller('hero-images')
@@ -41,7 +49,7 @@ export class HeroImagesController {
     private readonly heroImagesService: HeroImagesService,
     private readonly logger: PinoLogger,
   ) {
-    this.logger.setContext(HeroImagesController.name);
+    this.logger.setContext(HeroImagesController.name)
   }
 
   @Post()
@@ -95,8 +103,8 @@ export class HeroImagesController {
       new ParseFilePipe({
         validators: [
           new MaxFileSizeValidator({ maxSize: 10 * 1024 * 1024 }), // 10MB max
-          new FileTypeValidator({ 
-            fileType: 'image/(jpeg|jpg|png|webp|gif)'
+          new FileTypeValidator({
+            fileType: 'image/(jpeg|jpg|png|webp|gif)',
           }),
         ],
       }),
@@ -106,14 +114,10 @@ export class HeroImagesController {
     @CurrentUser() user: User,
   ): Promise<HeroImageResponseDto> {
     if (!file) {
-      throw new BadRequestException('File is required');
+      throw new BadRequestException('File is required')
     }
 
-    return this.heroImagesService.createWithFile(
-      file,
-      uploadDto.description,
-      user.email,
-    );
+    return this.heroImagesService.createWithFile(file, uploadDto.description, user.email)
   }
 
   @Get('carousel')
@@ -127,7 +131,7 @@ export class HeroImagesController {
     type: [HeroImageResponseDto],
   })
   async findCarouselImages(): Promise<HeroImageResponseDto[]> {
-    return this.heroImagesService.findCarouselImages();
+    return this.heroImagesService.findCarouselImages()
   }
 
   @Get()
@@ -152,7 +156,7 @@ export class HeroImagesController {
     description: 'Forbidden - Editor or Admin role required',
   })
   async findAll(): Promise<HeroImageResponseDto[]> {
-    return this.heroImagesService.findAll();
+    return this.heroImagesService.findAll()
   }
 
   @Patch('carousel')
@@ -183,7 +187,7 @@ export class HeroImagesController {
   async bulkUpdateCarousel(
     @Body() bulkUpdateDto: BulkUpdateCarouselDto,
   ): Promise<HeroImageResponseDto[]> {
-    return this.heroImagesService.bulkUpdateCarousel(bulkUpdateDto.imageIds);
+    return this.heroImagesService.bulkUpdateCarousel(bulkUpdateDto.imageIds)
   }
 
   @Get(':id/signed-url')
@@ -205,15 +209,13 @@ export class HeroImagesController {
     status: 404,
     description: 'Hero image not found or does not have a file',
   })
-  async getSignedUrl(
-    @Param('id') id: string,
-  ): Promise<SignedUrlResponseDto> {
-    const expirationMinutes = 60; // 1 hour default
-    const url = await this.heroImagesService.getSignedUrl(id, expirationMinutes);
+  async getSignedUrl(@Param('id') id: string): Promise<SignedUrlResponseDto> {
+    const expirationMinutes = 60 // 1 hour default
+    const url = await this.heroImagesService.getSignedUrl(id, expirationMinutes)
     return {
       url,
       expiresInMinutes: expirationMinutes,
-    };
+    }
   }
 
   @Get(':id')
@@ -236,7 +238,7 @@ export class HeroImagesController {
     description: 'Hero image not found',
   })
   async findOne(@Param('id') id: string): Promise<HeroImageResponseDto> {
-    return this.heroImagesService.findOne(id);
+    return this.heroImagesService.findOne(id)
   }
 
   @Patch(':id')
@@ -277,7 +279,7 @@ export class HeroImagesController {
     @Param('id') id: string,
     @Body() updateDto: UpdateHeroImageDto,
   ): Promise<HeroImageResponseDto> {
-    return this.heroImagesService.update(id, updateDto);
+    return this.heroImagesService.update(id, updateDto)
   }
 
   @Post('bulk-delete')
@@ -320,9 +322,9 @@ export class HeroImagesController {
   })
   async removeMany(@Body('ids') ids: string[]): Promise<void> {
     if (!ids || !Array.isArray(ids) || ids.length === 0) {
-      throw new BadRequestException('ids array is required and must not be empty');
+      throw new BadRequestException('ids array is required and must not be empty')
     }
-    return this.heroImagesService.removeMany(ids);
+    return this.heroImagesService.removeMany(ids)
   }
 
   @Delete(':id')
@@ -356,7 +358,6 @@ export class HeroImagesController {
     description: 'Hero image not found',
   })
   async remove(@Param('id') id: string): Promise<void> {
-    return this.heroImagesService.remove(id);
+    return this.heroImagesService.remove(id)
   }
 }
-

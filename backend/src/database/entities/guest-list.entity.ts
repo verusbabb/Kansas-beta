@@ -1,6 +1,6 @@
-import { Table, Column, DataType, PrimaryKey, Default } from 'sequelize-typescript';
-import { BaseEntity } from './base.entity';
-import { v4 as uuidv4 } from 'uuid';
+import { Table, Column, DataType, PrimaryKey, Default } from 'sequelize-typescript'
+import { BaseEntity } from './base.entity'
+import { v4 as uuidv4 } from 'uuid'
 
 /**
  * Guest List entity
@@ -15,19 +15,18 @@ export class GuestList extends BaseEntity {
   @PrimaryKey
   @Default(() => uuidv4())
   @Column(DataType.UUID)
-  id!: string;
+  id!: string
 
   @Column({
     type: DataType.STRING,
     allowNull: false,
   })
-  name!: string;
+  name!: string
 
   @Column({
     type: DataType.BOOLEAN,
     defaultValue: true,
     allowNull: false,
   })
-  active!: boolean;
+  active!: boolean
 }
-

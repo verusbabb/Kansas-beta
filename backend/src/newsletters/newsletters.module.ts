@@ -1,11 +1,11 @@
-import { Module } from '@nestjs/common';
-import { SequelizeModule } from '@nestjs/sequelize';
-import { NewslettersController } from './newsletters.controller';
-import { NewslettersService } from './newsletters.service';
-import { Newsletter } from '../database/entities/newsletter.entity';
-import { User } from '../database/entities/user.entity';
-import { AuthModule } from '../auth/auth.module';
-import { StorageModule } from '../storage/storage.module';
+import { Module } from '@nestjs/common'
+import { SequelizeModule } from '@nestjs/sequelize'
+import { NewslettersController } from './newsletters.controller'
+import { NewslettersService } from './newsletters.service'
+import { Newsletter } from '../database/entities/newsletter.entity'
+import { User } from '../database/entities/user.entity'
+import { AuthModule } from '../auth/auth.module'
+import { StorageModule } from '../storage/storage.module'
 
 @Module({
   imports: [
@@ -18,4 +18,3 @@ import { StorageModule } from '../storage/storage.module';
   exports: [NewslettersService],
 })
 export class NewslettersModule {}
-

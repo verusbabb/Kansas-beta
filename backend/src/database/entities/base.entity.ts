@@ -1,9 +1,5 @@
-import {
-  CreatedAt,
-  UpdatedAt,
-  DeletedAt,
-} from 'sequelize-typescript';
-import { Model } from 'sequelize-typescript';
+import { CreatedAt, UpdatedAt, DeletedAt } from 'sequelize-typescript'
+import { Model } from 'sequelize-typescript'
 
 /**
  * Base entity with common fields for all models
@@ -11,12 +7,11 @@ import { Model } from 'sequelize-typescript';
  */
 export abstract class BaseEntity extends Model {
   @CreatedAt
-  createdAt!: Date;
+  createdAt!: Date
 
   @UpdatedAt
-  updatedAt!: Date;
+  updatedAt!: Date
 
   @DeletedAt
-  deletedAt?: Date;
+  deletedAt?: Date
 }
-

@@ -54,4 +54,4 @@ export const US_STATE_CODES: string[] = [
   'WI',
   'WY',
   'DC',
-];
+]

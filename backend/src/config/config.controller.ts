@@ -1,7 +1,7 @@
-import { Controller, Get } from '@nestjs/common';
-import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { ConfigService } from '@nestjs/config';
-import { AppConfig } from './configuration';
+import { Controller, Get } from '@nestjs/common'
+import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger'
+import { ConfigService } from '@nestjs/config'
+import { AppConfig } from './configuration'
 
 /**
  * Public configuration endpoint for frontend
@@ -15,7 +15,8 @@ export class ConfigController {
   @Get()
   @ApiOperation({
     summary: 'Get public configuration',
-    description: 'Returns non-sensitive configuration for the frontend (API URLs, feature flags, etc.)',
+    description:
+      'Returns non-sensitive configuration for the frontend (API URLs, feature flags, etc.)',
   })
   @ApiResponse({
     status: 200,
@@ -31,7 +32,7 @@ export class ConfigController {
     },
   })
   getPublicConfig() {
-    const config = this.configService.get<AppConfig>('config', { infer: true })!;
+    const config = this.configService.get<AppConfig>('config', { infer: true })!
 
     // Only return non-sensitive configuration
     return {
@@ -40,7 +41,6 @@ export class ConfigController {
       environment: config.app.env,
       // Add feature flags, public settings, etc. here
       // Never include: secrets, API keys, database info, etc.
-    };
+    }
   }
 }
-

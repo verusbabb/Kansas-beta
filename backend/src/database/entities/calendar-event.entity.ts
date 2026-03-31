@@ -1,6 +1,6 @@
-import { Table, Column, DataType, PrimaryKey, Default, Index } from 'sequelize-typescript';
-import { BaseEntity } from './base.entity';
-import { v4 as uuidv4 } from 'uuid';
+import { Table, Column, DataType, PrimaryKey, Default, Index } from 'sequelize-typescript'
+import { BaseEntity } from './base.entity'
+import { v4 as uuidv4 } from 'uuid'
 
 /**
  * Calendar Event entity
@@ -15,51 +15,50 @@ export class CalendarEvent extends BaseEntity {
   @PrimaryKey
   @Default(() => uuidv4())
   @Column(DataType.UUID)
-  id!: string;
+  id!: string
 
   @Column({
     type: DataType.STRING(255),
     allowNull: false,
   })
-  name!: string;
+  name!: string
 
   @Column({
     type: DataType.TEXT,
     allowNull: true,
   })
-  description?: string;
+  description?: string
 
   @Index
   @Column({
     type: DataType.DATEONLY,
     allowNull: false,
   })
-  startDate!: Date;
+  startDate!: Date
 
   @Index
   @Column({
     type: DataType.DATEONLY,
     allowNull: false,
   })
-  endDate!: Date;
+  endDate!: Date
 
   @Column({
     type: DataType.TIME,
     allowNull: true,
   })
-  startTime?: Date;
+  startTime?: Date
 
   @Column({
     type: DataType.TIME,
     allowNull: true,
   })
-  endTime?: Date;
+  endTime?: Date
 
   @Column({
     type: DataType.BOOLEAN,
     allowNull: false,
     defaultValue: false,
   })
-  allDay!: boolean;
+  allDay!: boolean
 }
-

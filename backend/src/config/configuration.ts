@@ -1,41 +1,41 @@
-import { registerAs } from '@nestjs/config';
-import { EnvironmentVariables, Environment } from './config.schema';
+import { registerAs } from '@nestjs/config'
+import { EnvironmentVariables, Environment } from './config.schema'
 
 export interface AppConfig {
   app: {
-    env: Environment;
-    port: number;
-    name: string;
-  };
+    env: Environment
+    port: number
+    name: string
+  }
   frontend: {
-    url: string;
-  };
+    url: string
+  }
   database: {
-    host?: string;
-    port?: number;
-    name?: string;
-    user?: string;
-    password?: string;
-  };
+    host?: string
+    port?: number
+    name?: string
+    user?: string
+    password?: string
+  }
   jwt: {
-    secret?: string;
-    expiresIn?: string;
-  };
+    secret?: string
+    expiresIn?: string
+  }
   gcp: {
-    projectId?: string;
-    secretManagerEnabled: boolean;
+    projectId?: string
+    secretManagerEnabled: boolean
     storage?: {
-      bucketName?: string;
-    };
-  };
+      bucketName?: string
+    }
+  }
   auth0: {
-    domain?: string;
-    audience?: string;
-  };
+    domain?: string
+    audience?: string
+  }
 }
 
 export default registerAs('config', (): AppConfig => {
-  const env = process.env as unknown as EnvironmentVariables;
+  const env = process.env as unknown as EnvironmentVariables
 
   return {
     app: {
@@ -68,6 +68,5 @@ export default registerAs('config', (): AppConfig => {
       domain: env.AUTH0_DOMAIN,
       audience: env.AUTH0_AUDIENCE,
     },
-  };
-});
-
+  }
+})

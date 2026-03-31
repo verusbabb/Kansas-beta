@@ -1,6 +1,6 @@
-import { Table, Column, DataType, PrimaryKey, Default, Index, Unique } from 'sequelize-typescript';
-import { BaseEntity } from './base.entity';
-import { v4 as uuidv4 } from 'uuid';
+import { Table, Column, DataType, PrimaryKey, Default, Index, Unique } from 'sequelize-typescript'
+import { BaseEntity } from './base.entity'
+import { v4 as uuidv4 } from 'uuid'
 
 /**
  * Chapter directory person (member and/or parent).
@@ -15,43 +15,43 @@ export class Person extends BaseEntity {
   @PrimaryKey
   @Default(() => uuidv4())
   @Column(DataType.UUID)
-  id!: string;
+  id!: string
 
   @Column({
     type: DataType.STRING,
     allowNull: false,
   })
-  firstName!: string;
+  firstName!: string
 
   @Column({
     type: DataType.STRING,
     allowNull: false,
   })
-  lastName!: string;
+  lastName!: string
 
   @Column({
     type: DataType.TEXT,
     allowNull: false,
   })
-  addressLine1!: string;
+  addressLine1!: string
 
   @Column({
     type: DataType.STRING(100),
     allowNull: false,
   })
-  city!: string;
+  city!: string
 
   @Column({
     type: DataType.STRING(2),
     allowNull: false,
   })
-  state!: string;
+  state!: string
 
   @Column({
     type: DataType.STRING(20),
     allowNull: false,
   })
-  zip!: string;
+  zip!: string
 
   @Unique
   @Index
@@ -62,13 +62,13 @@ export class Person extends BaseEntity {
       isEmail: { msg: 'Email must be a valid email address' },
     },
   })
-  email!: string;
+  email!: string
 
   @Column({
     type: DataType.STRING,
     allowNull: true,
   })
-  phone?: string | null;
+  phone?: string | null
 
   /** Graduation / pledge class year; only meaningful for members */
   @Index
@@ -80,19 +80,19 @@ export class Person extends BaseEntity {
       max: 2100,
     },
   })
-  pledgeClassYear?: number | null;
+  pledgeClassYear?: number | null
 
   @Column({
     type: DataType.BOOLEAN,
     allowNull: false,
     defaultValue: false,
   })
-  isMember!: boolean;
+  isMember!: boolean
 
   @Column({
     type: DataType.BOOLEAN,
     allowNull: false,
     defaultValue: false,
   })
-  isParent!: boolean;
+  isParent!: boolean
 }

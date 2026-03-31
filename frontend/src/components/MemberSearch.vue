@@ -4,13 +4,20 @@
     <template #title>
       <div class="flex items-center gap-2">
         <i class="pi pi-search text-[#6F8FAF]"></i>
-        <span>Member Search</span>
+        <span>{{ variant === 'admin' ? 'Directory (manage)' : 'Member directory' }}</span>
       </div>
     </template>
     <template #content>
       <div class="flex flex-col gap-6">
         <div class="text-surface-600">
-          Browse everyone in the directory. Use search or class year to narrow the list.
+          <template v-if="variant === 'public'">
+            Browse everyone in the directory. Expand a row to see legacy and family connections. Editors
+            can manage entries in the Admin panel.
+          </template>
+          <template v-else>
+            Search and update directory entries. Expand a row for connections; use <strong>Edit</strong> to
+            change profile fields. To add someone new, open <strong>Add directory person</strong> above.
+          </template>
         </div>
 
         <div v-if="peopleStore.loading" class="text-center py-12">
@@ -23,8 +30,9 @@
         </Message>
 
         <template v-else>
-          <div class="flex flex-col md:flex-row md:items-center gap-4">
+          <div class="flex flex-col lg:flex-row lg:items-end gap-4">
             <div class="flex-1 min-w-0">
+              <label class="block text-xs font-medium text-surface-600 mb-1.5">Search</label>
               <InputText
                 v-model="searchQuery"
                 placeholder="Search by name, email, phone, address, or city…"
@@ -32,22 +40,51 @@
                 size="small"
               />
             </div>
-            <div class="w-full md:w-52 shrink-0">
-              <Select
-                v-model="yearFilter"
-                :options="yearOptions"
-                optionLabel="label"
-                optionValue="value"
-                placeholder="Class year"
-                showClear
-                size="small"
-                class="w-full"
-              />
+            <div class="flex flex-col sm:flex-row flex-wrap gap-4 shrink-0">
+              <div class="w-full sm:w-48">
+                <label class="block text-xs font-medium text-surface-600 mb-1.5">Directory role</label>
+                <Select
+                  v-model="roleFilter"
+                  :options="roleFilterOptions"
+                  optionLabel="label"
+                  optionValue="value"
+                  size="small"
+                  class="w-full"
+                />
+              </div>
+              <div class="w-full sm:w-40">
+                <label class="block text-xs font-medium text-surface-600 mb-1.5">Class year</label>
+                <Select
+                  v-model="yearFilter"
+                  :options="yearOptions"
+                  optionLabel="label"
+                  optionValue="value"
+                  placeholder="Any year"
+                  showClear
+                  size="small"
+                  class="w-full"
+                />
+              </div>
+              <div class="w-full sm:w-auto">
+                <label
+                  for="legacy-members-only-filter"
+                  class="block text-xs font-medium text-surface-600 mb-1.5 cursor-pointer select-none"
+                >
+                  Legacy Members Only
+                </label>
+                <div class="flex items-center min-h-[2.125rem]">
+                  <InputSwitch
+                    v-model="showLegacyTiesOnly"
+                    inputId="legacy-members-only-filter"
+                  />
+                </div>
+              </div>
             </div>
           </div>
 
           <div v-if="filteredPeople.length > 0" class="overflow-x-auto -mx-1">
             <DataTable
+              v-model:expandedRows="expandedRows"
               :value="filteredPeople"
               dataKey="id"
               stripedRows
@@ -60,9 +97,10 @@
               paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink RowsPerPageDropdown"
               class="text-sm"
               :pt="{
-                table: { class: canEdit ? 'min-w-[920px]' : 'min-w-[860px]' },
+                table: { class: tableMinWidthClass },
               }"
             >
+              <Column expander class="w-10" />
               <Column field="lastName" header="Name" sortable>
                 <template #body="{ data }">
                   <span class="font-medium text-surface-900">
@@ -82,13 +120,12 @@
               </Column>
               <Column field="phone" header="Phone" sortable>
                 <template #body="{ data }">
-                  <a
+                  <span
                     v-if="data.phone && String(data.phone).trim()"
-                    :href="`tel:${String(data.phone).replace(/\s/g, '')}`"
-                    class="text-[#6F8FAF] hover:underline whitespace-nowrap"
+                    class="text-surface-800 whitespace-nowrap"
                   >
                     {{ data.phone }}
-                  </a>
+                  </span>
                   <span v-else class="text-surface-400">—</span>
                 </template>
               </Column>
@@ -97,35 +134,7 @@
                   <span class="text-surface-700 whitespace-normal">{{ formatAddress(data) }}</span>
                 </template>
               </Column>
-              <Column
-                field="isMember"
-                header="Member"
-                sortable
-                dataType="boolean"
-                class="whitespace-nowrap w-[1%] text-center"
-                headerClass="!text-center"
-              >
-                <template #body="{ data }">
-                  <span :class="data.isMember ? 'text-surface-800' : 'text-surface-400'">
-                    {{ data.isMember ? 'Yes' : 'No' }}
-                  </span>
-                </template>
-              </Column>
-              <Column
-                field="isParent"
-                header="Parent"
-                sortable
-                dataType="boolean"
-                class="whitespace-nowrap w-[1%] text-center"
-                headerClass="!text-center"
-              >
-                <template #body="{ data }">
-                  <span :class="data.isParent ? 'text-surface-800' : 'text-surface-400'">
-                    {{ data.isParent ? 'Yes' : 'No' }}
-                  </span>
-                </template>
-              </Column>
-              <Column field="pledgeClassYear" header="Year" sortable>
+              <Column field="pledgeClassYear" header="PC Class" sortable>
                 <template #body="{ data }">
                   <span v-if="data.pledgeClassYear != null" class="text-surface-800">
                     {{ data.pledgeClassYear }}
@@ -147,6 +156,123 @@
                   />
                 </template>
               </Column>
+              <template #expansion="{ data: row }">
+                <div
+                  class="px-4 py-3 ml-2 border-l-4 border-[#6F8FAF] bg-surface-50 rounded-r-md text-sm"
+                >
+                  <div class="font-bold text-surface-900 mb-2 tracking-tight">
+                    Legacy &amp; family connections
+                  </div>
+                  <div
+                    v-if="rowRelState[row.id]?.status === 'loading'"
+                    class="pl-5 text-surface-600 flex items-center gap-2 text-sm"
+                  >
+                    <i class="pi pi-spin pi-spinner"></i>
+                    Loading…
+                  </div>
+                  <p v-else-if="rowRelState[row.id]?.error" class="text-red-600 m-0 pl-5 text-sm">
+                    {{ rowRelState[row.id]?.error }}
+                  </p>
+                  <template v-else>
+                    <ul
+                      v-if="(rowRelState[row.id]?.list?.length ?? 0) > 0"
+                      class="m-0 p-0 pl-5 list-disc space-y-0 marker:text-[#6F8FAF] text-surface-800 text-sm"
+                    >
+                      <li
+                        v-for="rel in rowRelState[row.id]!.list"
+                        :key="rel.id"
+                        class="m-0 py-0 leading-tight"
+                      >
+                        <div class="flex items-start gap-2 justify-between -ml-0.5">
+                          <span class="min-w-0 flex-1 pr-2 leading-tight">{{
+                            personRelationshipPhrase(rel, row)
+                          }}</span>
+                          <Button
+                            v-if="canEdit"
+                            type="button"
+                            icon="pi pi-times"
+                            severity="danger"
+                            rounded
+                            text
+                            size="small"
+                            class="shrink-0 !p-0 !min-h-0 !h-7 w-7"
+                            v-tooltip.top="'Remove connection'"
+                            :disabled="!!removingRelKey"
+                            :loading="removingRelKey === relRemoveKey(row.id, rel.id)"
+                            @click="confirmRemoveRowRelationship(row, rel)"
+                          />
+                        </div>
+                      </li>
+                    </ul>
+                    <p v-else class="text-surface-600 m-0 pl-5 text-sm">No connections listed yet.</p>
+
+                    <div
+                      v-if="canEdit"
+                      class="mt-4 pt-3 border-t border-surface-200 border-dashed"
+                    >
+                      <Button
+                        type="button"
+                        :icon="rowExpandAddOpen[row.id] ? 'pi pi-minus' : 'pi pi-plus'"
+                        :label="rowExpandAddOpen[row.id] ? 'Hide add form' : 'Add connection'"
+                        size="small"
+                        severity="secondary"
+                        outlined
+                        :disabled="!!rowExpandAddSaving[row.id]"
+                        @click="toggleRowExpandAdd(row.id)"
+                      />
+                      <div
+                        v-if="rowExpandAddOpen[row.id]"
+                        class="mt-2 grid grid-cols-1 md:grid-cols-2 gap-3 md:items-end"
+                      >
+                          <div class="flex flex-col gap-1 min-w-0">
+                            <label class="text-xs font-medium text-surface-600">Other person</label>
+                            <Select
+                              :modelValue="rowExpandAddForm[row.id]?.otherPersonId ?? ''"
+                              :options="rowCounterpartSelectOptions(row.id)"
+                              optionLabel="label"
+                              optionValue="value"
+                              placeholder="Select person"
+                              filter
+                              filterPlaceholder="Search name or email"
+                              size="small"
+                              class="w-full"
+                              :disabled="!!rowExpandAddSaving[row.id]"
+                              @update:modelValue="(v: string) => setRowExpandAddOther(row.id, v)"
+                            />
+                          </div>
+                          <div class="flex flex-col gap-1 min-w-0">
+                            <label class="text-xs font-medium text-surface-600">Relationship</label>
+                            <Select
+                              :modelValue="rowExpandAddForm[row.id]?.relationshipType ?? null"
+                              :options="PERSON_RELATIONSHIP_TYPE_OPTIONS"
+                              optionLabel="label"
+                              optionValue="value"
+                              :placeholder="rowExpandRelationshipPlaceholder(row)"
+                              showClear
+                              filter
+                              size="small"
+                              class="w-full"
+                              :disabled="!!rowExpandAddSaving[row.id]"
+                              @update:modelValue="(v: string | null) => setRowExpandAddType(row.id, v)"
+                            />
+                          </div>
+                          <div class="md:col-span-2 flex justify-end">
+                            <Button
+                              type="button"
+                              label="Add link"
+                              icon="pi pi-check"
+                              size="small"
+                              class="bg-[#6F8FAF] hover:bg-[#5A7A9F]"
+                              :loading="!!rowExpandAddSaving[row.id]"
+                              :disabled="!rowExpandAddForm[row.id]?.otherPersonId || !!rowExpandAddSaving[row.id]"
+                              @click="submitRowExpandAdd(row)"
+                            />
+                          </div>
+                        </div>
+                    </div>
+                  </template>
+                </div>
+              </template>
             </DataTable>
           </div>
 
@@ -156,7 +282,9 @@
           >
             <i class="pi pi-filter-slash text-6xl text-surface-400 mb-4"></i>
             <h3 class="text-2xl font-bold text-surface-700 mb-2">No matches</h3>
-            <p class="text-surface-600">Try a different search or clear the class year filter.</p>
+            <p class="text-surface-600">
+              Try a different search, or turn off filters (role, class year, Legacy Members Only).
+            </p>
           </div>
 
           <div v-else class="text-center py-16">
@@ -303,7 +431,7 @@
 
       <div v-if="showEditPledgeField" class="flex flex-col gap-2 md:max-w-xs">
         <label for="edit-person-pledge" class="font-semibold text-surface-700">
-          Pledge / graduation year
+          Pledge Class
         </label>
         <InputNumber
           id="edit-person-pledge"
@@ -359,6 +487,7 @@ import Card from 'primevue/card'
 import InputText from 'primevue/inputtext'
 import InputNumber from 'primevue/inputnumber'
 import Select from 'primevue/select'
+import InputSwitch from 'primevue/inputswitch'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
 import Message from 'primevue/message'
@@ -371,17 +500,266 @@ import { isAxiosRejection } from '@/services/api'
 import { usePeopleStore } from '@/stores/people'
 import { useAuthStore } from '@/stores/auth'
 import type { PersonResponse, PersonKind, UpdatePersonPayload } from '@/types/person'
+import type { PersonRelationshipResponse } from '@/types/personRelationship'
+import { usePersonRelationshipsStore } from '@/stores/personRelationships'
+import { personRelationshipPhrase } from '@/utils/personRelationshipPhrase'
+import { PERSON_RELATIONSHIP_TYPE_OPTIONS } from '@/constants/relationshipTypes'
 import { US_STATE_CODE_SET, US_STATE_OPTIONS, normalizeUsStateForSelect } from '@/constants/usStates'
+
+const props = withDefaults(
+  defineProps<{
+    /** `public` = view-only table (Members page). `admin` = editors can edit rows. */
+    variant?: 'public' | 'admin'
+  }>(),
+  { variant: 'public' },
+)
 
 const toast = useToast()
 const confirm = useConfirm()
 const peopleStore = usePeopleStore()
 const authStore = useAuthStore()
+const personRelStore = usePersonRelationshipsStore()
+
+/** DataTable row expansion: keyed by person id when `dataKey` is set */
+const expandedRows = ref<Record<string, boolean>>({})
+
+type RowRelEntry = {
+  status: 'loading' | 'loaded'
+  list: PersonRelationshipResponse[]
+  error: string | null
+}
+
+const rowRelState = ref<Record<string, RowRelEntry>>({})
+
+async function ensureRowRelationshipsLoaded(personId: string) {
+  const cur = rowRelState.value[personId]
+  if (cur?.status === 'loading' || cur?.status === 'loaded') return
+  rowRelState.value = {
+    ...rowRelState.value,
+    [personId]: { status: 'loading', list: [], error: null },
+  }
+  try {
+    const list = await personRelStore.fetchForPerson(personId)
+    rowRelState.value = {
+      ...rowRelState.value,
+      [personId]: { status: 'loaded', list, error: null },
+    }
+  } catch {
+    rowRelState.value = {
+      ...rowRelState.value,
+      [personId]: {
+        status: 'loaded',
+        list: [],
+        error: 'Could not load connections.',
+      },
+    }
+  }
+}
+
+/** After mutations, sync people from the server and reload connections for any expanded rows. */
+async function refreshDirectoryAndConnections() {
+  await peopleStore.fetchPeople({ silent: true })
+  const expanded = expandedRows.value
+  rowRelState.value = {}
+  const expandedIds = Object.keys(expanded).filter((id) => expanded[id])
+  await Promise.all(expandedIds.map((id) => ensureRowRelationshipsLoaded(id)))
+}
+
+const removingRelKey = ref<string | null>(null)
+
+function relRemoveKey(anchorId: string, relId: string) {
+  return `${anchorId}:${relId}`
+}
+
+function confirmRemoveRowRelationship(anchor: PersonResponse, rel: PersonRelationshipResponse) {
+  const cn = `${rel.counterpart.firstName} ${rel.counterpart.lastName}`.trim()
+  confirm.require({
+    message: `Remove the connection with ${cn}?`,
+    header: 'Remove connection',
+    icon: 'pi pi-exclamation-triangle',
+    rejectClass: 'p-button-secondary p-button-outlined',
+    rejectLabel: 'Cancel',
+    acceptLabel: 'Remove',
+    acceptClass: 'p-button-danger',
+    accept: () => {
+      void runRemoveRowRelationship(anchor.id, rel.id)
+    },
+  })
+}
+
+async function runRemoveRowRelationship(anchorId: string, relationshipId: string) {
+  const key = relRemoveKey(anchorId, relationshipId)
+  removingRelKey.value = key
+  try {
+    await personRelStore.remove(anchorId, relationshipId)
+    toast.add({
+      severity: 'success',
+      summary: 'Removed',
+      detail: 'Connection removed.',
+      life: 3000,
+    })
+    await refreshDirectoryAndConnections()
+  } catch (err: unknown) {
+    if (!isAxiosRejection(err)) {
+      toast.add({
+        severity: 'error',
+        summary: 'Error',
+        detail: 'Could not remove.',
+        life: 5000,
+      })
+    }
+  } finally {
+    removingRelKey.value = null
+  }
+}
+
+const rowExpandAddOpen = ref<Record<string, boolean>>({})
+const rowExpandAddForm = ref<
+  Record<string, { otherPersonId: string; relationshipType: string | null }>
+>({})
+const rowExpandAddSaving = ref<Record<string, boolean>>({})
+
+function ensureRowExpandFormRow(anchorId: string) {
+  if (!rowExpandAddForm.value[anchorId]) {
+    rowExpandAddForm.value = {
+      ...rowExpandAddForm.value,
+      [anchorId]: { otherPersonId: '', relationshipType: null },
+    }
+  }
+}
+
+function toggleRowExpandAdd(anchorId: string) {
+  ensureRowExpandFormRow(anchorId)
+  rowExpandAddOpen.value = {
+    ...rowExpandAddOpen.value,
+    [anchorId]: !rowExpandAddOpen.value[anchorId],
+  }
+}
+
+function setRowExpandAddOther(anchorId: string, v: string) {
+  ensureRowExpandFormRow(anchorId)
+  rowExpandAddForm.value = {
+    ...rowExpandAddForm.value,
+    [anchorId]: {
+      ...rowExpandAddForm.value[anchorId],
+      otherPersonId: v,
+    },
+  }
+}
+
+function setRowExpandAddType(anchorId: string, v: string | null) {
+  ensureRowExpandFormRow(anchorId)
+  rowExpandAddForm.value = {
+    ...rowExpandAddForm.value,
+    [anchorId]: {
+      ...rowExpandAddForm.value[anchorId],
+      relationshipType: v,
+    },
+  }
+}
+
+function rowCounterpartSelectOptions(anchorId: string) {
+  return peopleStore.list
+    .filter((p) => p.id !== anchorId)
+    .map((p) => ({
+      value: p.id,
+      label: `${p.firstName} ${p.lastName} · ${p.email}`,
+    }))
+    .sort((a, b) => a.label.localeCompare(b.label))
+}
+
+function rowExpandRelationshipPlaceholder(row: PersonResponse) {
+  const f = rowExpandAddForm.value[row.id]
+  const otherId = f?.otherPersonId
+  const other = otherId ? peopleStore.list.find((p) => p.id === otherId) : null
+  const on = other ? `${other.firstName} ${other.lastName}` : 'They'
+  return `${on} is ${row.firstName}'s… (e.g. father)`
+}
+
+async function submitRowExpandAdd(anchor: PersonResponse) {
+  const id = anchor.id
+  const form = rowExpandAddForm.value[id]
+  if (!form?.otherPersonId) {
+    toast.add({
+      severity: 'warn',
+      summary: 'Select a person',
+      detail: 'Choose the other person first.',
+      life: 2800,
+    })
+    return
+  }
+  rowExpandAddSaving.value = { ...rowExpandAddSaving.value, [id]: true }
+  try {
+    await personRelStore.create(id, {
+      otherPersonId: form.otherPersonId,
+      direction: 'other_is_from',
+      relationshipType: form.relationshipType || null,
+    })
+    toast.add({
+      severity: 'success',
+      summary: 'Added',
+      detail: 'Connection added.',
+      life: 3000,
+    })
+    rowExpandAddForm.value = {
+      ...rowExpandAddForm.value,
+      [id]: { otherPersonId: '', relationshipType: null },
+    }
+    rowExpandAddOpen.value = { ...rowExpandAddOpen.value, [id]: false }
+    await refreshDirectoryAndConnections()
+  } catch (err: unknown) {
+    if (!isAxiosRejection(err)) {
+      toast.add({
+        severity: 'error',
+        summary: 'Error',
+        detail: 'Could not add connection (it may already exist).',
+        life: 5000,
+      })
+    }
+  } finally {
+    rowExpandAddSaving.value = { ...rowExpandAddSaving.value, [id]: false }
+  }
+}
+
+watch(
+  expandedRows,
+  (rows) => {
+    if (!rows || typeof rows !== 'object') return
+    for (const personId of Object.keys(rows)) {
+      if (rows[personId]) void ensureRowRelationshipsLoaded(personId)
+    }
+  },
+  { deep: true },
+)
 
 const searchQuery = ref('')
 const yearFilter = ref<number | null>(null)
 
-const canEdit = computed(() => authStore.isEditor)
+/** Everyone | listed as member | listed as parent (matches directory flags; “both” appears in both). */
+type DirectoryRoleFilter = 'all' | 'members' | 'parents'
+const roleFilter = ref<DirectoryRoleFilter>('all')
+
+const roleFilterOptions: { label: string; value: DirectoryRoleFilter }[] = [
+  { label: 'Everyone', value: 'all' },
+  { label: 'Members only', value: 'members' },
+  { label: 'Parents only', value: 'parents' },
+]
+
+/** “Legacy Members Only” filter: member↔member directory links only. */
+const showLegacyTiesOnly = ref(false)
+
+watch([searchQuery, yearFilter, roleFilter, showLegacyTiesOnly], () => {
+  expandedRows.value = {}
+  rowExpandAddOpen.value = {}
+  rowExpandAddForm.value = {}
+})
+
+const canEdit = computed(() => props.variant === 'admin' && authStore.isEditor)
+
+const tableMinWidthClass = computed(() => {
+  if (props.variant === 'admin' && canEdit.value) return 'min-w-[860px]'
+  return 'min-w-[780px]'
+})
 
 const kindOptions = [
   { label: 'Member', value: 'member' as PersonKind },
@@ -467,6 +845,14 @@ function matchesSearch(person: PersonResponse, q: string): boolean {
 
 const filteredPeople = computed(() => {
   let rows = peopleStore.list
+  if (roleFilter.value === 'members') {
+    rows = rows.filter((p) => p.isMember)
+  } else if (roleFilter.value === 'parents') {
+    rows = rows.filter((p) => p.isParent)
+  }
+  if (showLegacyTiesOnly.value) {
+    rows = rows.filter((p) => p.hasLegacyMemberLink)
+  }
   if (yearFilter.value != null) {
     rows = rows.filter((p) => p.pledgeClassYear === yearFilter.value)
   }
@@ -611,6 +997,7 @@ async function submitEdit() {
     })
     editDialogVisible.value = false
     resetEditForm()
+    await refreshDirectoryAndConnections()
   } catch (err: unknown) {
     // Global api interceptor already toasts for Axios errors; avoid duplicate error toasts.
     if (!isAxiosRejection(err)) {
@@ -655,6 +1042,10 @@ async function runDeletePersonAfterConfirm(personId: string, displayName: string
     })
     editDialogVisible.value = false
     resetEditForm()
+    const ex = { ...expandedRows.value }
+    delete ex[personId]
+    expandedRows.value = ex
+    await refreshDirectoryAndConnections()
   } catch (err: unknown) {
     if (import.meta.env.DEV) {
       console.error('Remove directory entry failed:', err)

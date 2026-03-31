@@ -5,14 +5,14 @@
       <div class="max-w-6xl mx-auto text-center">
         <div class="text-4xl md:text-5xl font-bold mb-4">People</div>
         <div class="text-xl md:text-2xl text-gray-300 mb-6">
-          Members, Alumni, Advisors, and Leadership Teams
+          Members, Parents, and Leadership Team
         </div>
         <div class="w-32 h-1 bg-gray-400 mx-auto"></div>
       </div>
     </div>
 
     <!-- Main Content with Side Navigation -->
-    <div class="max-w-7xl mx-auto px-6 py-8">
+    <div class="max-w-[90rem] mx-auto px-6 py-8">
       <div class="flex flex-col lg:flex-row gap-6">
         <!-- Side Navigation -->
         <div class="w-full lg:w-64 flex-shrink-0">
@@ -66,12 +66,12 @@ import MemberSearch from '@/components/MemberSearch.vue'
 const route = useRoute()
 const router = useRouter()
 
-// Initialize activeSection from URL query parameter or default to 'exec-team'
-const validSectionIds = ['exec-team', 'member-search']
+// Initialize activeSection from URL query parameter or default to directory (members & parents)
+const validSectionIds = ['member-search', 'exec-team']
 const sectionFromQuery = route.query.section
 const initialSection = (sectionFromQuery && typeof sectionFromQuery === 'string' && validSectionIds.includes(sectionFromQuery))
   ? sectionFromQuery
-  : 'exec-team'
+  : 'member-search'
 const activeSection = ref(initialSection)
 
 // Function to set active section and update URL
@@ -82,14 +82,14 @@ const setActiveSection = (section: string) => {
 
 const navItems = [
   {
-    id: 'exec-team',
-    label: 'Exec Team',
-    icon: 'pi pi-users'
+    id: 'member-search',
+    label: 'Members and Parents',
+    icon: 'pi pi-search',
   },
   {
-    id: 'member-search',
-    label: 'Members',
-    icon: 'pi pi-search'
-  }
+    id: 'exec-team',
+    label: 'Exec Team',
+    icon: 'pi pi-users',
+  },
 ]
 </script>

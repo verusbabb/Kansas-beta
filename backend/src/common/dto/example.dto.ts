@@ -1,4 +1,4 @@
-import { IsString, IsEmail, IsOptional, MinLength } from 'class-validator';
+import { IsString, IsEmail, IsOptional, MinLength } from 'class-validator'
 
 /**
  * Example DTO demonstrating validation decorators
@@ -7,13 +7,12 @@ import { IsString, IsEmail, IsOptional, MinLength } from 'class-validator';
 export class ExampleDto {
   @IsString()
   @MinLength(3)
-  name: string;
+  name: string
 
   @IsEmail()
-  email: string;
+  email: string
 
   @IsOptional()
   @IsString()
-  description?: string;
+  description?: string
 }
-

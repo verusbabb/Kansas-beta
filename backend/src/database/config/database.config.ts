@@ -3,32 +3,32 @@
  * This file is used by sequelize-cli for migrations and seeders
  * It reads from environment variables (same as NestJS config)
  * In production, loads secrets from GCP Secret Manager
- * 
+ *
  * Note: This file uses CommonJS syntax for sequelize-cli compatibility
  */
 
-const { config: dotenvConfig } = require('dotenv');
+const { config: dotenvConfig } = require('dotenv')
 
 // Load environment variables
-dotenvConfig({ path: ['.env.local', '.env'] });
+dotenvConfig({ path: ['.env.local', '.env'] })
 
 // PostgreSQL dialect options type
 interface PostgresDialectOptions {
-  socketPath?: string;
-  [key: string]: unknown;
+  socketPath?: string
+  [key: string]: unknown
 }
 
 // Sequelize config interface (for sequelize-cli)
 interface SequelizeConfig {
-  username?: string;
-  password?: string;
-  database?: string;
-  host?: string;
-  port?: number;
-  dialect: string;
-  logging?: boolean | ((sql: string) => void);
-  dialectOptions?: PostgresDialectOptions;
-  [key: string]: unknown;
+  username?: string
+  password?: string
+  database?: string
+  host?: string
+  port?: number
+  dialect: string
+  logging?: boolean | ((sql: string) => void)
+  dialectOptions?: PostgresDialectOptions
+  [key: string]: unknown
 }
 
 const databaseConfig: { [key: string]: SequelizeConfig } = {
@@ -65,7 +65,7 @@ const databaseConfig: { [key: string]: SequelizeConfig } = {
     dialect: 'postgres',
     logging: false,
   },
-};
+}
 
 // Export for sequelize-cli (CommonJS)
-module.exports = databaseConfig;
+module.exports = databaseConfig

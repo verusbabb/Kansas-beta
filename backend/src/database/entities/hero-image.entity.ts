@@ -1,6 +1,6 @@
-import { Table, Column, DataType, PrimaryKey, Default, Index } from 'sequelize-typescript';
-import { BaseEntity } from './base.entity';
-import { v4 as uuidv4 } from 'uuid';
+import { Table, Column, DataType, PrimaryKey, Default, Index } from 'sequelize-typescript'
+import { BaseEntity } from './base.entity'
+import { v4 as uuidv4 } from 'uuid'
 
 /**
  * Hero Image entity
@@ -15,26 +15,26 @@ export class HeroImage extends BaseEntity {
   @PrimaryKey
   @Default(() => uuidv4())
   @Column(DataType.UUID)
-  id!: string;
+  id!: string
 
   @Column({
     type: DataType.TEXT,
     allowNull: false,
   })
-  filePath!: string;
+  filePath!: string
 
   @Column({
     type: DataType.TEXT,
     allowNull: true,
   })
-  description?: string;
+  description?: string
 
   @Index
   @Column({
     type: DataType.STRING(255),
     allowNull: false,
   })
-  uploadedBy!: string;
+  uploadedBy!: string
 
   @Index
   @Column({
@@ -42,6 +42,5 @@ export class HeroImage extends BaseEntity {
     allowNull: false,
     defaultValue: false,
   })
-  isInCarousel!: boolean;
+  isInCarousel!: boolean
 }
-

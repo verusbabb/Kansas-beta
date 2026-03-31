@@ -41,6 +41,8 @@ export interface PersonResponse {
   pledgeClassYear?: number | null
   isMember: boolean
   isParent: boolean
+  /** At least one member↔member relationship (both sides chapter members), not parent-only family links. */
+  hasLegacyMemberLink: boolean
   createdAt: string
   updatedAt: string
 }

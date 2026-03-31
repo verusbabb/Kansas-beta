@@ -1,5 +1,5 @@
-import { IsArray, IsUUID } from 'class-validator';
-import { ApiProperty } from '@nestjs/swagger';
+import { IsArray, IsUUID } from 'class-validator'
+import { ApiProperty } from '@nestjs/swagger'
 
 export class BulkUpdateCarouselDto {
   @ApiProperty({
@@ -9,6 +9,5 @@ export class BulkUpdateCarouselDto {
   })
   @IsArray()
   @IsUUID('4', { each: true, message: 'Each ID must be a valid UUID' })
-  imageIds!: string[];
+  imageIds!: string[]
 }
-

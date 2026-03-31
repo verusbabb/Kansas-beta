@@ -1,6 +1,6 @@
-import { Injectable, ExecutionContext, UnauthorizedException, Logger } from '@nestjs/common';
-import { AuthGuard } from '@nestjs/passport';
-import { Observable } from 'rxjs';
+import { Injectable, ExecutionContext, UnauthorizedException, Logger } from '@nestjs/common'
+import { AuthGuard } from '@nestjs/passport'
+import { Observable } from 'rxjs'
 
 /**
  * JWT Auth Guard
@@ -9,10 +9,10 @@ import { Observable } from 'rxjs';
  */
 @Injectable()
 export class JwtAuthGuard extends AuthGuard('jwt') {
-  private readonly logger = new Logger(JwtAuthGuard.name);
+  private readonly logger = new Logger(JwtAuthGuard.name)
 
   canActivate(context: ExecutionContext): boolean | Promise<boolean> | Observable<boolean> {
-    return super.canActivate(context);
+    return super.canActivate(context)
   }
 
   handleRequest(err: any, user: any, info: any) {
@@ -21,8 +21,8 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
         error: err.message || err,
         errorName: err.name,
         stack: err.stack,
-      });
-      throw err;
+      })
+      throw err
     }
 
     if (!user) {
@@ -30,13 +30,13 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
       this.logger.warn('JWT validation failed', {
         info: info?.message || info,
         infoName: info?.name,
-      });
+      })
       throw new UnauthorizedException(
-        info?.message || 'Invalid or expired token. Please ensure you are using an access token with the correct audience.',
-      );
+        info?.message ||
+          'Invalid or expired token. Please ensure you are using an access token with the correct audience.',
+      )
     }
 
-    return user;
+    return user
   }
 }
-

@@ -10,18 +10,28 @@ export const usePeopleStore = defineStore('people', {
   }),
 
   actions: {
-    async fetchPeople() {
-      this.loading = true
-      this.error = null
+    /** Refetch directory. Use `{ silent: true }` after saves so the table does not swap to the full-page loader. */
+    async fetchPeople(opts?: { silent?: boolean }) {
+      const silent = opts?.silent === true
+      if (!silent) {
+        this.loading = true
+        this.error = null
+      }
       try {
         const { data } = await apiClient.get<PersonResponse[]>('/people')
         this.list = Array.isArray(data) ? data : []
       } catch (err: unknown) {
-        this.error = 'Failed to load directory.'
-        this.list = []
-        console.error('Error fetching people:', err)
+        if (silent) {
+          console.error('Error refreshing directory:', err)
+        } else {
+          this.error = 'Failed to load directory.'
+          this.list = []
+          console.error('Error fetching people:', err)
+        }
       } finally {
-        this.loading = false
+        if (!silent) {
+          this.loading = false
+        }
       }
     },
 

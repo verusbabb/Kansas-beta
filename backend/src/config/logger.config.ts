@@ -1,10 +1,10 @@
-import { Params } from 'nestjs-pino';
-import { ConfigService } from '@nestjs/config';
-import { AppConfig } from './configuration';
+import { Params } from 'nestjs-pino'
+import { ConfigService } from '@nestjs/config'
+import { AppConfig } from './configuration'
 
 export const createLoggerConfig = (configService: ConfigService<AppConfig>): Params => {
-  const config = configService.get<AppConfig>('config', { infer: true })!;
-  
+  const config = configService.get<AppConfig>('config', { infer: true })!
+
   return {
     pinoHttp: {
       level: config.app.env === 'production' ? 'info' : 'debug',
@@ -37,17 +37,16 @@ export const createLoggerConfig = (configService: ConfigService<AppConfig>): Par
       },
       customLogLevel: (req, res, err) => {
         if (res.statusCode >= 400 && res.statusCode < 500) {
-          return 'warn';
+          return 'warn'
         } else if (res.statusCode >= 500 || err) {
-          return 'error';
+          return 'error'
         }
-        return 'info';
+        return 'info'
       },
       // Add request ID for tracing
       genReqId: (req) => {
-        return req.headers['x-request-id'] || req.id;
+        return req.headers['x-request-id'] || req.id
       },
     },
-  };
-};
-
+  }
+}

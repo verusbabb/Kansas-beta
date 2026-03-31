@@ -1,5 +1,5 @@
-import { IsString, IsEnum, IsInt, Min, Max } from 'class-validator';
-import { ApiProperty } from '@nestjs/swagger';
+import { IsString, IsEnum, IsInt, Min, Max } from 'class-validator'
+import { ApiProperty } from '@nestjs/swagger'
 
 export class CreateNewsletterDto {
   @ApiProperty({
@@ -7,7 +7,7 @@ export class CreateNewsletterDto {
     example: 'newsletters/2024/spring/newsletter.pdf',
   })
   @IsString()
-  filePath!: string;
+  filePath!: string
 
   @ApiProperty({
     description: 'Season of the newsletter',
@@ -17,7 +17,7 @@ export class CreateNewsletterDto {
   @IsEnum(['spring', 'summer', 'fall', 'winter'], {
     message: 'Season must be one of: spring, summer, fall, winter',
   })
-  season!: 'spring' | 'summer' | 'fall' | 'winter';
+  season!: 'spring' | 'summer' | 'fall' | 'winter'
 
   @ApiProperty({
     description: 'Year of the newsletter',
@@ -28,6 +28,5 @@ export class CreateNewsletterDto {
   @IsInt({ message: 'Year must be an integer' })
   @Min(2000, { message: 'Year must be at least 2000' })
   @Max(2100, { message: 'Year must be at most 2100' })
-  year!: number;
+  year!: number
 }
-

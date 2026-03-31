@@ -1,5 +1,5 @@
-import { IsString, IsBoolean, IsOptional, MaxLength } from 'class-validator';
-import { ApiProperty } from '@nestjs/swagger';
+import { IsString, IsBoolean, IsOptional, MaxLength } from 'class-validator'
+import { ApiProperty } from '@nestjs/swagger'
 
 export class UpdateHeroImageDto {
   @ApiProperty({
@@ -10,7 +10,7 @@ export class UpdateHeroImageDto {
   @IsOptional()
   @IsString()
   @MaxLength(500, { message: 'Description must be at most 500 characters' })
-  description?: string;
+  description?: string
 
   @ApiProperty({
     description: 'Whether this image should be displayed in the carousel',
@@ -19,6 +19,5 @@ export class UpdateHeroImageDto {
   })
   @IsOptional()
   @IsBoolean()
-  isInCarousel?: boolean;
+  isInCarousel?: boolean
 }
-

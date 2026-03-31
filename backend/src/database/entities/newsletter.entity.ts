@@ -1,6 +1,6 @@
-import { Table, Column, DataType, PrimaryKey, Default, Index } from 'sequelize-typescript';
-import { BaseEntity } from './base.entity';
-import { v4 as uuidv4 } from 'uuid';
+import { Table, Column, DataType, PrimaryKey, Default, Index } from 'sequelize-typescript'
+import { BaseEntity } from './base.entity'
+import { v4 as uuidv4 } from 'uuid'
 
 /**
  * Newsletter entity
@@ -15,19 +15,19 @@ export class Newsletter extends BaseEntity {
   @PrimaryKey
   @Default(() => uuidv4())
   @Column(DataType.UUID)
-  id!: string;
+  id!: string
 
   @Column({
     type: DataType.TEXT,
     allowNull: false,
   })
-  filePath!: string;
+  filePath!: string
 
   @Column({
     type: DataType.ENUM('spring', 'summer', 'fall', 'winter'),
     allowNull: false,
   })
-  season!: 'spring' | 'summer' | 'fall' | 'winter';
+  season!: 'spring' | 'summer' | 'fall' | 'winter'
 
   @Index
   @Column({
@@ -38,6 +38,5 @@ export class Newsletter extends BaseEntity {
       max: 2100,
     },
   })
-  year!: number;
+  year!: number
 }
-

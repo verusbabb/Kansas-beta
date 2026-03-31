@@ -1,45 +1,51 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
 
 export class PersonResponseDto {
   @ApiProperty()
-  id!: string;
+  id!: string
 
   @ApiProperty()
-  firstName!: string;
+  firstName!: string
 
   @ApiProperty()
-  lastName!: string;
+  lastName!: string
 
   @ApiProperty()
-  addressLine1!: string;
+  addressLine1!: string
 
   @ApiProperty()
-  city!: string;
+  city!: string
 
   @ApiProperty()
-  state!: string;
+  state!: string
 
   @ApiProperty()
-  zip!: string;
+  zip!: string
 
   @ApiProperty()
-  email!: string;
+  email!: string
 
   @ApiPropertyOptional()
-  phone?: string | null;
+  phone?: string | null
 
   @ApiPropertyOptional()
-  pledgeClassYear?: number | null;
+  pledgeClassYear?: number | null
 
   @ApiProperty()
-  isMember!: boolean;
+  isMember!: boolean
 
   @ApiProperty()
-  isParent!: boolean;
+  isParent!: boolean
+
+  @ApiProperty({
+    description:
+      'True if this person has at least one relationship where both endpoints are listed as chapter members (member↔member “legacy” link, not parent↔member).',
+  })
+  hasLegacyMemberLink!: boolean
 
   @ApiProperty()
-  createdAt!: Date;
+  createdAt!: Date
 
   @ApiProperty()
-  updatedAt!: Date;
+  updatedAt!: Date
 }

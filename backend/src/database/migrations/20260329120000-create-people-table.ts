@@ -1,10 +1,10 @@
-import { QueryInterface, DataTypes, Sequelize } from 'sequelize';
+import { QueryInterface, DataTypes, Sequelize } from 'sequelize'
 
 /**
  * Migration: Create people table (chapter directory: members and/or parents)
  */
 export async function up(queryInterface: QueryInterface): Promise<void> {
-  await queryInterface.sequelize.query('CREATE EXTENSION IF NOT EXISTS "uuid-ossp";');
+  await queryInterface.sequelize.query('CREATE EXTENSION IF NOT EXISTS "uuid-ossp";')
 
   await queryInterface.createTable('people', {
     id: {
@@ -74,27 +74,27 @@ export async function up(queryInterface: QueryInterface): Promise<void> {
       type: DataTypes.DATE,
       allowNull: true,
     },
-  });
+  })
 
   await queryInterface.addIndex('people', ['email'], {
     name: 'idx_people_email',
     unique: true,
-  });
+  })
 
   await queryInterface.addIndex('people', ['pledgeClassYear'], {
     name: 'idx_people_pledge_class_year',
-  });
+  })
 
   await queryInterface.sequelize.query(`
     ALTER TABLE people
     ADD CONSTRAINT chk_people_member_or_parent
     CHECK ("isMember" = true OR "isParent" = true);
-  `);
+  `)
 }
 
 export async function down(queryInterface: QueryInterface): Promise<void> {
   await queryInterface.sequelize.query(`
     ALTER TABLE people DROP CONSTRAINT IF EXISTS chk_people_member_or_parent;
-  `);
-  await queryInterface.dropTable('people');
+  `)
+  await queryInterface.dropTable('people')
 }

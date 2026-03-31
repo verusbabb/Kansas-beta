@@ -1,13 +1,27 @@
 <template>
-  <Card class="mb-6">
+  <Card class="mb-6" :pt="cardPassThrough">
     <template #title>
-      <div class="flex items-center gap-2">
-        <i class="pi pi-user-plus text-[#6F8FAF]"></i>
-        <span>Add/Manage Members</span>
+      <div class="flex flex-wrap items-center justify-between gap-3 w-full">
+        <div class="flex items-center gap-2 min-w-0">
+          <i class="pi pi-user-plus ml-3 text-[#6F8FAF] shrink-0"></i>
+          <span>Add directory person</span>
+        </div>
+        <Button
+          type="button"
+          :icon="formOpen ? 'pi pi-minus' : 'pi pi-plus'"
+          severity="secondary"
+          rounded
+          text
+          size="small"
+          class="shrink-0 text-[#6F8FAF]"
+          :aria-label="formOpen ? 'Hide add person form' : 'Show add person form'"
+          v-tooltip.top="formOpen ? 'Hide form' : 'Show form'"
+          @click="formOpen = !formOpen"
+        />
       </div>
     </template>
     <template #content>
-      <div class="flex flex-col gap-6">
+      <div v-if="formOpen" class="flex flex-col gap-6">
         <div class="text-surface-600">
           Add a chapter directory person (member, parent, or both). Email must be unique.
         </div>
@@ -151,7 +165,7 @@
 
           <div v-if="showPledgeField" class="flex flex-col gap-2 md:max-w-xs">
             <label for="person-pledge" class="font-semibold text-surface-700">
-              Pledge / graduation year
+              Pledge Class
             </label>
             <InputNumber
               id="person-pledge"
@@ -191,10 +205,24 @@ import InputNumber from 'primevue/inputnumber'
 import Select from 'primevue/select'
 import { useToast } from 'primevue/usetoast'
 import apiClient from '@/services/api'
+import { usePeopleStore } from '@/stores/people'
 import type { CreatePersonPayload, PersonKind, PersonResponse } from '@/types/person'
 import { US_STATE_CODE_SET, US_STATE_OPTIONS } from '@/constants/usStates'
 
 const toast = useToast()
+const peopleStore = usePeopleStore()
+
+const formOpen = ref(false)
+
+/** Avoid an empty padded body when the form is collapsed. */
+const cardPassThrough = computed(() =>
+  formOpen.value
+    ? {}
+    : {
+        body: { class: '!p-0' },
+        content: { class: '!p-0' },
+      },
+)
 
 const kindOptions = [
   { label: 'Member', value: 'member' as PersonKind },
@@ -363,6 +391,8 @@ async function handleSubmit() {
       life: 4000,
     })
     resetForm()
+    formOpen.value = false
+    void peopleStore.fetchPeople({ silent: true })
   } catch (err: unknown) {
     const ax = err as { response?: { data?: { message?: string | string[] } } }
     const raw = ax.response?.data?.message

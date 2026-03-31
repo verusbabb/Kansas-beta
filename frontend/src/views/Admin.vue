@@ -13,7 +13,7 @@
     </div>
 
     <!-- Main Content with Side Navigation -->
-    <div class="max-w-7xl mx-auto px-6 py-8">
+    <div class="max-w-[90rem] mx-auto px-6 py-8">
       <div class="flex flex-col lg:flex-row gap-6">
         <!-- Side Navigation -->
         <div class="w-full lg:w-64 flex-shrink-0">
@@ -100,8 +100,11 @@
           <!-- Newsletter Section -->
           <AdminNewsletters v-if="activeSection === 'newsletter'" />
 
-          <!-- Member Section -->
-          <AdminAddPerson v-if="activeSection === 'member'" />
+          <!-- Member Section: add new people + full directory management -->
+          <div v-if="activeSection === 'member'" class="flex flex-col gap-8">
+            <AdminAddPerson />
+            <MemberSearch variant="admin" />
+          </div>
 
           <!-- Users Section -->
           <AdminUsers v-if="activeSection === 'users'" />
@@ -160,6 +163,7 @@ import AdminOverview from '@/components/AdminOverview.vue'
 import AdminExecTeam from '@/components/AdminExecTeam.vue'
 import AdminHomePageImages from '@/components/AdminHomePageImages.vue'
 import AdminAddPerson from '@/components/AdminAddPerson.vue'
+import MemberSearch from '@/components/MemberSearch.vue'
 
 const route = useRoute()
 const router = useRouter()

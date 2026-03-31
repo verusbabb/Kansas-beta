@@ -1,12 +1,12 @@
-import { Module } from '@nestjs/common';
-import { PassportModule } from '@nestjs/passport';
-import { SequelizeModule } from '@nestjs/sequelize';
-import { ConfigModule } from '../config/config.module';
-import { User } from '../database/entities/user.entity';
-import { JwtStrategy } from './strategies/jwt.strategy';
-import { JwtAuthGuard } from './guards/jwt-auth.guard';
-import { RolesGuard } from './guards/roles.guard';
-import { UserLookupGuard } from './guards/user-lookup.guard';
+import { Module } from '@nestjs/common'
+import { PassportModule } from '@nestjs/passport'
+import { SequelizeModule } from '@nestjs/sequelize'
+import { ConfigModule } from '../config/config.module'
+import { User } from '../database/entities/user.entity'
+import { JwtStrategy } from './strategies/jwt.strategy'
+import { JwtAuthGuard } from './guards/jwt-auth.guard'
+import { RolesGuard } from './guards/roles.guard'
+import { UserLookupGuard } from './guards/user-lookup.guard'
 
 @Module({
   imports: [
@@ -18,4 +18,3 @@ import { UserLookupGuard } from './guards/user-lookup.guard';
   exports: [JwtAuthGuard, RolesGuard, UserLookupGuard, PassportModule],
 })
 export class AuthModule {}
-

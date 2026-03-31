@@ -10,24 +10,18 @@ import {
   Post,
   Delete,
   UseGuards,
-} from '@nestjs/common';
-import {
-  ApiBearerAuth,
-  ApiOperation,
-  ApiParam,
-  ApiResponse,
-  ApiTags,
-} from '@nestjs/swagger';
-import { PinoLogger } from 'nestjs-pino';
-import { PeopleService } from './people.service';
-import { CreatePersonDto } from './dto/create-person.dto';
-import { UpdatePersonDto } from './dto/update-person.dto';
-import { PersonResponseDto } from './dto/person-response.dto';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { RolesGuard } from '../auth/guards/roles.guard';
-import { UserLookupGuard } from '../auth/guards/user-lookup.guard';
-import { Roles } from '../auth/decorators/roles.decorator';
-import { UserRole } from '../database/entities/user.entity';
+} from '@nestjs/common'
+import { ApiBearerAuth, ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger'
+import { PinoLogger } from 'nestjs-pino'
+import { PeopleService } from './people.service'
+import { CreatePersonDto } from './dto/create-person.dto'
+import { UpdatePersonDto } from './dto/update-person.dto'
+import { PersonResponseDto } from './dto/person-response.dto'
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard'
+import { RolesGuard } from '../auth/guards/roles.guard'
+import { UserLookupGuard } from '../auth/guards/user-lookup.guard'
+import { Roles } from '../auth/decorators/roles.decorator'
+import { UserRole } from '../database/entities/user.entity'
 
 @ApiTags('People')
 @Controller('people')
@@ -36,7 +30,7 @@ export class PeopleController {
     private readonly peopleService: PeopleService,
     private readonly logger: PinoLogger,
   ) {
-    this.logger.setContext(PeopleController.name);
+    this.logger.setContext(PeopleController.name)
   }
 
   @Get()
@@ -46,7 +40,7 @@ export class PeopleController {
   })
   @ApiResponse({ status: HttpStatus.OK, type: [PersonResponseDto] })
   async findAll(): Promise<PersonResponseDto[]> {
-    return this.peopleService.findAll();
+    return this.peopleService.findAll()
   }
 
   @Patch(':id')
@@ -66,7 +60,7 @@ export class PeopleController {
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdatePersonDto,
   ): Promise<PersonResponseDto> {
-    return this.peopleService.update(id, dto);
+    return this.peopleService.update(id, dto)
   }
 
   @Delete(':id')
@@ -83,7 +77,7 @@ export class PeopleController {
   @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'Person not found' })
   @ApiResponse({ status: HttpStatus.FORBIDDEN, description: 'Editor or admin required' })
   async remove(@Param('id', ParseUUIDPipe) id: string): Promise<void> {
-    return this.peopleService.remove(id);
+    return this.peopleService.remove(id)
   }
 
   @Post()
@@ -100,6 +94,6 @@ export class PeopleController {
   @ApiResponse({ status: HttpStatus.CONFLICT, description: 'Email already in use' })
   @ApiResponse({ status: HttpStatus.FORBIDDEN, description: 'Editor or admin required' })
   async create(@Body() dto: CreatePersonDto): Promise<PersonResponseDto> {
-    return this.peopleService.create(dto);
+    return this.peopleService.create(dto)
   }
 }
