@@ -1,29 +1,39 @@
 <template>
   <Card class="mb-6" :pt="cardPassThrough">
     <template #title>
-      <div class="flex flex-wrap items-center justify-between gap-3 w-full">
-        <div class="flex items-center gap-2 min-w-0">
-          <i class="pi pi-user-plus ml-3 text-[#6F8FAF] shrink-0"></i>
-          <span>Add directory person</span>
-        </div>
-        <Button
-          type="button"
-          :icon="formOpen ? 'pi pi-minus' : 'pi pi-plus'"
-          severity="secondary"
-          rounded
-          text
-          size="small"
-          class="shrink-0 text-[#6F8FAF]"
-          :aria-label="formOpen ? 'Hide add person form' : 'Show add person form'"
-          v-tooltip.top="formOpen ? 'Hide form' : 'Show form'"
-          @click="formOpen = !formOpen"
+      <button
+        id="add-member-parent-trigger"
+        type="button"
+        class="add-member-parent-header flex flex-wrap items-center justify-between gap-3 w-full text-left text-xl font-semibold leading-normal rounded-md border-0 bg-transparent p-1 -m-1 cursor-pointer text-surface-900 transition-colors hover:bg-surface-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6F8FAF]"
+        :aria-expanded="formOpen"
+        aria-controls="add-member-parent-panel"
+        :aria-label="formOpen ? 'Hide add member or parent form' : 'Show add member or parent form'"
+        v-tooltip.top="formOpen ? 'Hide form' : 'Show form'"
+        @click="formOpen = !formOpen"
+      >
+        <span class="flex items-center gap-2 min-w-0">
+          <i class="pi pi-user-plus ml-3 text-xl text-[#6F8FAF] shrink-0" aria-hidden="true"></i>
+          <span>Add A Member or Parent</span>
+        </span>
+        <i
+          :class="[
+            'pi shrink-0 text-xl text-[#6F8FAF]',
+            formOpen ? 'pi-minus' : 'pi-plus',
+          ]"
+          aria-hidden="true"
         />
-      </div>
+      </button>
     </template>
     <template #content>
-      <div v-if="formOpen" class="flex flex-col gap-6">
+      <div
+        id="add-member-parent-panel"
+        v-show="formOpen"
+        class="flex flex-col gap-6"
+        role="region"
+        aria-labelledby="add-member-parent-trigger"
+      >
         <div class="text-surface-600">
-          Add a chapter directory person (member, parent, or both). Email must be unique.
+          Add a member, parent, or both to the chapter directory. Email must be unique.
         </div>
 
         <form

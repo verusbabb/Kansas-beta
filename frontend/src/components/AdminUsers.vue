@@ -1,19 +1,43 @@
 <template>
   <div class="flex flex-col gap-6">
     <!-- Add Site Admin Section -->
-    <Card class="mb-6">
+    <Card class="mb-6" :pt="addAdminCardPassThrough">
       <template #title>
-        <div class="flex items-center gap-2">
-          <i class="pi pi-users text-[#6F8FAF]"></i>
-          <span>Add/Manage Site Admins</span>
-        </div>
+        <button
+          id="add-admin-trigger"
+          type="button"
+          class="flex flex-wrap items-center justify-between gap-3 w-full text-left text-xl font-semibold leading-normal rounded-md border-0 bg-transparent p-1 -m-1 cursor-pointer text-surface-900 transition-colors hover:bg-surface-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6F8FAF]"
+          :aria-expanded="addAdminFormOpen"
+          aria-controls="add-admin-panel"
+          :aria-label="addAdminFormOpen ? 'Hide add admin form' : 'Show add admin form'"
+          v-tooltip.top="addAdminFormOpen ? 'Hide form' : 'Show form'"
+          @click="addAdminFormOpen = !addAdminFormOpen"
+        >
+          <span class="flex items-center gap-2 min-w-0">
+            <i class="pi pi-users ml-3 text-xl text-[#6F8FAF] shrink-0" aria-hidden="true"></i>
+            <span>Add/Manage Site Admins</span>
+          </span>
+          <i
+            :class="[
+              'pi shrink-0 text-xl text-[#6F8FAF]',
+              addAdminFormOpen ? 'pi-minus' : 'pi-plus',
+            ]"
+            aria-hidden="true"
+          />
+        </button>
       </template>
       <template #content>
-        <div class="flex flex-col gap-6">
+        <div
+          id="add-admin-panel"
+          v-show="addAdminFormOpen"
+          class="flex flex-col gap-6"
+          role="region"
+          aria-labelledby="add-admin-trigger"
+        >
           <div class="text-surface-600">
             Add a new user with admin or editor role. Users will be able to log in after being created.
           </div>
-          
+
           <form @submit.prevent="handleAddUser" class="flex flex-col gap-5">
             <!-- First Name and Last Name Row -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -101,16 +125,6 @@
                 class="bg-[#6F8FAF] hover:bg-[#5A7A9F]"
               />
             </div>
-
-            <!-- Success Message -->
-            <Message
-              v-if="userSuccess"
-              severity="success"
-              :closable="false"
-              class="w-full"
-            >
-              User added successfully!
-            </Message>
           </form>
         </div>
       </template>
@@ -132,7 +146,9 @@
 
         <div v-else-if="userStore.activeUsers.length === 0" class="text-center py-8">
           <i class="pi pi-inbox text-6xl text-surface-400 mb-4"></i>
-          <div class="text-surface-600">No users yet. Add one above to get started.</div>
+          <div class="text-surface-600">
+            No users yet. Open <strong>Add/Manage Site Admins</strong> above to add one.
+          </div>
         </div>
 
         <div v-else class="space-y-3">
@@ -314,7 +330,6 @@ import Card from 'primevue/card'
 import Button from 'primevue/button'
 import InputText from 'primevue/inputtext'
 import Select from 'primevue/select'
-import Message from 'primevue/message'
 import Dialog from 'primevue/dialog'
 import { useToast } from 'primevue/usetoast'
 import { useConfirm } from 'primevue/useconfirm'
@@ -324,6 +339,17 @@ import { UserRole } from '@/types/user'
 const toast = useToast()
 const confirm = useConfirm()
 const userStore = useUserStore()
+
+const addAdminFormOpen = ref(false)
+
+const addAdminCardPassThrough = computed(() =>
+  addAdminFormOpen.value
+    ? {}
+    : {
+        body: { class: '!p-0' },
+        content: { class: '!p-0' },
+      },
+)
 
 // Local UI state
 const removingUserId = ref<string | null>(null)
@@ -345,7 +371,6 @@ const userErrors = ref({
 })
 
 const isSubmittingUser = ref(false)
-const userSuccess = ref(false)
 
 // Edit user dialog and form
 const editUserDialogVisible = ref(false)
@@ -475,10 +500,7 @@ const handleAddUser = async () => {
     })
 
     resetUserForm()
-    userSuccess.value = true
-    setTimeout(() => {
-      userSuccess.value = false
-    }, 5000)
+    addAdminFormOpen.value = false
   } catch (error: any) {
     const errorMessage = error.response?.data?.message || error.message || 'Failed to add user'
     toast.add({
@@ -506,7 +528,6 @@ const resetUserForm = () => {
     email: '',
     role: '',
   }
-  userSuccess.value = false
 }
 
 const handleEditUser = (user: any) => {

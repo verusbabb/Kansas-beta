@@ -1,90 +1,47 @@
 <template>
   <div class="flex flex-col gap-6">
-    <!-- Events List -->
-    <Card class="mb-6">
-      <template #title>
-        <div class="flex items-center gap-2">
-          <i class="pi pi-list text-[#6F8FAF]"></i>
-          <span>Calendar Events ({{ calendarEventStore.events.length }})</span>
-        </div>
-      </template>
-      <template #content>
-        <div v-if="calendarEventStore.loading" class="text-center py-8">
-          <i class="pi pi-spin pi-spinner text-4xl text-[#6F8FAF]"></i>
-          <p class="mt-4 text-surface-600">Loading events...</p>
-        </div>
-
-        <div v-else-if="calendarEventStore.events.length === 0" class="text-center py-8">
-          <i class="pi pi-calendar-times text-4xl text-surface-400 mb-4"></i>
-          <p class="text-surface-600">No calendar events yet. Create your first event below.</p>
-        </div>
-
-        <div v-else class="flex flex-col gap-4">
-          <Card
-            v-for="event in sortedEvents"
-            :key="event.id"
-            class="cursor-pointer hover:shadow-lg transition-shadow"
-            @click="editEvent(event)"
+    <!-- Add/Edit Event Form (above list; reveal on demand) -->
+    <div ref="eventFormCardRef" class="mb-6">
+      <Card :pt="eventFormCardPassThrough">
+        <template #title>
+          <button
+            id="calendar-event-form-trigger"
+            type="button"
+            class="flex flex-wrap items-center justify-between gap-3 w-full text-left text-xl font-semibold leading-normal rounded-md border-0 bg-transparent p-1 -m-1 cursor-pointer text-surface-900 transition-colors hover:bg-surface-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6F8FAF]"
+            :aria-expanded="eventFormOpen"
+            aria-controls="calendar-event-form-panel"
+            :aria-label="
+              eventFormOpen
+                ? (editingEvent ? 'Hide edit event form' : 'Hide add event form')
+                : editingEvent
+                  ? 'Show edit event form'
+                  : 'Show add event form'
+            "
+            v-tooltip.top="eventFormOpen ? 'Hide form' : 'Show form'"
+            @click="eventFormOpen = !eventFormOpen"
           >
-            <template #content>
-              <div class="flex flex-col md:flex-row gap-4">
-                <div class="flex-shrink-0">
-                  <div class="w-16 h-16 bg-gradient-to-br from-[#5A7A9F] to-[#6F8FAF] rounded-lg flex items-center justify-center text-white">
-                    <i class="pi pi-calendar text-2xl"></i>
-                  </div>
-                </div>
-                <div class="flex-1">
-                  <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-2 mb-2">
-                    <h3 class="text-xl font-bold text-surface-900">{{ event.name }}</h3>
-                    <div class="flex gap-2">
-                      <Button
-                        icon="pi pi-pencil"
-                        label="Edit"
-                        size="small"
-                        outlined
-                        @click.stop="editEvent(event)"
-                        class="text-[#6F8FAF] border-[#6F8FAF]"
-                      />
-                      <Button
-                        icon="pi pi-trash"
-                        label="Delete"
-                        size="small"
-                        outlined
-                        severity="danger"
-                        @click.stop="confirmDelete(event)"
-                      />
-                    </div>
-                  </div>
-                  <p class="text-surface-700 mb-2">
-                    <i class="pi pi-calendar mr-2"></i>
-                    {{ formatDateRange(event) }}
-                    <span v-if="!event.allDay && event.startTime" class="ml-2">
-                      <i class="pi pi-clock mr-1"></i>
-                      {{ formatTimeRange(event) }}
-                    </span>
-                    <span v-if="event.allDay" class="ml-2 text-sm text-surface-500">
-                      (All Day)
-                    </span>
-                  </p>
-                  <div v-if="event.description" class="text-surface-600 line-clamp-2" v-html="event.description"></div>
-                </div>
-              </div>
-            </template>
-          </Card>
-        </div>
-      </template>
-    </Card>
-
-    <!-- Add/Edit Event Form -->
-    <Card>
-      <template #title>
-        <div class="flex items-center gap-2">
-          <i class="pi pi-plus-circle text-[#6F8FAF]"></i>
-          <span>{{ editingEvent ? 'Edit Event' : 'Add New Event' }}</span>
-        </div>
-      </template>
-      <template #content>
-        <form @submit.prevent="handleSubmit" class="flex flex-col gap-5">
+            <span class="flex items-center gap-2 min-w-0">
+              <i class="pi pi-plus-circle ml-3 text-xl text-[#6F8FAF] shrink-0" aria-hidden="true"></i>
+              <span>{{ editingEvent ? 'Edit Event' : 'Add New Event' }}</span>
+            </span>
+            <i
+              :class="[
+                'pi shrink-0 text-xl text-[#6F8FAF]',
+                eventFormOpen ? 'pi-minus' : 'pi-plus',
+              ]"
+              aria-hidden="true"
+            />
+          </button>
+        </template>
+        <template #content>
+          <div
+            id="calendar-event-form-panel"
+            v-show="eventFormOpen"
+            class="flex flex-col gap-6"
+            role="region"
+            aria-labelledby="calendar-event-form-trigger"
+          >
+            <form @submit.prevent="handleSubmit" class="flex flex-col gap-5">
           <!-- Event Name -->
           <div class="flex flex-col gap-2">
             <label for="event-name" class="font-semibold text-surface-700">
@@ -237,29 +194,97 @@
               :disabled="isSubmitting"
             />
           </div>
+            </form>
+          </div>
+        </template>
+      </Card>
+    </div>
 
-          <!-- Success Message -->
-          <Message
-            v-if="successMessage"
-            severity="success"
-            :closable="false"
-            class="w-full"
+    <!-- Events List -->
+    <Card class="mb-6">
+      <template #title>
+        <div class="flex items-center gap-2">
+          <i class="pi pi-list text-[#6F8FAF]"></i>
+          <span>Calendar Events ({{ calendarEventStore.events.length }})</span>
+        </div>
+      </template>
+      <template #content>
+        <div v-if="calendarEventStore.loading" class="text-center py-8">
+          <i class="pi pi-spin pi-spinner text-4xl text-[#6F8FAF]"></i>
+          <p class="mt-4 text-surface-600">Loading events...</p>
+        </div>
+
+        <div v-else-if="calendarEventStore.events.length === 0" class="text-center py-8">
+          <i class="pi pi-calendar-times text-4xl text-surface-400 mb-4"></i>
+          <p class="text-surface-600">
+            No calendar events yet. Open <strong>Add New Event</strong> above to create one.
+          </p>
+        </div>
+
+        <div v-else class="flex flex-col gap-4">
+          <Card
+            v-for="event in sortedEvents"
+            :key="event.id"
+            class="cursor-pointer hover:shadow-lg transition-shadow"
+            @click="editEvent(event)"
           >
-            {{ successMessage }}
-          </Message>
-        </form>
+            <template #content>
+              <div class="flex flex-col md:flex-row gap-4">
+                <div class="flex-shrink-0">
+                  <div class="w-16 h-16 bg-gradient-to-br from-[#5A7A9F] to-[#6F8FAF] rounded-lg flex items-center justify-center text-white">
+                    <i class="pi pi-calendar text-2xl"></i>
+                  </div>
+                </div>
+                <div class="flex-1">
+                  <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-2 mb-2">
+                    <h3 class="text-xl font-bold text-surface-900">{{ event.name }}</h3>
+                    <div class="flex gap-2">
+                      <Button
+                        icon="pi pi-pencil"
+                        label="Edit"
+                        size="small"
+                        outlined
+                        @click.stop="editEvent(event)"
+                        class="text-[#6F8FAF] border-[#6F8FAF]"
+                      />
+                      <Button
+                        icon="pi pi-trash"
+                        label="Delete"
+                        size="small"
+                        outlined
+                        severity="danger"
+                        @click.stop="confirmDelete(event)"
+                      />
+                    </div>
+                  </div>
+                  <p class="text-surface-700 mb-2">
+                    <i class="pi pi-calendar mr-2"></i>
+                    {{ formatDateRange(event) }}
+                    <span v-if="!event.allDay && event.startTime" class="ml-2">
+                      <i class="pi pi-clock mr-1"></i>
+                      {{ formatTimeRange(event) }}
+                    </span>
+                    <span v-if="event.allDay" class="ml-2 text-sm text-surface-500">
+                      (All Day)
+                    </span>
+                  </p>
+                  <div v-if="event.description" class="text-surface-600 line-clamp-2" v-html="event.description"></div>
+                </div>
+              </div>
+            </template>
+          </Card>
+        </div>
       </template>
     </Card>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, watch, nextTick } from 'vue'
 import Card from 'primevue/card'
 import Button from 'primevue/button'
 import InputText from 'primevue/inputtext'
 import Editor from 'primevue/editor'
-import Message from 'primevue/message'
 import { useConfirm } from 'primevue/useconfirm'
 import { useToast } from 'primevue/usetoast'
 import { useCalendarEventStore } from '@/stores/calendarEvent'
@@ -267,6 +292,18 @@ import { useCalendarEventStore } from '@/stores/calendarEvent'
 const calendarEventStore = useCalendarEventStore()
 const confirm = useConfirm()
 const toast = useToast()
+
+const eventFormOpen = ref(false)
+const eventFormCardRef = ref<HTMLElement | null>(null)
+
+const eventFormCardPassThrough = computed(() =>
+  eventFormOpen.value
+    ? {}
+    : {
+        body: { class: '!p-0' },
+        content: { class: '!p-0' },
+      },
+)
 
 // Configure Editor toolbar to ensure proper list handling
 const editorModules = {
@@ -282,7 +319,6 @@ const editorModules = {
 
 const editingEvent = ref(null)
 const isSubmitting = ref(false)
-const successMessage = ref('')
 
 const eventForm = ref({
   name: '',
@@ -392,7 +428,6 @@ const resetForm = () => {
     endTime: '',
   }
   editingEvent.value = null
-  successMessage.value = ''
 }
 
 const validateForm = () => {
@@ -461,7 +496,6 @@ const handleSubmit = async () => {
   }
 
   isSubmitting.value = true
-  successMessage.value = ''
 
   try {
     const eventData = {
@@ -476,15 +510,14 @@ const handleSubmit = async () => {
 
     if (editingEvent.value) {
       await calendarEventStore.update(editingEvent.value.id, eventData)
-      successMessage.value = 'Event updated successfully!'
       toast.add({ severity: 'success', summary: 'Success', detail: 'Event updated successfully', life: 3000 })
     } else {
       await calendarEventStore.create(eventData)
-      successMessage.value = 'Event created successfully!'
       toast.add({ severity: 'success', summary: 'Success', detail: 'Event created successfully', life: 3000 })
     }
 
     resetForm()
+    eventFormOpen.value = false
   } catch (error: any) {
     console.error('Error saving event:', error)
     toast.add({ 
@@ -509,15 +542,15 @@ const editEvent = (event) => {
     endTime: event.endTime || '',
     allDay: event.allDay,
   }
-  // Scroll to form
-  setTimeout(() => {
-    const formCard = document.querySelector('.p-card:last-of-type')
-    formCard?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-  }, 100)
+  eventFormOpen.value = true
+  void nextTick(() => {
+    eventFormCardRef.value?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  })
 }
 
 const cancelEdit = () => {
   resetForm()
+  eventFormOpen.value = false
 }
 
 const confirmDelete = (event) => {

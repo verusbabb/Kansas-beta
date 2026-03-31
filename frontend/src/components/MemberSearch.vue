@@ -16,7 +16,7 @@
           </template>
           <template v-else>
             Search and update directory entries. Expand a row for connections; use <strong>Edit</strong> to
-            change profile fields. To add someone new, open <strong>Add directory person</strong> above.
+            change profile fields. To add someone new, open <strong>Add A Member or Parent</strong> above.
           </template>
         </div>
 
@@ -85,20 +85,20 @@
           <div v-if="filteredPeople.length > 0" class="overflow-x-auto -mx-1">
             <DataTable
               v-model:expandedRows="expandedRows"
+              v-model:first="directoryTableFirst"
               :value="filteredPeople"
               dataKey="id"
               stripedRows
               sortField="lastName"
               :sortOrder="1"
               removableSort
-              :paginator="filteredPeople.length > 15"
+              paginator
               :rows="25"
-              :rowsPerPageOptions="[25, 50, 100]"
-              paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink RowsPerPageDropdown"
-              class="text-sm"
-              :pt="{
-                table: { class: tableMinWidthClass },
-              }"
+              :rowsPerPageOptions="[10, 25, 50, 100]"
+              paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
+              currentPageReportTemplate="Showing {first} to {last} of {totalRecords}"
+              class="member-directory-datatable text-sm"
+              :pt="memberDirectoryDataTablePt"
             >
               <Column expander class="w-10" />
               <Column field="lastName" header="Name" sortable>
@@ -748,10 +748,14 @@ const roleFilterOptions: { label: string; value: DirectoryRoleFilter }[] = [
 /** “Legacy Members Only” filter: member↔member directory links only. */
 const showLegacyTiesOnly = ref(false)
 
+/** First row index for client-side DataTable pagination (reset when filters change). */
+const directoryTableFirst = ref(0)
+
 watch([searchQuery, yearFilter, roleFilter, showLegacyTiesOnly], () => {
   expandedRows.value = {}
   rowExpandAddOpen.value = {}
   rowExpandAddForm.value = {}
+  directoryTableFirst.value = 0
 })
 
 const canEdit = computed(() => props.variant === 'admin' && authStore.isEditor)
@@ -760,6 +764,16 @@ const tableMinWidthClass = computed(() => {
   if (props.variant === 'admin' && canEdit.value) return 'min-w-[860px]'
   return 'min-w-[780px]'
 })
+
+/** Paginator rows-per-page control: Prime `small` size + table min-width. */
+const memberDirectoryDataTablePt = computed(() => ({
+  table: { class: tableMinWidthClass.value },
+  pcPaginator: {
+    pcRowPerPageDropdown: {
+      root: { class: 'p-select-sm p-inputfield-sm' },
+    },
+  },
+}))
 
 const kindOptions = [
   { label: 'Member', value: 'member' as PersonKind },
@@ -1114,3 +1128,26 @@ watch(
   { deep: true },
 )
 </script>
+
+<style scoped>
+/*
+ * Theme tokens on Select can still read larger than paginator links; force match to text-sm bar.
+ */
+.member-directory-datatable :deep(.p-paginator .p-paginator-rpp-dropdown) {
+  font-size: 0.875rem !important;
+  line-height: 1.25rem !important;
+}
+
+.member-directory-datatable :deep(.p-paginator .p-paginator-rpp-dropdown .p-select-label) {
+  font-size: inherit !important;
+  line-height: inherit !important;
+}
+
+.member-directory-datatable :deep(.p-paginator .p-paginator-rpp-dropdown .p-select-dropdown) {
+  font-size: inherit !important;
+}
+
+.member-directory-datatable :deep(.p-paginator .p-paginator-rpp-dropdown .p-select-dropdown-icon) {
+  font-size: 0.75rem !important;
+}
+</style>
