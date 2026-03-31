@@ -228,7 +228,7 @@ const navItems = [
   },
   {
     id: 'member',
-    label: 'Add/Manage Members',
+    label: 'Add/Manage Members and Parents',
     icon: 'pi pi-user-plus'
   },
   {

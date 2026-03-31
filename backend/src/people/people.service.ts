@@ -60,7 +60,7 @@ export class PeopleService {
   }
 
   /**
-   * Member↔member edges only (not parent↔member). Matches “(legacy relationship)” in the directory UI.
+   * Member↔member edges only (not parent↔member). Matches Legacy Connections in the directory UI.
    */
   private async legacyMemberLinkPersonIds(): Promise<Set<string>> {
     const rows = await this.personRelationshipModel.findAll({

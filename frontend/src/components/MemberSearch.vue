@@ -4,18 +4,19 @@
     <template #title>
       <div class="flex items-center gap-2">
         <i class="pi pi-search text-[#6F8FAF]"></i>
-        <span>{{ variant === 'admin' ? 'Directory (manage)' : 'Member directory' }}</span>
+        <span>{{ variant === 'admin' ? 'Directory (manage)' : 'Member and Parent Directory' }}</span>
       </div>
     </template>
     <template #content>
       <div class="flex flex-col gap-6">
         <div class="text-surface-600">
           <template v-if="variant === 'public'">
-            Browse everyone in the directory. Expand a row to see legacy and family connections. Editors
+            Browse everyone in the directory. Expand a row to see legacy and parent connections. Editors
             can manage entries in the Admin panel.
           </template>
           <template v-else>
-            Search and update directory entries. Expand a row for connections; use <strong>Edit</strong> to
+            Search and update directory entries. Expand a row for legacy and parent connections; use
+            <strong>Edit</strong> to
             change profile fields. To add someone new, open <strong>Add A Member or Parent</strong> above.
           </template>
         </div>
@@ -86,6 +87,7 @@
             <DataTable
               v-model:expandedRows="expandedRows"
               v-model:first="directoryTableFirst"
+              v-model:rows="directoryTableRows"
               :value="filteredPeople"
               dataKey="id"
               stripedRows
@@ -93,14 +95,29 @@
               :sortOrder="1"
               removableSort
               paginator
-              :rows="25"
               :rowsPerPageOptions="[10, 25, 50, 100]"
               paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
               currentPageReportTemplate="Showing {first} to {last} of {totalRecords}"
               class="member-directory-datatable text-sm"
               :pt="memberDirectoryDataTablePt"
             >
-              <Column expander class="w-10" />
+              <Column expander class="w-12 min-w-[2.75rem]">
+                <template #header>
+                  <span
+                    class="inline-flex w-full justify-center"
+                    v-tooltip.top="'Expand or collapse every row on this page'"
+                  >
+                    <Checkbox
+                      inputId="directory-expand-page"
+                      binary
+                      :modelValue="directoryExpandHeaderChecked"
+                      :indeterminate="directoryExpandHeaderIndeterminate"
+                      aria-label="Expand or collapse every row on this page"
+                      @update:modelValue="onDirectoryExpandHeaderCheckbox"
+                    />
+                  </span>
+                </template>
+              </Column>
               <Column field="lastName" header="Name" sortable>
                 <template #body="{ data }">
                   <span class="font-medium text-surface-900">
@@ -160,9 +177,6 @@
                 <div
                   class="px-4 py-3 ml-2 border-l-4 border-[#6F8FAF] bg-surface-50 rounded-r-md text-sm"
                 >
-                  <div class="font-bold text-surface-900 mb-2 tracking-tight">
-                    Legacy &amp; family connections
-                  </div>
                   <div
                     v-if="rowRelState[row.id]?.status === 'loading'"
                     class="pl-5 text-surface-600 flex items-center gap-2 text-sm"
@@ -174,36 +188,50 @@
                     {{ rowRelState[row.id]?.error }}
                   </p>
                   <template v-else>
-                    <ul
+                    <template
                       v-if="(rowRelState[row.id]?.list?.length ?? 0) > 0"
-                      class="m-0 p-0 pl-5 list-disc space-y-0 marker:text-[#6F8FAF] text-surface-800 text-sm"
                     >
-                      <li
-                        v-for="rel in rowRelState[row.id]!.list"
-                        :key="rel.id"
-                        class="m-0 py-0 leading-tight"
+                      <div
+                        v-for="bucket in relationshipBuckets(row, rowRelState[row.id]!.list)"
+                        :key="bucket.key"
+                        class="mb-4 last:mb-0 pl-5"
                       >
-                        <div class="flex items-start gap-2 justify-between -ml-0.5">
-                          <span class="min-w-0 flex-1 pr-2 leading-tight">{{
-                            personRelationshipPhrase(rel, row)
-                          }}</span>
-                          <Button
-                            v-if="canEdit"
-                            type="button"
-                            icon="pi pi-times"
-                            severity="danger"
-                            rounded
-                            text
-                            size="small"
-                            class="shrink-0 !p-0 !min-h-0 !h-7 w-7"
-                            v-tooltip.top="'Remove connection'"
-                            :disabled="!!removingRelKey"
-                            :loading="removingRelKey === relRemoveKey(row.id, rel.id)"
-                            @click="confirmRemoveRowRelationship(row, rel)"
-                          />
+                        <div class="font-bold text-surface-900 mb-1.5">
+                          {{ bucket.title }}
                         </div>
-                      </li>
-                    </ul>
+                        <ul class="m-0 list-none space-y-0 p-0 text-sm text-surface-800">
+                          <li
+                            v-for="rel in bucket.items"
+                            :key="rel.id"
+                            class="m-0 flex items-start gap-2 py-0 leading-tight"
+                          >
+                            <span
+                              class="shrink-0 select-none text-[#6F8FAF] leading-tight"
+                              aria-hidden="true"
+                            >•</span>
+                            <div class="flex min-w-0 flex-1 items-start justify-between gap-2">
+                              <span class="min-w-0 flex-1 pr-2 leading-tight">{{
+                                personRelationshipPhrase(rel, row)
+                              }}</span>
+                              <Button
+                                v-if="canEdit"
+                                type="button"
+                                icon="pi pi-times"
+                                severity="danger"
+                                rounded
+                                text
+                                size="small"
+                                class="shrink-0 !h-7 !min-h-0 !p-0 w-7"
+                                v-tooltip.top="'Remove connection'"
+                                :disabled="!!removingRelKey"
+                                :loading="removingRelKey === relRemoveKey(row.id, rel.id)"
+                                @click="confirmRemoveRowRelationship(row, rel)"
+                              />
+                            </div>
+                          </li>
+                        </ul>
+                      </div>
+                    </template>
                     <p v-else class="text-surface-600 m-0 pl-5 text-sm">No connections listed yet.</p>
 
                     <div
@@ -492,6 +520,7 @@ import Select from 'primevue/select'
 import InputSwitch from 'primevue/inputswitch'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
+import Checkbox from 'primevue/checkbox'
 import Message from 'primevue/message'
 import Button from 'primevue/button'
 import Dialog from 'primevue/dialog'
@@ -754,6 +783,9 @@ const showLegacyTiesOnly = ref(false)
 /** First row index for client-side DataTable pagination (reset when filters change). */
 const directoryTableFirst = ref(0)
 
+/** Page size for directory DataTable (synced with paginator). */
+const directoryTableRows = ref(25)
+
 watch([searchQuery, yearFilter, roleFilter, showLegacyTiesOnly], () => {
   expandedRows.value = {}
   rowExpandAddOpen.value = {}
@@ -840,6 +872,29 @@ function formatAddress(p: PersonResponse): string {
   return line || '—'
 }
 
+type RelationshipBucket = {
+  key: 'legacy' | 'parent'
+  title: string
+  items: PersonRelationshipResponse[]
+}
+
+/** Member↔member = legacy; anything else (e.g. parent↔member) = parent connections. Matches `hasLegacyMemberLink` semantics. */
+function relationshipBuckets(
+  anchor: PersonResponse,
+  list: PersonRelationshipResponse[],
+): RelationshipBucket[] {
+  const legacy: PersonRelationshipResponse[] = []
+  const parent: PersonRelationshipResponse[] = []
+  for (const rel of list) {
+    if (anchor.isMember && rel.counterpart.isMember) legacy.push(rel)
+    else parent.push(rel)
+  }
+  const out: RelationshipBucket[] = []
+  if (legacy.length) out.push({ key: 'legacy', title: 'Legacy Connections', items: legacy })
+  if (parent.length) out.push({ key: 'parent', title: 'Parent Connections', items: parent })
+  return out
+}
+
 function matchesSearch(person: PersonResponse, q: string): boolean {
   if (!q) return true
   const needle = q.toLowerCase().trim()
@@ -884,6 +939,48 @@ const filteredPeople = computed(() => {
   }
   return rows
 })
+
+/** Rows on the current directory table page (for expand-all checkbox). */
+const visibleDirectoryPage = computed(() => {
+  const list = filteredPeople.value
+  const first = directoryTableFirst.value
+  const perPage = directoryTableRows.value
+  return list.slice(first, Math.min(first + perPage, list.length))
+})
+
+const directoryExpandHeaderChecked = computed(() => {
+  const vis = visibleDirectoryPage.value
+  if (vis.length === 0) return false
+  return vis.every((p) => expandedRows.value[p.id])
+})
+
+const directoryExpandHeaderIndeterminate = computed(() => {
+  const vis = visibleDirectoryPage.value
+  if (vis.length === 0) return false
+  const n = vis.filter((p) => expandedRows.value[p.id]).length
+  return n > 0 && n < vis.length
+})
+
+function expandDirectoryPageRows() {
+  const next = { ...expandedRows.value }
+  for (const p of visibleDirectoryPage.value) {
+    next[p.id] = true
+  }
+  expandedRows.value = next
+}
+
+function collapseDirectoryVisiblePage() {
+  const ids = visibleDirectoryPage.value.map((p) => p.id)
+  if (ids.length === 0) return
+  const next = { ...expandedRows.value }
+  for (const id of ids) delete next[id]
+  expandedRows.value = next
+}
+
+function onDirectoryExpandHeaderCheckbox(checked: boolean) {
+  if (checked) expandDirectoryPageRows()
+  else collapseDirectoryVisiblePage()
+}
 
 function clearEditErrors() {
   editErrors.value = {
