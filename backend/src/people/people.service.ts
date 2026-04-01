@@ -13,7 +13,13 @@ import { CreatePersonDto, PersonKindDto } from './dto/create-person.dto'
 import { UpdatePersonDto } from './dto/update-person.dto'
 import { normalizeUsPhoneForStorage } from '../common/utils/us-phone'
 import { PersonResponseDto } from './dto/person-response.dto'
+import { PersonProfileResponseDto } from './dto/person-profile-response.dto'
 import { StorageService } from '../storage/storage.service'
+import { PersonRelationshipsService } from '../person-relationships/person-relationships.service'
+import { ExecTeamService } from '../exec-team/exec-team.service'
+
+/** Match `ExecTeamService` roster headshot signed URL lifetime. */
+const PROFILE_HEADSHOT_URL_EXPIRY_MINUTES = 7 * 24 * 60
 
 export interface PersonHeadshotFile {
   fieldname: string
@@ -33,8 +39,23 @@ export class PeopleService {
     private personRelationshipModel: typeof PersonRelationship,
     private readonly storageService: StorageService,
     private readonly logger: PinoLogger,
+    private readonly personRelationshipsService: PersonRelationshipsService,
+    private readonly execTeamService: ExecTeamService,
   ) {
     this.logger.setContext(PeopleService.name)
+  }
+
+  private async headshotSignedUrlForPerson(person: Person): Promise<string | null> {
+    if (!person.headshotFilePath) return null
+    try {
+      return await this.storageService.getSignedUrl(
+        person.headshotFilePath,
+        PROFILE_HEADSHOT_URL_EXPIRY_MINUTES,
+      )
+    } catch (e) {
+      this.logger.warn('Profile headshot signed URL failed', { personId: person.id, error: e })
+      return null
+    }
   }
 
   private flagsFromKind(kind: PersonKindDto): { isMember: boolean; isParent: boolean } {
@@ -194,6 +215,24 @@ export class PeopleService {
       ],
     })
     return rows.map((p) => this.toResponseDto(p, legacyIds.has(p.id)))
+  }
+
+  /**
+   * Full profile for authenticated viewers (and above): directory row, connections, exec history.
+   */
+  async findProfileById(id: string): Promise<PersonProfileResponseDto> {
+    const person = await this.personModel.findByPk(id)
+    if (!person) {
+      throw new NotFoundException('Person not found')
+    }
+    const hasLegacy = await this.personHasLegacyMemberLink(person.id)
+    const personDto = this.toResponseDto(person, hasLegacy)
+    const [relationships, execHistory, headshotUrl] = await Promise.all([
+      this.personRelationshipsService.findAllForPerson(id),
+      this.execTeamService.findExecHistoryForPerson(id),
+      this.headshotSignedUrlForPerson(person),
+    ])
+    return { person: personDto, headshotUrl, relationships, execHistory }
   }
 
   async update(id: string, dto: UpdatePersonDto): Promise<PersonResponseDto> {

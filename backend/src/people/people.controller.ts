@@ -24,6 +24,7 @@ import { PeopleService } from './people.service'
 import { CreatePersonDto } from './dto/create-person.dto'
 import { UpdatePersonDto } from './dto/update-person.dto'
 import { PersonResponseDto } from './dto/person-response.dto'
+import { PersonProfileResponseDto } from './dto/person-profile-response.dto'
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard'
 import { RolesGuard } from '../auth/guards/roles.guard'
 import { UserLookupGuard } from '../auth/guards/user-lookup.guard'
@@ -49,6 +50,23 @@ export class PeopleController {
   @ApiResponse({ status: HttpStatus.OK, type: [PersonResponseDto] })
   async findAll(): Promise<PersonResponseDto[]> {
     return this.peopleService.findAll()
+  }
+
+  @Get(':id')
+  @UseGuards(JwtAuthGuard, UserLookupGuard, RolesGuard)
+  @Roles(UserRole.VIEWER, UserRole.EDITOR, UserRole.ADMIN)
+  @ApiBearerAuth()
+  @ApiParam({ name: 'id', description: 'Person UUID' })
+  @ApiOperation({
+    summary: 'Directory person profile (viewer / editor / admin)',
+    description:
+      'Contact and directory fields, legacy/family connections, and executive offices held across all terms.',
+  })
+  @ApiResponse({ status: HttpStatus.OK, type: PersonProfileResponseDto })
+  @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'Person not found' })
+  @ApiResponse({ status: HttpStatus.FORBIDDEN, description: 'Site role required' })
+  async findProfile(@Param('id', ParseUUIDPipe) id: string): Promise<PersonProfileResponseDto> {
+    return this.peopleService.findProfileById(id)
   }
 
   @Post(':id/headshot')

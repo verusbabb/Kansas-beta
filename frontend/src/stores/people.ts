@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import apiClient from '@/services/api'
 import type { PersonResponse, UpdatePersonPayload } from '@/types/person'
+import type { PersonProfileResponse } from '@/types/personProfile'
 
 export const usePeopleStore = defineStore('people', {
   state: () => ({
@@ -11,6 +12,12 @@ export const usePeopleStore = defineStore('people', {
 
   actions: {
     /** Refetch directory. Use `{ silent: true }` after saves so the table does not swap to the full-page loader. */
+    /** Authenticated viewers (and above) only; backend returns 401/403 otherwise. */
+    async fetchPersonProfile(id: string): Promise<PersonProfileResponse> {
+      const { data } = await apiClient.get<PersonProfileResponse>(`/people/${id}`)
+      return data
+    },
+
     async fetchPeople(opts?: { silent?: boolean }) {
       const silent = opts?.silent === true
       if (!silent) {

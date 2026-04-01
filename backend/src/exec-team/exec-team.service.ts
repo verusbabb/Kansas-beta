@@ -20,6 +20,7 @@ import { ExecTermPublicDto } from './dto/exec-term-public.dto'
 import { ExecRosterResponseDto } from './dto/exec-roster-response.dto'
 import { ExecRosterSlotDto } from './dto/exec-roster-slot.dto'
 import { ExecRosterPersonDto } from './dto/exec-roster-person.dto'
+import { PersonExecHistoryEntryDto } from './dto/person-exec-history-entry.dto'
 import { execRoleEmailForPositionCode } from './exec-position-role-emails'
 
 /** Signed URL TTL for roster headshots (embedded in public HTML). */
@@ -161,6 +162,33 @@ export class ExecTeamService {
       throw new NotFoundException('Term not found')
     }
     return this.getRoster(termId)
+  }
+
+  /**
+   * All exec assignments for this person (any term), newest term first.
+   */
+  async findExecHistoryForPerson(personId: string): Promise<PersonExecHistoryEntryDto[]> {
+    const rows = await this.execAssignmentModel.findAll({
+      where: { personId },
+      include: [
+        { model: this.execTermModel, required: true },
+        { model: this.execPositionModel, required: true },
+      ],
+    })
+
+    rows.sort((a, b) => {
+      const ta = a.execTerm!
+      const tb = b.execTerm!
+      if (tb.year !== ta.year) return tb.year - ta.year
+      const bySeason = tb.season.localeCompare(ta.season)
+      if (bySeason !== 0) return bySeason
+      return (a.execPosition!.sortOrder ?? 0) - (b.execPosition!.sortOrder ?? 0)
+    })
+
+    return rows.map((a) => ({
+      term: this.toTermDto(a.execTerm!),
+      position: this.toPositionDto(a.execPosition!),
+    }))
   }
 
   async createTerm(dto: CreateExecTermDto): Promise<ExecTermPublicDto> {

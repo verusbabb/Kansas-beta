@@ -9,6 +9,7 @@ import MembersAndAlumni from '../views/MembersAndAlumni.vue'
 import Donate from '../views/Donate.vue'
 import ContactUs from '../views/ContactUs.vue'
 import AccessPending from '../views/AccessPending.vue'
+import PersonProfile from '../views/PersonProfile.vue'
 import Admin from '../views/Admin.vue'
 
 const router = createRouter({
@@ -26,6 +27,12 @@ const router = createRouter({
     { path: '/newsletters', component: NewsLetters },
     { path: '/events', component: Events },
     { path: '/members', component: MembersAndAlumni },
+    {
+      path: '/people/:id',
+      name: 'person-profile',
+      component: PersonProfile,
+      meta: { requiresAuth: true, requiredRole: ['viewer', 'editor', 'admin'] },
+    },
     { path: '/donate', component: Donate },
     { path: '/contact', component: ContactUs },
     { path: '/access-pending', component: AccessPending },

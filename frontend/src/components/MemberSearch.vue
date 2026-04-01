@@ -120,7 +120,14 @@
               </Column>
               <Column field="lastName" header="Name" sortable>
                 <template #body="{ data }">
-                  <span class="font-medium text-surface-900">
+                  <RouterLink
+                    v-if="canOpenPersonProfile"
+                    :to="{ name: 'person-profile', params: { id: data.id } }"
+                    class="font-medium text-[#6F8FAF] hover:underline"
+                  >
+                    {{ data.firstName }} {{ data.lastName }}
+                  </RouterLink>
+                  <span v-else class="font-medium text-surface-900">
                     {{ data.firstName }} {{ data.lastName }}
                   </span>
                 </template>
@@ -807,6 +814,9 @@ watch([searchQuery, yearFilter, roleFilter, showLegacyTiesOnly], () => {
 })
 
 const canEdit = computed(() => props.variant === 'admin' && authStore.isEditor)
+
+/** Logged-in site users (viewer / editor / admin) can open full profiles; guests see plain names. */
+const canOpenPersonProfile = computed(() => authStore.isViewer && !!authStore.user)
 
 const tableMinWidthClass = computed(() => {
   if (props.variant === 'admin' && canEdit.value) return 'min-w-[860px]'
