@@ -95,4 +95,11 @@ export class Person extends BaseEntity {
     defaultValue: false,
   })
   isParent!: boolean
+
+  /** GCS object path for optional headshot (signed URLs for display). */
+  @Column({
+    type: DataType.STRING(512),
+    allowNull: true,
+  })
+  headshotFilePath?: string | null
 }

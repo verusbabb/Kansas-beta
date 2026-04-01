@@ -10,7 +10,14 @@ import {
   Post,
   Delete,
   UseGuards,
+  UseInterceptors,
+  UploadedFile,
+  BadRequestException,
+  ParseFilePipe,
+  MaxFileSizeValidator,
+  FileTypeValidator,
 } from '@nestjs/common'
+import { FileInterceptor } from '@nestjs/platform-express'
 import { ApiBearerAuth, ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger'
 import { PinoLogger } from 'nestjs-pino'
 import { PeopleService } from './people.service'
@@ -22,6 +29,7 @@ import { RolesGuard } from '../auth/guards/roles.guard'
 import { UserLookupGuard } from '../auth/guards/user-lookup.guard'
 import { Roles } from '../auth/decorators/roles.decorator'
 import { UserRole } from '../database/entities/user.entity'
+import type { PersonHeadshotFile } from './people.service'
 
 @ApiTags('People')
 @Controller('people')
@@ -41,6 +49,48 @@ export class PeopleController {
   @ApiResponse({ status: HttpStatus.OK, type: [PersonResponseDto] })
   async findAll(): Promise<PersonResponseDto[]> {
     return this.peopleService.findAll()
+  }
+
+  @Post(':id/headshot')
+  @UseGuards(JwtAuthGuard, UserLookupGuard, RolesGuard)
+  @Roles(UserRole.EDITOR, UserRole.ADMIN)
+  @UseInterceptors(FileInterceptor('file'))
+  @HttpCode(HttpStatus.OK)
+  @ApiBearerAuth()
+  @ApiParam({ name: 'id', description: 'Person UUID' })
+  @ApiOperation({
+    summary: 'Upload or replace headshot for a member (editor/admin)',
+    description: 'Stored in GCS; used on the executive team roster. Members only.',
+  })
+  @ApiResponse({ status: HttpStatus.OK, type: PersonResponseDto })
+  async uploadHeadshot(
+    @Param('id', ParseUUIDPipe) id: string,
+    @UploadedFile(
+      new ParseFilePipe({
+        validators: [
+          new MaxFileSizeValidator({ maxSize: 10 * 1024 * 1024 }),
+          new FileTypeValidator({ fileType: 'image/(jpeg|jpg|png|webp|gif)' }),
+        ],
+      }),
+    )
+    file: PersonHeadshotFile,
+  ): Promise<PersonResponseDto> {
+    if (!file) {
+      throw new BadRequestException('File is required')
+    }
+    return this.peopleService.uploadHeadshot(id, file)
+  }
+
+  @Delete(':id/headshot')
+  @UseGuards(JwtAuthGuard, UserLookupGuard, RolesGuard)
+  @Roles(UserRole.EDITOR, UserRole.ADMIN)
+  @HttpCode(HttpStatus.OK)
+  @ApiBearerAuth()
+  @ApiParam({ name: 'id', description: 'Person UUID' })
+  @ApiOperation({ summary: 'Remove headshot image (editor/admin)' })
+  @ApiResponse({ status: HttpStatus.OK, type: PersonResponseDto })
+  async clearHeadshot(@Param('id', ParseUUIDPipe) id: string): Promise<PersonResponseDto> {
+    return this.peopleService.clearHeadshot(id)
   }
 
   @Patch(':id')

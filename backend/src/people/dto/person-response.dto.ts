@@ -43,6 +43,11 @@ export class PersonResponseDto {
   })
   hasLegacyMemberLink!: boolean
 
+  @ApiPropertyOptional({
+    description: 'True if a headshot image is stored (GCS); used for exec team display.',
+  })
+  hasHeadshot?: boolean
+
   @ApiProperty()
   createdAt!: Date
 

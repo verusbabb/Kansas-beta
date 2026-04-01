@@ -13,6 +13,16 @@ import { CreatePersonDto, PersonKindDto } from './dto/create-person.dto'
 import { UpdatePersonDto } from './dto/update-person.dto'
 import { normalizeUsPhoneForStorage } from '../common/utils/us-phone'
 import { PersonResponseDto } from './dto/person-response.dto'
+import { StorageService } from '../storage/storage.service'
+
+export interface PersonHeadshotFile {
+  fieldname: string
+  originalname: string
+  encoding: string
+  mimetype: string
+  size: number
+  buffer: Buffer
+}
 
 @Injectable()
 export class PeopleService {
@@ -21,6 +31,7 @@ export class PeopleService {
     private personModel: typeof Person,
     @InjectModel(PersonRelationship)
     private personRelationshipModel: typeof PersonRelationship,
+    private readonly storageService: StorageService,
     private readonly logger: PinoLogger,
   ) {
     this.logger.setContext(PeopleService.name)
@@ -54,6 +65,7 @@ export class PeopleService {
       isMember: person.isMember,
       isParent: person.isParent,
       hasLegacyMemberLink,
+      hasHeadshot: !!person.headshotFilePath,
       createdAt: person.createdAt,
       updatedAt: person.updatedAt,
     }
@@ -250,5 +262,62 @@ export class PeopleService {
     }
     await person.destroy()
     this.logger.info('Soft-deleted person', { id })
+  }
+
+  async uploadHeadshot(id: string, file: PersonHeadshotFile): Promise<PersonResponseDto> {
+    const person = await this.personModel.findByPk(id)
+    if (!person) {
+      throw new NotFoundException('Person not found')
+    }
+    if (!person.isMember) {
+      throw new BadRequestException('Headshots are only for chapter members')
+    }
+
+    const validImageTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif']
+    if (!file.mimetype || !validImageTypes.includes(file.mimetype)) {
+      throw new BadRequestException('File must be an image (JPEG, PNG, WebP, or GIF)')
+    }
+    const maxSize = 10 * 1024 * 1024
+    if (file.size > maxSize) {
+      throw new BadRequestException('File size must be less than 10MB')
+    }
+
+    const now = new Date()
+    const y = now.getFullYear()
+    const m = String(now.getMonth() + 1).padStart(2, '0')
+    const ts = now.getTime()
+    const safeName = file.originalname.replace(/[^a-zA-Z0-9.-]/g, '_')
+    const filePath = `people-headshots/${y}/${m}/${id}/${ts}-${safeName}`
+
+    if (person.headshotFilePath) {
+      try {
+        await this.storageService.deleteFile(person.headshotFilePath)
+      } catch {
+        /* ignore */
+      }
+    }
+
+    const uploaded = await this.storageService.uploadFile(file.buffer, filePath, file.mimetype)
+    person.headshotFilePath = uploaded
+    await person.save()
+    this.logger.info('Uploaded person headshot', { id })
+    return this.toResponseDto(person, await this.personHasLegacyMemberLink(person.id))
+  }
+
+  async clearHeadshot(id: string): Promise<PersonResponseDto> {
+    const person = await this.personModel.findByPk(id)
+    if (!person) {
+      throw new NotFoundException('Person not found')
+    }
+    if (person.headshotFilePath) {
+      try {
+        await this.storageService.deleteFile(person.headshotFilePath)
+      } catch {
+        /* ignore */
+      }
+      person.headshotFilePath = null
+      await person.save()
+    }
+    return this.toResponseDto(person, await this.personHasLegacyMemberLink(person.id))
   }
 }

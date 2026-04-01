@@ -106,6 +106,8 @@
             <MemberSearch variant="admin" />
           </div>
 
+          <AdminExecTeam v-if="activeSection === 'exec-team'" />
+
           <!-- Users Section -->
           <AdminUsers v-if="activeSection === 'users'" />
 
@@ -138,7 +140,6 @@
           <AdminHealthCheck v-if="activeSection === 'health'" />
 
           <!-- Settings Sub-sections -->
-          <AdminExecTeam v-if="activeSection === 'settings-exec-team'" />
           <AdminHomePageImages v-if="activeSection === 'settings-home-images'" />
 
           <!-- Overview Section -->
@@ -170,13 +171,26 @@ const router = useRouter()
 
 // Initialize activeSection from URL query parameter or default to 'overview'
 const validSectionIds = [
-  'overview', 'newsletter', 'users', 'member', 'alumni', 'rush', 'health',
-  'settings', 'settings-exec-team', 'settings-home-images'
+  'overview',
+  'newsletter',
+  'users',
+  'member',
+  'exec-team',
+  'alumni',
+  'rush',
+  'health',
+  'settings',
+  'settings-home-images',
 ]
 const sectionFromQuery = route.query.section
-const initialSection = (sectionFromQuery && typeof sectionFromQuery === 'string' && validSectionIds.includes(sectionFromQuery))
-  ? sectionFromQuery
-  : 'overview'
+const normalizedSection =
+  sectionFromQuery && typeof sectionFromQuery === 'string'
+    ? sectionFromQuery === 'settings-exec-team'
+      ? 'exec-team'
+      : sectionFromQuery
+    : null
+const initialSection =
+  normalizedSection && validSectionIds.includes(normalizedSection) ? normalizedSection : 'overview'
 const activeSection = ref(initialSection)
 
 // Settings menu state
@@ -232,6 +246,11 @@ const navItems = [
     icon: 'pi pi-user-plus'
   },
   {
+    id: 'exec-team',
+    label: 'Add/Manage Exec Team',
+    icon: 'pi pi-briefcase'
+  },
+  {
     id: 'alumni',
     label: 'Add/Manage Calendar',
     icon: 'pi pi-id-card'
@@ -251,11 +270,6 @@ const navItems = [
     label: 'Site Settings',
     icon: 'pi pi-cog',
     items: [
-      {
-        id: 'settings-exec-team',
-        label: 'Exec Team',
-        icon: 'pi pi-users'
-      },
       {
         id: 'settings-home-images',
         label: 'Home Page Images',

@@ -43,6 +43,8 @@ export interface PersonResponse {
   isParent: boolean
   /** At least one member↔member relationship (both sides chapter members), not parent-only family links. */
   hasLegacyMemberLink: boolean
+  /** True when a headshot is stored (exec team / display). */
+  hasHeadshot?: boolean
   createdAt: string
   updatedAt: string
 }

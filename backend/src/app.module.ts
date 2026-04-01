@@ -13,6 +13,7 @@ import { CalendarEventsModule } from './calendar-events/calendar-events.module'
 import { HeroImagesModule } from './hero-images/hero-images.module'
 import { PeopleModule } from './people/people.module'
 import { PersonRelationshipsModule } from './person-relationships/person-relationships.module'
+import { ExecTeamModule } from './exec-team/exec-team.module'
 import { createLoggerConfig } from './config/logger.config'
 import { HttpExceptionFilter } from './common/filters/http-exception.filter'
 import { AppConfig } from './config/configuration'
@@ -28,6 +29,7 @@ import { AppConfig } from './config/configuration'
     HeroImagesModule, // Hero images API
     PeopleModule, // Chapter directory (members/parents)
     PersonRelationshipsModule, // Legacy / family links between people
+    ExecTeamModule, // Executive team terms and roster
     LoggerModule.forRootAsync({
       inject: [ConfigService],
       useFactory: (configService: ConfigService<AppConfig>) => {

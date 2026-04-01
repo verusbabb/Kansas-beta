@@ -10,6 +10,9 @@ import { CalendarEvent } from './entities/calendar-event.entity'
 import { HeroImage } from './entities/hero-image.entity'
 import { Person } from './entities/person.entity'
 import { PersonRelationship } from './entities/person-relationship.entity'
+import { ExecPosition } from './entities/exec-position.entity'
+import { ExecTerm } from './entities/exec-term.entity'
+import { ExecAssignment } from './entities/exec-assignment.entity'
 
 @Module({
   imports: [
@@ -77,6 +80,9 @@ import { PersonRelationship } from './entities/person-relationship.entity'
           HeroImage,
           Person,
           PersonRelationship,
+          ExecPosition,
+          ExecTerm,
+          ExecAssignment,
         ]
 
         return sequelizeConfig
@@ -91,6 +97,9 @@ import { PersonRelationship } from './entities/person-relationship.entity'
       HeroImage,
       Person,
       PersonRelationship,
+      ExecPosition,
+      ExecTerm,
+      ExecAssignment,
     ]),
   ],
   exports: [SequelizeModule],
