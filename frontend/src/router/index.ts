@@ -8,6 +8,7 @@ import Events from '../views/Events.vue'
 import MembersAndAlumni from '../views/MembersAndAlumni.vue'
 import Donate from '../views/Donate.vue'
 import ContactUs from '../views/ContactUs.vue'
+import AccessPending from '../views/AccessPending.vue'
 import Admin from '../views/Admin.vue'
 
 const router = createRouter({
@@ -27,6 +28,7 @@ const router = createRouter({
     { path: '/members', component: MembersAndAlumni },
     { path: '/donate', component: Donate },
     { path: '/contact', component: ContactUs },
+    { path: '/access-pending', component: AccessPending },
     { 
       path: '/admin', 
       component: Admin,

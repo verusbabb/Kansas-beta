@@ -82,17 +82,15 @@ export const useAuthStore = defineStore('auth', () => {
           
           // Clear user profile before logout
           clearUser()
-          
-          // Delay logout to give user time to see the error toast message
-          // The toast has a 5 second lifetime, so 3 seconds is enough to read it
-          setTimeout(() => {
-            // Logout from Auth0 to clear session, allowing user to login again after being created
-            auth0.logout({
-              logoutParams: {
-                returnTo: window.location.origin
-              }
-            })
-          }, 3000) // 3 second delay
+
+          // Return users to a dedicated page after Auth0 logout (add this URL to Auth0
+          // Application → Allowed Logout URLs if your tenant requires exact paths).
+          const returnTo = `${window.location.origin}/access-pending`
+          auth0.logout({
+            logoutParams: {
+              returnTo,
+            },
+          })
         } else if (!isUsersMeEndpoint) {
           console.warn('User not authorized - may need to be created in database first')
         }
