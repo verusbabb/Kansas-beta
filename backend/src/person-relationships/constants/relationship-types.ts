@@ -2,34 +2,22 @@
  * Directed edge semantics: `from` is the `relationshipType` of `to`
  * (e.g. from=Bob, to=Sam, type=uncle → Bob is Sam’s uncle).
  * Nullable type = linked, relationship not yet specified.
+ *
+ * Fraternity-focused: male members + parents; gender-neutral parent/grandparent tiers.
  */
 export const PERSON_RELATIONSHIP_TYPES = [
-  'son',
-  'daughter',
-  'child',
-  'father',
-  'mother',
   'parent',
+  'son',
   'brother',
-  'sister',
-  'sibling',
-  'grandfather',
-  'grandmother',
-  'grandparent',
-  'grandson',
-  'granddaughter',
-  'grandchild',
-  'great_grandfather',
-  'great_grandmother',
-  'great_grandparent',
-  'great_grandson',
-  'great_granddaughter',
-  'great_grandchild',
-  'uncle',
-  'aunt',
-  'nephew',
-  'niece',
   'cousin',
+  'grandparent',
+  'great_grandparent',
+  'great_great_grandparent',
+  'grandchild',
+  'great_grandchild',
+  'great_great_grandchild',
+  'uncle',
+  'nephew',
 ] as const
 
 export type PersonRelationshipType = (typeof PERSON_RELATIONSHIP_TYPES)[number]

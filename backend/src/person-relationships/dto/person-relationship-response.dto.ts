@@ -23,6 +23,12 @@ export class PersonRelationshipCounterpartDto {
     description: 'True if this person is soft-deleted but the link is still listed',
   })
   removedFromDirectory!: boolean
+
+  @ApiPropertyOptional({
+    description: 'Pledge class year when counterpart is a member (PC year)',
+    nullable: true,
+  })
+  pledgeClassYear?: number | null
 }
 
 export class PersonRelationshipResponseDto {
@@ -51,6 +57,19 @@ export class PersonRelationshipResponseDto {
     description: 'True if the viewer (`personId` in URL) is `fromPersonId`',
   })
   viewerIsFrom!: boolean
+
+  @ApiProperty({
+    description:
+      'Viewer-centric role of the counterpart (e.g. Father, Son, Brother) for table-style display',
+  })
+  viewerCounterpartRoleLabel!: string
+
+  @ApiProperty({
+    description: 'Legacy = both are members; Family = kin (except peer brother when both members)',
+    enum: ['legacy', 'family'],
+    isArray: true,
+  })
+  connectionTags!: ('legacy' | 'family')[]
 
   @ApiProperty()
   createdAt!: Date

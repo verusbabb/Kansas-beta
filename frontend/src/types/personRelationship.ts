@@ -1,6 +1,8 @@
 /** Matches backend `PersonRelationshipConnectDirectionDto` */
 export type PersonRelationshipDirection = 'other_is_from' | 'other_is_to'
 
+export type PersonConnectionTag = 'legacy' | 'family'
+
 export interface PersonRelationshipCounterpart {
   id: string
   firstName: string
@@ -9,6 +11,7 @@ export interface PersonRelationshipCounterpart {
   isMember: boolean
   isParent: boolean
   removedFromDirectory: boolean
+  pledgeClassYear?: number | null
 }
 
 export interface PersonRelationshipResponse {
@@ -19,6 +22,8 @@ export interface PersonRelationshipResponse {
   relationshipType: string | null
   notes: string | null
   viewerIsFrom: boolean
+  viewerCounterpartRoleLabel: string
+  connectionTags: PersonConnectionTag[]
   createdAt: string
   updatedAt: string
 }

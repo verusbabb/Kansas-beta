@@ -191,28 +191,41 @@
                     <template
                       v-if="(rowRelState[row.id]?.list?.length ?? 0) > 0"
                     >
-                      <div
-                        v-for="bucket in relationshipBuckets(row, rowRelState[row.id]!.list)"
-                        :key="bucket.key"
-                        class="mb-4 last:mb-0 pl-5"
-                      >
-                        <div class="font-bold text-surface-900 mb-1.5">
-                          {{ bucket.title }}
-                        </div>
-                        <ul class="m-0 list-none space-y-0 p-0 text-sm text-surface-800">
-                          <li
-                            v-for="rel in bucket.items"
-                            :key="rel.id"
-                            class="m-0 flex items-start gap-2 py-0 leading-tight"
+                      <div class="font-bold text-surface-900 mb-1.5 pl-5">Connections</div>
+                      <ul class="m-0 list-none space-y-1.5 p-0 pl-5 text-sm text-surface-800">
+                        <li
+                          v-for="rel in rowRelState[row.id]!.list"
+                          :key="rel.id"
+                          class="m-0 flex items-start gap-2 py-0 leading-tight"
+                        >
+                          <span
+                            class="shrink-0 select-none text-[#6F8FAF] leading-tight"
+                            aria-hidden="true"
+                          >•</span>
+                          <div
+                            class="flex min-w-0 flex-1 flex-wrap items-start justify-between gap-x-2 gap-y-1"
                           >
-                            <span
-                              class="shrink-0 select-none text-[#6F8FAF] leading-tight"
-                              aria-hidden="true"
-                            >•</span>
-                            <div class="flex min-w-0 flex-1 items-start justify-between gap-2">
-                              <span class="min-w-0 flex-1 pr-2 leading-tight">{{
-                                personRelationshipPhrase(rel, row)
-                              }}</span>
+                            <span class="min-w-0 flex-1 pr-2 leading-tight">
+                              <span class="font-medium text-surface-900">
+                                {{ rel.counterpart.firstName }} {{ rel.counterpart.lastName }}
+                              </span>
+                              <template v-if="rel.counterpart.pledgeClassYear != null">
+                                <span class="text-surface-600"
+                                  >, PC {{ rel.counterpart.pledgeClassYear }}</span
+                                >
+                              </template>
+                              <span class="text-surface-700"
+                                >, {{ rel.viewerCounterpartRoleLabel ?? 'Connection' }}</span
+                              >
+                            </span>
+                            <span class="flex shrink-0 flex-wrap items-center gap-1">
+                              <Tag
+                                v-for="tag in rel.connectionTags ?? []"
+                                :key="tag"
+                                :value="tag === 'legacy' ? 'Legacy' : 'Family'"
+                                :severity="tag === 'legacy' ? 'secondary' : 'success'"
+                                class="text-xs"
+                              />
                               <Button
                                 v-if="canEdit"
                                 type="button"
@@ -227,10 +240,10 @@
                                 :loading="removingRelKey === relRemoveKey(row.id, rel.id)"
                                 @click="confirmRemoveRowRelationship(row, rel)"
                               />
-                            </div>
-                          </li>
-                        </ul>
-                      </div>
+                            </span>
+                          </div>
+                        </li>
+                      </ul>
                     </template>
                     <p v-else class="text-surface-600 m-0 pl-5 text-sm">No connections listed yet.</p>
 
@@ -523,6 +536,7 @@ import Column from 'primevue/column'
 import Checkbox from 'primevue/checkbox'
 import Message from 'primevue/message'
 import Button from 'primevue/button'
+import Tag from 'primevue/tag'
 import Dialog from 'primevue/dialog'
 import ConfirmDialog from 'primevue/confirmdialog'
 import { useToast } from 'primevue/usetoast'
@@ -533,7 +547,6 @@ import { useAuthStore } from '@/stores/auth'
 import type { PersonResponse, PersonKind, UpdatePersonPayload } from '@/types/person'
 import type { PersonRelationshipResponse } from '@/types/personRelationship'
 import { usePersonRelationshipsStore } from '@/stores/personRelationships'
-import { personRelationshipPhrase } from '@/utils/personRelationshipPhrase'
 import { PERSON_RELATIONSHIP_TYPE_OPTIONS } from '@/constants/relationshipTypes'
 import { US_STATE_CODE_SET, US_STATE_OPTIONS, normalizeUsStateForSelect } from '@/constants/usStates'
 import { formatUsPhoneForDisplay, usPhoneDigits } from '@/utils/usPhone'
@@ -705,7 +718,7 @@ function rowExpandRelationshipPlaceholder(row: PersonResponse) {
   const otherId = f?.otherPersonId
   const other = otherId ? peopleStore.list.find((p) => p.id === otherId) : null
   const on = other ? `${other.firstName} ${other.lastName}` : 'They'
-  return `${on} is ${row.firstName}'s… (e.g. father)`
+  return `${on} is ${row.firstName}'s… (e.g. parent)`
 }
 
 async function submitRowExpandAdd(anchor: PersonResponse) {
@@ -870,29 +883,6 @@ function formatAddress(p: PersonResponse): string {
     .filter((s) => s && String(s).trim())
     .join(', ')
   return line || '—'
-}
-
-type RelationshipBucket = {
-  key: 'legacy' | 'parent'
-  title: string
-  items: PersonRelationshipResponse[]
-}
-
-/** Member↔member = legacy; anything else (e.g. parent↔member) = parent connections. Matches `hasLegacyMemberLink` semantics. */
-function relationshipBuckets(
-  anchor: PersonResponse,
-  list: PersonRelationshipResponse[],
-): RelationshipBucket[] {
-  const legacy: PersonRelationshipResponse[] = []
-  const parent: PersonRelationshipResponse[] = []
-  for (const rel of list) {
-    if (anchor.isMember && rel.counterpart.isMember) legacy.push(rel)
-    else parent.push(rel)
-  }
-  const out: RelationshipBucket[] = []
-  if (legacy.length) out.push({ key: 'legacy', title: 'Legacy Connections', items: legacy })
-  if (parent.length) out.push({ key: 'parent', title: 'Parent Connections', items: parent })
-  return out
 }
 
 function matchesSearch(person: PersonResponse, q: string): boolean {

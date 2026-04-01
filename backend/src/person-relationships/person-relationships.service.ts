@@ -19,6 +19,10 @@ import {
   PersonRelationshipCounterpartDto,
   PersonRelationshipResponseDto,
 } from './dto/person-relationship-response.dto'
+import {
+  computeConnectionTags,
+  viewerCounterpartRoleLabel,
+} from './relationship-connection-display'
 
 @Injectable()
 export class PersonRelationshipsService {
@@ -41,12 +45,19 @@ export class PersonRelationshipsService {
       isMember: person.isMember,
       isParent: person.isParent,
       removedFromDirectory: person.deletedAt != null,
+      pledgeClassYear: person.pledgeClassYear ?? null,
     }
   }
 
   private toResponseDto(rel: PersonRelationship, viewerId: string): PersonRelationshipResponseDto {
     const viewerIsFrom = rel.fromPersonId === viewerId
+    const viewerPerson = viewerIsFrom ? rel.fromPerson : rel.toPerson
     const counterpartPerson = viewerIsFrom ? rel.toPerson : rel.fromPerson
+    const connectionTags = computeConnectionTags(
+      viewerPerson.isMember,
+      counterpartPerson.isMember,
+      rel.relationshipType,
+    )
     return {
       id: rel.id,
       fromPersonId: rel.fromPersonId,
@@ -55,6 +66,8 @@ export class PersonRelationshipsService {
       relationshipType: rel.relationshipType ?? null,
       notes: rel.notes ?? null,
       viewerIsFrom,
+      viewerCounterpartRoleLabel: viewerCounterpartRoleLabel(rel.relationshipType, viewerIsFrom),
+      connectionTags,
       createdAt: rel.createdAt,
       updatedAt: rel.updatedAt,
     }
