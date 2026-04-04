@@ -121,15 +121,11 @@
               <Column field="lastName" header="Name" sortable>
                 <template #body="{ data }">
                   <RouterLink
-                    v-if="canOpenPersonProfile"
                     :to="{ name: 'person-profile', params: { id: data.id } }"
                     class="font-medium text-[#6F8FAF] hover:underline"
                   >
                     {{ data.firstName }} {{ data.lastName }}
                   </RouterLink>
-                  <span v-else class="font-medium text-surface-900">
-                    {{ data.firstName }} {{ data.lastName }}
-                  </span>
                 </template>
               </Column>
               <Column field="email" header="Email" sortable>
@@ -146,7 +142,9 @@
                 <template #body="{ data }">
                   <span
                     v-if="formatPhonesDisplay(data)"
-                    class="text-surface-800 whitespace-normal text-sm"
+                    class="text-surface-800 whitespace-normal text-sm inline-block max-w-full"
+                    :class="phoneBlurClass"
+                    :title="phoneBlurTitle"
                   >
                     {{ formatPhonesDisplay(data) }}
                   </span>
@@ -833,8 +831,18 @@ watch([searchQuery, yearFilter, roleFilter, showLegacyTiesOnly], () => {
 
 const canEdit = computed(() => props.variant === 'admin' && authStore.isEditor)
 
-/** Logged-in site users (viewer / editor / admin) can open full profiles; guests see plain names. */
-const canOpenPersonProfile = computed(() => authStore.isViewer && !!authStore.user)
+/** Admin directory shows phones to editors; public People table shows clear phones only to admins. */
+const showDirectoryPhonesClearly = computed(
+  () => props.variant === 'admin' || authStore.isAdmin,
+)
+
+const phoneBlurClass = computed(() =>
+  showDirectoryPhonesClearly.value ? '' : 'select-none blur-[6px]',
+)
+
+const phoneBlurTitle = computed(() =>
+  showDirectoryPhonesClearly.value ? undefined : 'Phone numbers are visible to site administrators only',
+)
 
 const tableMinWidthClass = computed(() => {
   if (props.variant === 'admin' && canEdit.value) return 'min-w-[860px]'

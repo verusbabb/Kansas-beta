@@ -31,7 +31,6 @@ const router = createRouter({
       path: '/people/:id',
       name: 'person-profile',
       component: PersonProfile,
-      meta: { requiresAuth: true, requiredRole: ['viewer', 'editor', 'admin'] },
     },
     { path: '/donate', component: Donate },
     { path: '/contact', component: ContactUs },

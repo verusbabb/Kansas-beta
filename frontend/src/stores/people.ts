@@ -16,7 +16,7 @@ export const usePeopleStore = defineStore('people', {
 
   actions: {
     /** Refetch directory. Use `{ silent: true }` after saves so the table does not swap to the full-page loader. */
-    /** Authenticated viewers (and above) only; backend returns 401/403 otherwise. */
+    /** Public endpoint; works with or without a JWT. */
     async fetchPersonProfile(id: string): Promise<PersonProfileResponse> {
       const { data } = await apiClient.get<PersonProfileResponse>(`/people/${id}`)
       return data

@@ -79,18 +79,14 @@ export class PeopleController {
   }
 
   @Get(':id')
-  @UseGuards(JwtAuthGuard, UserLookupGuard, RolesGuard)
-  @Roles(UserRole.VIEWER, UserRole.EDITOR, UserRole.ADMIN)
-  @ApiBearerAuth()
   @ApiParam({ name: 'id', description: 'Person UUID' })
   @ApiOperation({
-    summary: 'Directory person profile (viewer / editor / admin)',
+    summary: 'Directory person profile (public)',
     description:
-      'Contact and directory fields, legacy/family connections, and executive offices held across all terms.',
+      'Same payload for guests and signed-in users: contact and directory fields, connections, exec history, headshot URL when present. Phone numbers may be obscured in the UI for non-admins.',
   })
   @ApiResponse({ status: HttpStatus.OK, type: PersonProfileResponseDto })
   @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'Person not found' })
-  @ApiResponse({ status: HttpStatus.FORBIDDEN, description: 'Site role required' })
   async findProfile(@Param('id', ParseUUIDPipe) id: string): Promise<PersonProfileResponseDto> {
     return this.peopleService.findProfileById(id)
   }

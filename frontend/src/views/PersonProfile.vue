@@ -63,7 +63,9 @@
               <dd class="m-0 text-surface-800">
                 <span
                   v-if="formatUsPhoneForDisplay(profile.person.mobilePhone)"
-                  class="whitespace-nowrap"
+                  class="whitespace-nowrap inline-block"
+                  :class="profilePhoneBlurClass"
+                  :title="profilePhoneBlurTitle"
                 >
                   {{ formatUsPhoneForDisplay(profile.person.mobilePhone) }}
                 </span>
@@ -71,7 +73,12 @@
               </dd>
               <dt class="text-surface-500 font-medium">Home</dt>
               <dd class="m-0 text-surface-800">
-                <span v-if="formatUsPhoneForDisplay(profile.person.homePhone)" class="whitespace-nowrap">
+                <span
+                  v-if="formatUsPhoneForDisplay(profile.person.homePhone)"
+                  class="whitespace-nowrap inline-block"
+                  :class="profilePhoneBlurClass"
+                  :title="profilePhoneBlurTitle"
+                >
                   {{ formatUsPhoneForDisplay(profile.person.homePhone) }}
                 </span>
                 <span v-else class="text-surface-400">—</span>
@@ -153,7 +160,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { ref, watch, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import Card from 'primevue/card'
 import Button from 'primevue/button'
@@ -166,10 +173,22 @@ import type { PersonResponse } from '@/types/person'
 import type { PersonRelationshipResponse } from '@/types/personRelationship'
 import type { ExecTermPublic } from '@/types/execTeam'
 import { formatUsPhoneForDisplay } from '@/utils/usPhone'
+import { useAuthStore } from '@/stores/auth'
 
 const route = useRoute()
 const router = useRouter()
 const peopleStore = usePeopleStore()
+const authStore = useAuthStore()
+
+const showProfilePhonesClearly = computed(() => authStore.isAdmin)
+
+const profilePhoneBlurClass = computed(() =>
+  showProfilePhonesClearly.value ? '' : 'select-none blur-[6px]',
+)
+
+const profilePhoneBlurTitle = computed(() =>
+  showProfilePhonesClearly.value ? undefined : 'Phone numbers are visible to site administrators only',
+)
 
 const loading = ref(true)
 const loadError = ref<string | null>(null)
