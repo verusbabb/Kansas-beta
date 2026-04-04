@@ -11,9 +11,26 @@ import {
   Min,
   MinLength,
   MaxLength,
+  ValidateIf,
 } from 'class-validator'
 import { US_STATE_CODES } from '../constants/us-states'
 import { PersonKindDto } from './create-person.dto'
+
+function patchTextOrNull({ value }: { value: unknown }): unknown {
+  if (value === undefined) return undefined
+  if (value === null) return null
+  if (typeof value !== 'string') return value
+  const t = value.trim()
+  return t.length ? t : null
+}
+
+function patchStateOrNull({ value }: { value: unknown }): unknown {
+  if (value === undefined) return undefined
+  if (value === null) return null
+  if (typeof value !== 'string') return value
+  const t = value.trim().toUpperCase()
+  return t.length ? t : null
+}
 
 export class UpdatePersonDto {
   @ApiPropertyOptional({ enum: PersonKindDto })
@@ -33,48 +50,64 @@ export class UpdatePersonDto {
   @MinLength(1)
   lastName?: string
 
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({ description: 'Omit to leave unchanged; null clears' })
   @IsOptional()
+  @Transform(patchTextOrNull)
+  @ValidateIf((_, v) => v !== null && v !== undefined)
   @IsString()
-  @MinLength(1)
-  addressLine1?: string
+  @MaxLength(2000)
+  addressLine1?: string | null
 
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({ description: 'Omit to leave unchanged; null clears' })
   @IsOptional()
+  @Transform(patchTextOrNull)
+  @ValidateIf((_, v) => v !== null && v !== undefined)
   @IsString()
-  @MinLength(1)
   @MaxLength(100)
-  city?: string
+  city?: string | null
 
-  @ApiPropertyOptional({ description: 'US state or DC (2-letter)', enum: US_STATE_CODES })
+  @ApiPropertyOptional({
+    description: 'US state or DC (2-letter); omit unchanged; null clears',
+    enum: US_STATE_CODES,
+  })
   @IsOptional()
-  @Transform(({ value }) =>
-    value === undefined || value === null
-      ? value
-      : typeof value === 'string'
-        ? value.trim().toUpperCase()
-        : value,
-  )
+  @Transform(patchStateOrNull)
+  @ValidateIf((_, v) => v !== null && v !== undefined)
   @IsString()
   @IsIn(US_STATE_CODES)
-  state?: string
+  state?: string | null
 
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({ description: 'Omit to leave unchanged; null clears' })
   @IsOptional()
+  @Transform(patchTextOrNull)
+  @ValidateIf((_, v) => v !== null && v !== undefined)
   @IsString()
-  @MinLength(1)
   @MaxLength(20)
-  zip?: string
+  zip?: string | null
 
   @ApiPropertyOptional()
   @IsOptional()
   @IsEmail()
   email?: string
 
+  @ApiPropertyOptional({
+    description: 'CRM contact id; send null to clear',
+  })
+  @IsOptional()
+  @ValidateIf((_, v) => v !== null)
+  @IsString()
+  @MaxLength(64)
+  externalContactId?: string | null
+
   @ApiPropertyOptional()
   @IsOptional()
   @IsString()
-  phone?: string
+  homePhone?: string | null
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  mobilePhone?: string | null
 
   /** Omit to leave unchanged; send null to clear when person is a member. */
   @ApiPropertyOptional()

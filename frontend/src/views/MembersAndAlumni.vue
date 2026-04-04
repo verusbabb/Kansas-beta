@@ -42,10 +42,12 @@
           </Card>
         </div>
 
-        <!-- Main Content Area -->
-        <div class="flex-1">
+        <!-- Main Content Area: min-w-0 so flex row can shrink and text wraps inside cards -->
+        <div class="flex-1 min-w-0">
           <!-- Exec Team Section -->
           <ExecTeam v-if="activeSection === 'exec-team'" />
+
+          <HouseMom v-if="activeSection === 'house-mom'" />
 
           <!-- Member Search Section -->
           <MemberSearch v-if="activeSection === 'member-search'" />
@@ -61,13 +63,14 @@ import Card from 'primevue/card'
 import Button from 'primevue/button'
 import { useRoute, useRouter } from 'vue-router'
 import ExecTeam from '@/components/ExecTeam.vue'
+import HouseMom from '@/components/HouseMom.vue'
 import MemberSearch from '@/components/MemberSearch.vue'
 
 const route = useRoute()
 const router = useRouter()
 
 // Initialize activeSection from URL query parameter or default to directory (members & parents)
-const validSectionIds = ['member-search', 'exec-team']
+const validSectionIds = ['member-search', 'exec-team', 'house-mom']
 const sectionFromQuery = route.query.section
 const initialSection = (sectionFromQuery && typeof sectionFromQuery === 'string' && validSectionIds.includes(sectionFromQuery))
   ? sectionFromQuery
@@ -90,6 +93,11 @@ const navItems = [
     id: 'exec-team',
     label: 'Exec Team',
     icon: 'pi pi-users',
+  },
+  {
+    id: 'house-mom',
+    label: 'House Mom',
+    icon: 'pi pi-heart',
   },
 ]
 </script>

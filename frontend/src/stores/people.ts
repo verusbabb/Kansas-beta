@@ -1,6 +1,10 @@
 import { defineStore } from 'pinia'
 import apiClient from '@/services/api'
-import type { PersonResponse, UpdatePersonPayload } from '@/types/person'
+import type {
+  PersonResponse,
+  PeopleBulkImportResponse,
+  UpdatePersonPayload,
+} from '@/types/person'
 import type { PersonProfileResponse } from '@/types/personProfile'
 
 export const usePeopleStore = defineStore('people', {
@@ -71,6 +75,16 @@ export const usePeopleStore = defineStore('people', {
       const { data } = await apiClient.delete<PersonResponse>(`/people/${id}/headshot`)
       const idx = this.list.findIndex((p) => p.id === id)
       if (idx >= 0) this.list[idx] = data
+      return data
+    },
+
+    async bulkImportPeople(file: File): Promise<PeopleBulkImportResponse> {
+      const fd = new FormData()
+      fd.append('file', file)
+      const { data } = await apiClient.post<PeopleBulkImportResponse>('/people/import', fd, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      })
+      await this.fetchPeople({ silent: true })
       return data
     },
   },

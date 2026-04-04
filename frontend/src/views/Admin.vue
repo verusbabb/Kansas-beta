@@ -103,10 +103,13 @@
           <!-- Member Section: add new people + full directory management -->
           <div v-if="activeSection === 'member'" class="flex flex-col gap-8">
             <AdminAddPerson />
+            <AdminBulkImportPeople />
             <MemberSearch variant="admin" />
           </div>
 
           <AdminExecTeam v-if="activeSection === 'exec-team'" />
+
+          <AdminHouseMom v-if="activeSection === 'house-mom'" />
 
           <!-- Users Section -->
           <AdminUsers v-if="activeSection === 'users'" />
@@ -162,8 +165,10 @@ import AdminCalendarEvents from '@/components/AdminCalendarEvents.vue'
 import AdminHealthCheck from '@/components/AdminHealthCheck.vue'
 import AdminOverview from '@/components/AdminOverview.vue'
 import AdminExecTeam from '@/components/AdminExecTeam.vue'
+import AdminHouseMom from '@/components/AdminHouseMom.vue'
 import AdminHomePageImages from '@/components/AdminHomePageImages.vue'
 import AdminAddPerson from '@/components/AdminAddPerson.vue'
+import AdminBulkImportPeople from '@/components/AdminBulkImportPeople.vue'
 import MemberSearch from '@/components/MemberSearch.vue'
 
 const route = useRoute()
@@ -176,6 +181,7 @@ const validSectionIds = [
   'users',
   'member',
   'exec-team',
+  'house-mom',
   'alumni',
   'rush',
   'health',
@@ -249,6 +255,11 @@ const navItems = [
     id: 'exec-team',
     label: 'Add/Manage Exec Team',
     icon: 'pi pi-briefcase'
+  },
+  {
+    id: 'house-mom',
+    label: 'Edit House Mom',
+    icon: 'pi pi-heart'
   },
   {
     id: 'alumni',

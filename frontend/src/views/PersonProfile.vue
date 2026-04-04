@@ -59,10 +59,20 @@
                   {{ profile.person.email }}
                 </a>
               </dd>
-              <dt class="text-surface-500 font-medium">Phone</dt>
+              <dt class="text-surface-500 font-medium">Mobile</dt>
               <dd class="m-0 text-surface-800">
-                <span v-if="formatUsPhoneForDisplay(profile.person.phone)" class="whitespace-nowrap">
-                  {{ formatUsPhoneForDisplay(profile.person.phone) }}
+                <span
+                  v-if="formatUsPhoneForDisplay(profile.person.mobilePhone)"
+                  class="whitespace-nowrap"
+                >
+                  {{ formatUsPhoneForDisplay(profile.person.mobilePhone) }}
+                </span>
+                <span v-else class="text-surface-400">—</span>
+              </dd>
+              <dt class="text-surface-500 font-medium">Home</dt>
+              <dd class="m-0 text-surface-800">
+                <span v-if="formatUsPhoneForDisplay(profile.person.homePhone)" class="whitespace-nowrap">
+                  {{ formatUsPhoneForDisplay(profile.person.homePhone) }}
                 </span>
                 <span v-else class="text-surface-400">—</span>
               </dd>
@@ -172,7 +182,7 @@ function directoryRoleLine(p: PersonResponse): string {
 }
 
 function formatAddress(p: PersonResponse): string {
-  const line = [p.addressLine1, [p.city, p.state].filter(Boolean).join(', '), p.zip]
+  const line = [p.addressLine1 ?? '', [p.city, p.state].filter(Boolean).join(', '), p.zip ?? '']
     .filter((s) => s && String(s).trim())
     .join(', ')
   return line || '—'

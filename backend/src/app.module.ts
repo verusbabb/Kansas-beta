@@ -14,6 +14,7 @@ import { HeroImagesModule } from './hero-images/hero-images.module'
 import { PeopleModule } from './people/people.module'
 import { PersonRelationshipsModule } from './person-relationships/person-relationships.module'
 import { ExecTeamModule } from './exec-team/exec-team.module'
+import { HouseMomModule } from './house-mom/house-mom.module'
 import { createLoggerConfig } from './config/logger.config'
 import { HttpExceptionFilter } from './common/filters/http-exception.filter'
 import { AppConfig } from './config/configuration'
@@ -30,6 +31,7 @@ import { AppConfig } from './config/configuration'
     PeopleModule, // Chapter directory (members/parents)
     PersonRelationshipsModule, // Legacy / family links between people
     ExecTeamModule, // Executive team terms and roster
+    HouseMomModule, // House mom profile (People page)
     LoggerModule.forRootAsync({
       inject: [ConfigService],
       useFactory: (configService: ConfigService<AppConfig>) => {

@@ -10,23 +10,31 @@ export class PersonResponseDto {
   @ApiProperty()
   lastName!: string
 
-  @ApiProperty()
-  addressLine1!: string
+  @ApiPropertyOptional({ nullable: true })
+  addressLine1?: string | null
 
-  @ApiProperty()
-  city!: string
+  @ApiPropertyOptional({ nullable: true })
+  city?: string | null
 
-  @ApiProperty()
-  state!: string
+  @ApiPropertyOptional({ nullable: true })
+  state?: string | null
 
-  @ApiProperty()
-  zip!: string
+  @ApiPropertyOptional({ nullable: true })
+  zip?: string | null
 
   @ApiProperty()
   email!: string
 
+  @ApiPropertyOptional({
+    description: 'External CRM contact id when linked (e.g. Salesforce); null if added only in this app.',
+  })
+  externalContactId?: string | null
+
   @ApiPropertyOptional()
-  phone?: string | null
+  homePhone?: string | null
+
+  @ApiPropertyOptional()
+  mobilePhone?: string | null
 
   @ApiPropertyOptional()
   pledgeClassYear?: number | null

@@ -88,7 +88,7 @@
 
           <div class="flex flex-col gap-2">
             <label for="person-address" class="font-semibold text-surface-700">
-              Street address <span class="text-red-500">*</span>
+              Street address
             </label>
             <InputText
               id="person-address"
@@ -103,7 +103,7 @@
           <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
             <div class="flex flex-col gap-2 md:col-span-1">
               <label for="person-city" class="font-semibold text-surface-700">
-                City <span class="text-red-500">*</span>
+                City
               </label>
               <InputText
                 id="person-city"
@@ -116,7 +116,7 @@
             </div>
             <div class="flex flex-col gap-2">
               <label for="person-state" class="font-semibold text-surface-700">
-                State <span class="text-red-500">*</span>
+                State
               </label>
               <Select
                 id="person-state"
@@ -128,7 +128,7 @@
                 filterMatchMode="startsWith"
                 :filterFields="['label', 'value']"
                 filterPlaceholder="Search state"
-                placeholder="Select state"
+                placeholder="Optional"
                 :class="{ 'p-invalid': errors.state }"
                 class="w-full"
               />
@@ -136,7 +136,7 @@
             </div>
             <div class="flex flex-col gap-2">
               <label for="person-zip" class="font-semibold text-surface-700">
-                ZIP <span class="text-red-500">*</span>
+                ZIP
               </label>
               <InputText
                 id="person-zip"
@@ -149,26 +149,49 @@
             </div>
           </div>
 
+          <div class="flex flex-col gap-2">
+            <label for="person-email" class="font-semibold text-surface-700">
+              Email <span class="text-red-500">*</span>
+            </label>
+            <InputText
+              id="person-email"
+              v-model="form.email"
+              type="email"
+              placeholder="name@example.com"
+              :class="{ 'p-invalid': errors.email }"
+              class="w-full md:max-w-xl"
+            />
+            <small v-if="errors.email" class="p-error">{{ errors.email }}</small>
+          </div>
+
+          <div class="flex flex-col gap-2">
+            <label for="person-external-contact-id" class="font-semibold text-surface-700">
+              CRM Contact ID
+            </label>
+            <InputText
+              id="person-external-contact-id"
+              v-model="form.externalContactId"
+              placeholder="Optional — from import / Salesforce"
+              class="w-full md:max-w-xl font-mono text-sm"
+            />
+            <small class="text-surface-500">Used to match future spreadsheet imports; leave blank if unknown.</small>
+          </div>
+
           <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
             <div class="flex flex-col gap-2">
-              <label for="person-email" class="font-semibold text-surface-700">
-                Email <span class="text-red-500">*</span>
-              </label>
+              <label for="person-mobile" class="font-semibold text-surface-700">Mobile phone</label>
               <InputText
-                id="person-email"
-                v-model="form.email"
-                type="email"
-                placeholder="name@example.com"
-                :class="{ 'p-invalid': errors.email }"
+                id="person-mobile"
+                v-model="form.mobilePhone"
+                placeholder="Optional"
                 class="w-full"
               />
-              <small v-if="errors.email" class="p-error">{{ errors.email }}</small>
             </div>
             <div class="flex flex-col gap-2">
-              <label for="person-phone" class="font-semibold text-surface-700">Phone</label>
+              <label for="person-home-phone" class="font-semibold text-surface-700">Home phone</label>
               <InputText
-                id="person-phone"
-                v-model="form.phone"
+                id="person-home-phone"
+                v-model="form.homePhone"
                 placeholder="Optional"
                 class="w-full"
               />
@@ -251,7 +274,9 @@ const form = ref({
   state: '',
   zip: '',
   email: '',
-  phone: '',
+  externalContactId: '',
+  homePhone: '',
+  mobilePhone: '',
   pledgeClassYear: null as number | null,
 })
 
@@ -281,13 +306,9 @@ const isFormFilled = computed(() => {
     f.kind &&
     f.firstName.trim() !== '' &&
     f.lastName.trim() !== '' &&
-    f.addressLine1.trim() !== '' &&
-    f.city.trim() !== '' &&
-    f.state !== '' &&
-    US_STATE_CODE_SET.has(f.state) &&
-    f.zip.trim() !== '' &&
     f.email.trim() !== '' &&
-    emailRegex.test(f.email)
+    emailRegex.test(f.email) &&
+    (f.state === '' || US_STATE_CODE_SET.has(f.state))
   )
 })
 
@@ -322,20 +343,8 @@ function validate(): boolean {
     errors.value.lastName = 'Last name is required'
     ok = false
   }
-  if (!f.addressLine1.trim()) {
-    errors.value.addressLine1 = 'Address is required'
-    ok = false
-  }
-  if (!f.city.trim()) {
-    errors.value.city = 'City is required'
-    ok = false
-  }
-  if (!f.state || !US_STATE_CODE_SET.has(f.state)) {
-    errors.value.state = 'Select a state'
-    ok = false
-  }
-  if (!f.zip.trim()) {
-    errors.value.zip = 'ZIP is required'
+  if (f.state !== '' && !US_STATE_CODE_SET.has(f.state)) {
+    errors.value.state = 'Select a valid state or leave blank'
     ok = false
   }
   if (!f.email.trim()) {
@@ -367,7 +376,9 @@ function resetForm() {
     state: '',
     zip: '',
     email: '',
-    phone: '',
+    externalContactId: '',
+    homePhone: '',
+    mobilePhone: '',
     pledgeClassYear: null,
   }
   clearErrors()
@@ -382,14 +393,23 @@ async function handleSubmit() {
       kind: form.value.kind,
       firstName: form.value.firstName.trim(),
       lastName: form.value.lastName.trim(),
-      addressLine1: form.value.addressLine1.trim(),
-      city: form.value.city.trim(),
-      state: form.value.state.trim().toUpperCase(),
-      zip: form.value.zip.trim(),
       email: form.value.email.trim(),
     }
-    const phone = form.value.phone.trim()
-    if (phone) payload.phone = phone
+    const street = form.value.addressLine1.trim()
+    if (street) payload.addressLine1 = street
+    const city = form.value.city.trim()
+    if (city) payload.city = city
+    if (form.value.state && US_STATE_CODE_SET.has(form.value.state)) {
+      payload.state = form.value.state.trim().toUpperCase()
+    }
+    const zip = form.value.zip.trim()
+    if (zip) payload.zip = zip
+    const ext = form.value.externalContactId.trim()
+    if (ext) payload.externalContactId = ext
+    const mobile = form.value.mobilePhone.trim()
+    if (mobile) payload.mobilePhone = mobile
+    const home = form.value.homePhone.trim()
+    if (home) payload.homePhone = home
     if (showPledgeField.value && form.value.pledgeClassYear != null) {
       payload.pledgeClassYear = form.value.pledgeClassYear
     }

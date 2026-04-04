@@ -25,6 +25,7 @@ import { CreatePersonDto } from './dto/create-person.dto'
 import { UpdatePersonDto } from './dto/update-person.dto'
 import { PersonResponseDto } from './dto/person-response.dto'
 import { PersonProfileResponseDto } from './dto/person-profile-response.dto'
+import { BulkImportResponseDto } from './dto/bulk-import-response.dto'
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard'
 import { RolesGuard } from '../auth/guards/roles.guard'
 import { UserLookupGuard } from '../auth/guards/user-lookup.guard'
@@ -50,6 +51,31 @@ export class PeopleController {
   @ApiResponse({ status: HttpStatus.OK, type: [PersonResponseDto] })
   async findAll(): Promise<PersonResponseDto[]> {
     return this.peopleService.findAll()
+  }
+
+  @Post('import')
+  @UseGuards(JwtAuthGuard, UserLookupGuard, RolesGuard)
+  @Roles(UserRole.EDITOR, UserRole.ADMIN)
+  @UseInterceptors(FileInterceptor('file'))
+  @HttpCode(HttpStatus.OK)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Bulk import people from CSV or tab-separated file (editor/admin)',
+    description:
+      'Required: Contact ID (CRM id), First Name, Last Name, Email, full mailing address, Constituent Code; Preferred Year for Alumni/Undergrad. Upserts by Contact ID (and adopts by email when Contact ID was not set). Optional: Home Phone, Mobile. Skipped rows are returned as skippedFileContent for download.',
+  })
+  @ApiResponse({ status: HttpStatus.OK, type: BulkImportResponseDto })
+  @ApiResponse({ status: HttpStatus.FORBIDDEN, description: 'Editor or admin required' })
+  async bulkImport(
+    @UploadedFile(
+      new ParseFilePipe({
+        validators: [new MaxFileSizeValidator({ maxSize: 15 * 1024 * 1024 })],
+        fileIsRequired: true,
+      }),
+    )
+    file: PersonHeadshotFile,
+  ): Promise<BulkImportResponseDto> {
+    return this.peopleService.bulkImportFromFile(file.buffer)
   }
 
   @Get(':id')

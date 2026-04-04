@@ -74,7 +74,7 @@
                   Legacy Members Only
                 </label>
                 <div class="flex items-center min-h-[2.125rem]">
-                  <InputSwitch
+                  <ToggleSwitch
                     v-model="showLegacyTiesOnly"
                     inputId="legacy-members-only-filter"
                   />
@@ -142,13 +142,13 @@
                   </a>
                 </template>
               </Column>
-              <Column field="phone" header="Phone" sortable>
+              <Column header="Phones" :sortable="false">
                 <template #body="{ data }">
                   <span
-                    v-if="formatUsPhoneForDisplay(data.phone)"
-                    class="text-surface-800 whitespace-nowrap"
+                    v-if="formatPhonesDisplay(data)"
+                    class="text-surface-800 whitespace-normal text-sm"
                   >
-                    {{ formatUsPhoneForDisplay(data.phone) }}
+                    {{ formatPhonesDisplay(data) }}
                   </span>
                   <span v-else class="text-surface-400">—</span>
                 </template>
@@ -401,7 +401,7 @@
 
       <div class="flex flex-col gap-2">
         <label for="edit-person-address" class="font-semibold text-surface-700">
-          Street address <span class="text-red-500">*</span>
+          Street address
         </label>
         <InputText
           id="edit-person-address"
@@ -415,7 +415,7 @@
       <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
         <div class="flex flex-col gap-2">
           <label for="edit-person-city" class="font-semibold text-surface-700">
-            City <span class="text-red-500">*</span>
+            City
           </label>
           <InputText
             id="edit-person-city"
@@ -427,7 +427,7 @@
         </div>
         <div class="flex flex-col gap-2">
           <label for="edit-person-state" class="font-semibold text-surface-700">
-            State <span class="text-red-500">*</span>
+            State
           </label>
           <Select
             id="edit-person-state"
@@ -439,7 +439,7 @@
             filterMatchMode="startsWith"
             :filterFields="['label', 'value']"
             filterPlaceholder="Search state"
-            placeholder="Select state"
+            placeholder="Optional"
             :class="{ 'p-invalid': editErrors.state }"
             class="w-full"
           />
@@ -447,7 +447,7 @@
         </div>
         <div class="flex flex-col gap-2">
           <label for="edit-person-zip" class="font-semibold text-surface-700">
-            ZIP <span class="text-red-500">*</span>
+            ZIP
           </label>
           <InputText
             id="edit-person-zip"
@@ -459,23 +459,41 @@
         </div>
       </div>
 
+      <div class="flex flex-col gap-2">
+        <label for="edit-person-email" class="font-semibold text-surface-700">
+          Email <span class="text-red-500">*</span>
+        </label>
+        <InputText
+          id="edit-person-email"
+          v-model="editForm.email"
+          type="email"
+          :class="{ 'p-invalid': editErrors.email }"
+          class="w-full"
+        />
+        <small v-if="editErrors.email" class="p-error">{{ editErrors.email }}</small>
+      </div>
+
+      <div class="flex flex-col gap-2">
+        <label for="edit-person-external-id" class="font-semibold text-surface-700">
+          CRM Contact ID
+        </label>
+        <InputText
+          id="edit-person-external-id"
+          v-model="editForm.externalContactId"
+          class="w-full font-mono text-sm"
+          placeholder="From import / Salesforce"
+        />
+        <small class="text-surface-500">Clear the field and save to remove the link to imports.</small>
+      </div>
+
       <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
         <div class="flex flex-col gap-2">
-          <label for="edit-person-email" class="font-semibold text-surface-700">
-            Email <span class="text-red-500">*</span>
-          </label>
-          <InputText
-            id="edit-person-email"
-            v-model="editForm.email"
-            type="email"
-            :class="{ 'p-invalid': editErrors.email }"
-            class="w-full"
-          />
-          <small v-if="editErrors.email" class="p-error">{{ editErrors.email }}</small>
+          <label for="edit-person-mobile" class="font-semibold text-surface-700">Mobile phone</label>
+          <InputText id="edit-person-mobile" v-model="editForm.mobilePhone" class="w-full" />
         </div>
         <div class="flex flex-col gap-2">
-          <label for="edit-person-phone" class="font-semibold text-surface-700">Phone</label>
-          <InputText id="edit-person-phone" v-model="editForm.phone" class="w-full" />
+          <label for="edit-person-home" class="font-semibold text-surface-700">Home phone</label>
+          <InputText id="edit-person-home" v-model="editForm.homePhone" class="w-full" />
         </div>
       </div>
 
@@ -537,7 +555,7 @@ import Card from 'primevue/card'
 import InputText from 'primevue/inputtext'
 import InputNumber from 'primevue/inputnumber'
 import Select from 'primevue/select'
-import InputSwitch from 'primevue/inputswitch'
+import ToggleSwitch from 'primevue/toggleswitch'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
 import Checkbox from 'primevue/checkbox'
@@ -853,7 +871,9 @@ const editForm = ref({
   state: '',
   zip: '',
   email: '',
-  phone: '',
+  externalContactId: '',
+  homePhone: '',
+  mobilePhone: '',
   pledgeClassYear: null as number | null,
 })
 
@@ -889,24 +909,38 @@ function kindFromPerson(p: PersonResponse): PersonKind {
 }
 
 function formatAddress(p: PersonResponse): string {
-  const line = [p.addressLine1, [p.city, p.state].filter(Boolean).join(', '), p.zip]
+  const line = [p.addressLine1 ?? '', [p.city, p.state].filter(Boolean).join(', '), p.zip ?? '']
     .filter((s) => s && String(s).trim())
     .join(', ')
   return line || '—'
 }
 
+function formatPhonesDisplay(p: PersonResponse): string {
+  const m = formatUsPhoneForDisplay(p.mobilePhone ?? '')
+  const h = formatUsPhoneForDisplay(p.homePhone ?? '')
+  const parts: string[] = []
+  if (m) parts.push(`M ${m}`)
+  if (h) parts.push(`H ${h}`)
+  return parts.join(' · ')
+}
+
 function matchesSearch(person: PersonResponse, q: string): boolean {
   if (!q) return true
   const needle = q.toLowerCase().trim()
-  const phoneRaw = person.phone ?? ''
-  const phoneDigits = usPhoneDigits(phoneRaw)
-  const phoneFormatted = formatUsPhoneForDisplay(phoneRaw)
+  const mobileRaw = person.mobilePhone ?? ''
+  const homeRaw = person.homePhone ?? ''
+  const phoneDigits = [usPhoneDigits(mobileRaw), usPhoneDigits(homeRaw)].filter(Boolean).join(' ')
+  const phoneFormatted = [formatUsPhoneForDisplay(mobileRaw), formatUsPhoneForDisplay(homeRaw)]
+    .filter(Boolean)
+    .join(' ')
   const hay = [
     person.firstName,
     person.lastName,
     `${person.firstName} ${person.lastName}`,
     person.email,
-    phoneRaw,
+    person.externalContactId ?? '',
+    mobileRaw,
+    homeRaw,
     phoneDigits,
     phoneFormatted,
     person.city,
@@ -1007,7 +1041,9 @@ function resetEditForm() {
     state: '',
     zip: '',
     email: '',
-    phone: '',
+    externalContactId: '',
+    homePhone: '',
+    mobilePhone: '',
     pledgeClassYear: null,
   }
   clearEditErrors()
@@ -1019,12 +1055,14 @@ function openEditDialog(p: PersonResponse) {
     kind: kindFromPerson(p),
     firstName: p.firstName,
     lastName: p.lastName,
-    addressLine1: p.addressLine1,
-    city: p.city,
+    addressLine1: p.addressLine1 ?? '',
+    city: p.city ?? '',
     state: normalizeUsStateForSelect(p.state),
-    zip: p.zip,
+    zip: p.zip ?? '',
     email: p.email,
-    phone: formatUsPhoneForDisplay(p.phone ?? ''),
+    externalContactId: p.externalContactId ?? '',
+    mobilePhone: formatUsPhoneForDisplay(p.mobilePhone ?? ''),
+    homePhone: formatUsPhoneForDisplay(p.homePhone ?? ''),
     pledgeClassYear: p.pledgeClassYear ?? null,
   }
   clearEditErrors()
@@ -1049,20 +1087,8 @@ function validateEditForm(): boolean {
     editErrors.value.lastName = 'Last name is required'
     ok = false
   }
-  if (!f.addressLine1.trim()) {
-    editErrors.value.addressLine1 = 'Address is required'
-    ok = false
-  }
-  if (!f.city.trim()) {
-    editErrors.value.city = 'City is required'
-    ok = false
-  }
-  if (!f.state || !US_STATE_CODE_SET.has(f.state)) {
-    editErrors.value.state = 'Select a state'
-    ok = false
-  }
-  if (!f.zip.trim()) {
-    editErrors.value.zip = 'ZIP is required'
+  if (f.state !== '' && !US_STATE_CODE_SET.has(f.state)) {
+    editErrors.value.state = 'Select a valid state or leave blank'
     ok = false
   }
   if (!f.email.trim()) {
@@ -1093,12 +1119,15 @@ async function submitEdit() {
       kind: f.kind,
       firstName: f.firstName.trim(),
       lastName: f.lastName.trim(),
-      addressLine1: f.addressLine1.trim(),
-      city: f.city.trim(),
-      state: f.state.trim().toUpperCase(),
-      zip: f.zip.trim(),
+      addressLine1: f.addressLine1.trim() || null,
+      city: f.city.trim() || null,
+      state:
+        f.state && US_STATE_CODE_SET.has(f.state) ? f.state.trim().toUpperCase() : null,
+      zip: f.zip.trim() || null,
       email: f.email.trim(),
-      phone: f.phone.trim() || null,
+      externalContactId: f.externalContactId.trim() || null,
+      mobilePhone: f.mobilePhone.trim() || null,
+      homePhone: f.homePhone.trim() || null,
     }
     if (showEditPledgeField.value) {
       payload.pledgeClassYear = f.pledgeClassYear

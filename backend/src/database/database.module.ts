@@ -13,6 +13,7 @@ import { PersonRelationship } from './entities/person-relationship.entity'
 import { ExecPosition } from './entities/exec-position.entity'
 import { ExecTerm } from './entities/exec-term.entity'
 import { ExecAssignment } from './entities/exec-assignment.entity'
+import { HouseMom } from './entities/house-mom.entity'
 
 @Module({
   imports: [
@@ -83,6 +84,7 @@ import { ExecAssignment } from './entities/exec-assignment.entity'
           ExecPosition,
           ExecTerm,
           ExecAssignment,
+          HouseMom,
         ]
 
         return sequelizeConfig
@@ -100,6 +102,7 @@ import { ExecAssignment } from './entities/exec-assignment.entity'
       ExecPosition,
       ExecTerm,
       ExecAssignment,
+      HouseMom,
     ]),
   ],
   exports: [SequelizeModule],

@@ -31,27 +31,38 @@ export class Person extends BaseEntity {
 
   @Column({
     type: DataType.TEXT,
-    allowNull: false,
+    allowNull: true,
   })
-  addressLine1!: string
+  addressLine1?: string | null
 
   @Column({
     type: DataType.STRING(100),
-    allowNull: false,
+    allowNull: true,
   })
-  city!: string
+  city?: string | null
 
   @Column({
     type: DataType.STRING(2),
-    allowNull: false,
+    allowNull: true,
   })
-  state!: string
+  state?: string | null
 
   @Column({
     type: DataType.STRING(20),
-    allowNull: false,
+    allowNull: true,
   })
-  zip!: string
+  zip?: string | null
+
+  /**
+   * External CRM contact id (e.g. Salesforce); used for bulk import upserts.
+   * Nullable for manually created directory rows.
+   */
+  @Index
+  @Column({
+    type: DataType.STRING(64),
+    allowNull: true,
+  })
+  externalContactId?: string | null
 
   @Unique
   @Index
@@ -68,7 +79,13 @@ export class Person extends BaseEntity {
     type: DataType.STRING,
     allowNull: true,
   })
-  phone?: string | null
+  homePhone?: string | null
+
+  @Column({
+    type: DataType.STRING,
+    allowNull: true,
+  })
+  mobilePhone?: string | null
 
   /** Graduation / pledge class year; only meaningful for members */
   @Index

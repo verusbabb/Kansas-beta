@@ -15,6 +15,20 @@ import {
 } from 'class-validator'
 import { US_STATE_CODES } from '../constants/us-states'
 
+function trimEmptyToUndefined({ value }: { value: unknown }): unknown {
+  if (value === undefined || value === null) return undefined
+  if (typeof value !== 'string') return value
+  const t = value.trim()
+  return t.length ? t : undefined
+}
+
+function trimStateToUndefined({ value }: { value: unknown }): unknown {
+  if (value === undefined || value === null) return undefined
+  if (typeof value !== 'string') return value
+  const t = value.trim().toUpperCase()
+  return t.length ? t : undefined
+}
+
 export enum PersonKindDto {
   MEMBER = 'member',
   PARENT = 'parent',
@@ -40,37 +54,59 @@ export class CreatePersonDto {
   @MinLength(1)
   lastName!: string
 
-  @ApiProperty({ example: '1234 Jayhawk Blvd' })
+  @ApiPropertyOptional({ example: '1234 Jayhawk Blvd' })
+  @Transform(trimEmptyToUndefined)
+  @IsOptional()
   @IsString()
-  @MinLength(1)
-  addressLine1!: string
+  @MaxLength(2000)
+  addressLine1?: string
 
-  @ApiProperty({ example: 'Lawrence' })
+  @ApiPropertyOptional({ example: 'Lawrence' })
+  @Transform(trimEmptyToUndefined)
+  @IsOptional()
   @IsString()
-  @MinLength(1)
   @MaxLength(100)
-  city!: string
+  city?: string
 
-  @ApiProperty({ description: 'US state or DC (2-letter)', example: 'KS', enum: US_STATE_CODES })
-  @Transform(({ value }) => (typeof value === 'string' ? value.trim().toUpperCase() : value))
-  @IsString()
+  @ApiPropertyOptional({
+    description: 'US state or DC (2-letter) when provided',
+    example: 'KS',
+    enum: US_STATE_CODES,
+  })
+  @Transform(trimStateToUndefined)
+  @IsOptional()
   @IsIn(US_STATE_CODES)
-  state!: string
+  state?: string
 
-  @ApiProperty({ example: '66045' })
+  @ApiPropertyOptional({ example: '66045' })
+  @Transform(trimEmptyToUndefined)
+  @IsOptional()
   @IsString()
-  @MinLength(1)
   @MaxLength(20)
-  zip!: string
+  zip?: string
 
   @ApiProperty({ example: 'john.doe@example.com' })
   @IsEmail()
   email!: string
 
+  @ApiPropertyOptional({
+    description: 'Optional CRM contact id (e.g. Salesforce) for import-linked rows',
+    example: '003UQ00000p4lyE',
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(64)
+  externalContactId?: string
+
   @ApiPropertyOptional({ example: '785-555-0100' })
   @IsOptional()
   @IsString()
-  phone?: string
+  homePhone?: string
+
+  @ApiPropertyOptional({ example: '785-555-0101' })
+  @IsOptional()
+  @IsString()
+  mobilePhone?: string
 
   @ApiPropertyOptional({
     description: 'Graduation / pledge class year (members only)',

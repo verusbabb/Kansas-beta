@@ -14,6 +14,12 @@ import { UpdatePersonDto } from './dto/update-person.dto'
 import { normalizeUsPhoneForStorage } from '../common/utils/us-phone'
 import { PersonResponseDto } from './dto/person-response.dto'
 import { PersonProfileResponseDto } from './dto/person-profile-response.dto'
+import { BulkImportResponseDto } from './dto/bulk-import-response.dto'
+import {
+  formatSkippedImportRows,
+  parsePeopleImportBuffer,
+  type PeopleImportCreatePayload,
+} from './people-import'
 import { StorageService } from '../storage/storage.service'
 import { PersonRelationshipsService } from '../person-relationships/person-relationships.service'
 import { ExecTeamService } from '../exec-team/exec-team.service'
@@ -58,6 +64,34 @@ export class PeopleService {
     }
   }
 
+  private normalizeExternalContactId(value?: string | null): string | null {
+    if (value == null) return null
+    const t = String(value).trim()
+    return t.length > 0 ? t : null
+  }
+
+  private emptyToNullText(value: string | null | undefined): string | null {
+    if (value === undefined || value === null) return null
+    const t = String(value).trim()
+    return t.length > 0 ? t : null
+  }
+
+  private applyImportPayload(person: Person, c: PeopleImportCreatePayload): void {
+    person.firstName = c.firstName
+    person.lastName = c.lastName
+    person.addressLine1 = c.addressLine1
+    person.city = c.city
+    person.state = c.state
+    person.zip = c.zip
+    person.email = c.email
+    person.homePhone = normalizeUsPhoneForStorage(c.homePhone || null)
+    person.mobilePhone = normalizeUsPhoneForStorage(c.mobilePhone || null)
+    person.pledgeClassYear = c.pledgeClassYear
+    person.isMember = c.isMember
+    person.isParent = c.isParent
+    person.externalContactId = c.externalContactId
+  }
+
   private flagsFromKind(kind: PersonKindDto): { isMember: boolean; isParent: boolean } {
     switch (kind) {
       case PersonKindDto.MEMBER:
@@ -81,7 +115,9 @@ export class PeopleService {
       state: person.state,
       zip: person.zip,
       email: person.email,
-      phone: person.phone ?? null,
+      externalContactId: person.externalContactId ?? null,
+      homePhone: person.homePhone ?? null,
+      mobilePhone: person.mobilePhone ?? null,
       pledgeClassYear: person.pledgeClassYear ?? null,
       isMember: person.isMember,
       isParent: person.isParent,
@@ -160,25 +196,39 @@ export class PeopleService {
         ? dto.pledgeClassYear
         : null
 
+    const emailNorm = dto.email.toLowerCase().trim()
+    const ext = this.normalizeExternalContactId(dto.externalContactId)
+
     const existing = await this.personModel.findOne({
-      where: { email: dto.email.toLowerCase().trim() },
+      where: { email: emailNorm },
       paranoid: false,
     })
 
     if (existing) {
       if (existing.deletedAt) {
+        if (ext) {
+          const otherExt = await this.personModel.findOne({
+            where: { externalContactId: ext },
+            paranoid: false,
+          })
+          if (otherExt && otherExt.id !== existing.id) {
+            throw new ConflictException('External contact ID is already in use')
+          }
+        }
         await existing.restore()
         existing.firstName = dto.firstName
         existing.lastName = dto.lastName
-        existing.addressLine1 = dto.addressLine1
-        existing.city = dto.city
-        existing.state = dto.state.toUpperCase()
-        existing.zip = dto.zip
-        existing.email = dto.email.toLowerCase().trim()
-        existing.phone = normalizeUsPhoneForStorage(dto.phone)
+        existing.addressLine1 = this.emptyToNullText(dto.addressLine1)
+        existing.city = this.emptyToNullText(dto.city)
+        existing.state = dto.state ?? null
+        existing.zip = this.emptyToNullText(dto.zip)
+        existing.email = emailNorm
+        existing.homePhone = normalizeUsPhoneForStorage(dto.homePhone)
+        existing.mobilePhone = normalizeUsPhoneForStorage(dto.mobilePhone)
         existing.pledgeClassYear = pledgeClassYear
         existing.isMember = isMember
         existing.isParent = isParent
+        existing.externalContactId = ext
         await existing.save()
         this.logger.info('Restored soft-deleted person', { id: existing.id, email: existing.email })
         return this.toResponseDto(existing, await this.personHasLegacyMemberLink(existing.id))
@@ -186,18 +236,30 @@ export class PeopleService {
       throw new ConflictException(`Person with email ${dto.email} already exists`)
     }
 
+    if (ext) {
+      const taken = await this.personModel.findOne({
+        where: { externalContactId: ext },
+        paranoid: false,
+      })
+      if (taken) {
+        throw new ConflictException('External contact ID is already in use')
+      }
+    }
+
     const person = await this.personModel.create({
       firstName: dto.firstName,
       lastName: dto.lastName,
-      addressLine1: dto.addressLine1,
-      city: dto.city,
-      state: dto.state.toUpperCase(),
-      zip: dto.zip,
-      email: dto.email.toLowerCase().trim(),
-      phone: normalizeUsPhoneForStorage(dto.phone),
+      addressLine1: this.emptyToNullText(dto.addressLine1),
+      city: this.emptyToNullText(dto.city),
+      state: dto.state ?? null,
+      zip: this.emptyToNullText(dto.zip),
+      email: emailNorm,
+      homePhone: normalizeUsPhoneForStorage(dto.homePhone),
+      mobilePhone: normalizeUsPhoneForStorage(dto.mobilePhone),
       pledgeClassYear,
       isMember,
       isParent,
+      externalContactId: ext,
     })
 
     return this.toResponseDto(person, false)
@@ -264,13 +326,39 @@ export class PeopleService {
 
     if (dto.firstName !== undefined) person.firstName = dto.firstName
     if (dto.lastName !== undefined) person.lastName = dto.lastName
-    if (dto.addressLine1 !== undefined) person.addressLine1 = dto.addressLine1
-    if (dto.city !== undefined) person.city = dto.city
-    if (dto.state !== undefined) person.state = dto.state.toUpperCase()
-    if (dto.zip !== undefined) person.zip = dto.zip
+    if (dto.addressLine1 !== undefined) {
+      person.addressLine1 = this.emptyToNullText(dto.addressLine1)
+    }
+    if (dto.city !== undefined) {
+      person.city = this.emptyToNullText(dto.city)
+    }
+    if (dto.state !== undefined) {
+      person.state = dto.state === null ? null : String(dto.state).trim().toUpperCase()
+    }
+    if (dto.zip !== undefined) {
+      person.zip = this.emptyToNullText(dto.zip)
+    }
     if (dto.email !== undefined) person.email = dto.email.toLowerCase().trim()
-    if (dto.phone !== undefined) {
-      person.phone = normalizeUsPhoneForStorage(dto.phone)
+
+    if (dto.externalContactId !== undefined) {
+      const ext = this.normalizeExternalContactId(dto.externalContactId)
+      if (ext) {
+        const other = await this.personModel.findOne({
+          where: { externalContactId: ext },
+          paranoid: false,
+        })
+        if (other && other.id !== person.id) {
+          throw new ConflictException('External contact ID is already in use')
+        }
+      }
+      person.externalContactId = ext
+    }
+
+    if (dto.homePhone !== undefined) {
+      person.homePhone = normalizeUsPhoneForStorage(dto.homePhone)
+    }
+    if (dto.mobilePhone !== undefined) {
+      person.mobilePhone = normalizeUsPhoneForStorage(dto.mobilePhone)
     }
 
     person.isMember = isMember
@@ -358,5 +446,150 @@ export class PeopleService {
       await person.save()
     }
     return this.toResponseDto(person, await this.personHasLegacyMemberLink(person.id))
+  }
+
+  /**
+   * Bulk import from CSV/TSV. Upserts by Contact ID (externalContactId); adopts rows matched by email
+   * when externalContactId was previously unset. Skips invalid rows; returns skipped file content.
+   */
+  async bulkImportFromFile(buffer: Buffer): Promise<BulkImportResponseDto> {
+    const { creates, skips, outputDelimiter } = parsePeopleImportBuffer(buffer)
+    const allSkips = [...skips]
+
+    if (creates.length === 0) {
+      const skippedFileContent = formatSkippedImportRows(allSkips, outputDelimiter)
+      return {
+        importedCount: 0,
+        skippedCount: allSkips.length,
+        skippedFileContent,
+        ...(allSkips.length > 0
+          ? { skippedFileFormat: outputDelimiter === '\t' ? 'tsv' : 'csv' }
+          : {}),
+      }
+    }
+
+    const contactIds = [...new Set(creates.map((c) => c.externalContactId))]
+    const emails = [...new Set(creates.map((c) => c.email))]
+
+    const [byContact, byEmail] = await Promise.all([
+      this.personModel.findAll({
+        where: { externalContactId: { [Op.in]: contactIds } },
+        paranoid: false,
+      }),
+      this.personModel.findAll({
+        where: { email: { [Op.in]: emails } },
+        paranoid: false,
+      }),
+    ])
+
+    const byId = new Map<string, Person>()
+    for (const p of [...byContact, ...byEmail]) {
+      if (!byId.has(p.id)) byId.set(p.id, p)
+    }
+    const peopleList = [...byId.values()]
+
+    const contactToPerson = new Map<string, Person>()
+    const emailToPerson = new Map<string, Person>()
+    for (const p of peopleList) {
+      emailToPerson.set(p.email, p)
+      if (p.externalContactId) contactToPerson.set(p.externalContactId, p)
+    }
+
+    let processed = 0
+    const sequelize = this.personModel.sequelize
+    if (!sequelize) {
+      throw new BadRequestException('Database unavailable')
+    }
+
+    await sequelize.transaction(async (transaction) => {
+      for (const c of creates) {
+        let person = contactToPerson.get(c.externalContactId)
+
+        if (person) {
+          const emailOwner = emailToPerson.get(c.email)
+          if (emailOwner && emailOwner.id !== person.id) {
+            allSkips.push({
+              sourceRow: c.sourceRow,
+              raw: c.raw,
+              reason: 'email_conflict',
+            })
+            continue
+          }
+          if (person.email !== c.email) {
+            emailToPerson.delete(person.email)
+          }
+          if (person.deletedAt) {
+            await person.restore({ transaction })
+          }
+          this.applyImportPayload(person, c)
+          await person.save({ transaction })
+          emailToPerson.set(c.email, person)
+          contactToPerson.set(c.externalContactId, person)
+          processed++
+          continue
+        }
+
+        const emailPerson = emailToPerson.get(c.email)
+        if (emailPerson) {
+          if (
+            emailPerson.externalContactId &&
+            emailPerson.externalContactId !== c.externalContactId
+          ) {
+            allSkips.push({
+              sourceRow: c.sourceRow,
+              raw: c.raw,
+              reason: 'email_belongs_to_different_contact',
+            })
+            continue
+          }
+          if (emailPerson.deletedAt) {
+            await emailPerson.restore({ transaction })
+          }
+          this.applyImportPayload(emailPerson, c)
+          await emailPerson.save({ transaction })
+          contactToPerson.set(c.externalContactId, emailPerson)
+          emailToPerson.set(c.email, emailPerson)
+          processed++
+          continue
+        }
+
+        const created = await this.personModel.create(
+          {
+            firstName: c.firstName,
+            lastName: c.lastName,
+            addressLine1: c.addressLine1,
+            city: c.city,
+            state: c.state,
+            zip: c.zip,
+            email: c.email,
+            homePhone: normalizeUsPhoneForStorage(c.homePhone || null),
+            mobilePhone: normalizeUsPhoneForStorage(c.mobilePhone || null),
+            pledgeClassYear: c.pledgeClassYear,
+            isMember: c.isMember,
+            isParent: c.isParent,
+            externalContactId: c.externalContactId,
+          },
+          { transaction },
+        )
+        contactToPerson.set(c.externalContactId, created)
+        emailToPerson.set(c.email, created)
+        processed++
+      }
+    })
+
+    this.logger.info('Bulk people import completed', {
+      processed,
+      skipped: allSkips.length,
+    })
+
+    const skippedFileContent = formatSkippedImportRows(allSkips, outputDelimiter)
+    return {
+      importedCount: processed,
+      skippedCount: allSkips.length,
+      skippedFileContent,
+      ...(allSkips.length > 0
+        ? { skippedFileFormat: outputDelimiter === '\t' ? 'tsv' : 'csv' }
+        : {}),
+    }
   }
 }

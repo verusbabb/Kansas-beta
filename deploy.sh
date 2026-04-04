@@ -212,28 +212,28 @@ steps:
             sleep 2
             break
           fi
-          echo "Attempt \$${i}/30: Proxy not ready, waiting..."
+          echo "Attempt \$\$i/30: Proxy not ready, waiting..."
           sleep 1
         done
         
         if ! grep -q "ready for new connections" /tmp/cloud-sql-proxy.log 2>/dev/null; then
           echo "ERROR: Cloud SQL Proxy failed to start"
           cat /tmp/cloud-sql-proxy.log || true
-          kill $${PROXY_PID} 2>/dev/null || true
+          kill \$\$PROXY_PID 2>/dev/null || true
           exit 1
         fi
         
         echo "Running migrations..."
         npm run migration:run
-        MIGRATION_EXIT=$$?
+        MIGRATION_EXIT=\$\$?
         
-        kill $${PROXY_PID} 2>/dev/null || true
-        exit $${MIGRATION_EXIT}
+        kill \$\$PROXY_PID 2>/dev/null || true
+        exit \$\$MIGRATION_EXIT
     env:
       - 'NODE_ENV=production'
       - 'DATABASE_HOST=127.0.0.1'
       - 'DATABASE_PORT=5432'
-      - 'DATABASE_NAME=${DATABASE_NAME}'
+      - 'DATABASE_NAME='"${DATABASE_NAME}"'
       - 'DATABASE_USER=postgres'
       - 'GCP_SECRET_MANAGER_ENABLED=true'
       - 'GCP_PROJECT_ID=$PROJECT_ID'
@@ -289,28 +289,28 @@ steps:
             sleep 2
             break
           fi
-          echo "Attempt \$${i}/30: Proxy not ready, waiting..."
+          echo "Attempt \$\$i/30: Proxy not ready, waiting..."
           sleep 1
         done
         
         if ! grep -q "ready for new connections" /tmp/cloud-sql-proxy.log 2>/dev/null; then
           echo "ERROR: Cloud SQL Proxy failed to start"
           cat /tmp/cloud-sql-proxy.log || true
-          kill $${PROXY_PID} 2>/dev/null || true
+          kill \$\$PROXY_PID 2>/dev/null || true
           exit 1
         fi
         
         echo "Running seeders..."
         npm run seed:run
-        SEEDER_EXIT=$$?
+        SEEDER_EXIT=\$\$?
         
-        kill $${PROXY_PID} 2>/dev/null || true
-        exit $${SEEDER_EXIT}
+        kill \$\$PROXY_PID 2>/dev/null || true
+        exit \$\$SEEDER_EXIT
     env:
       - 'NODE_ENV=production'
       - 'DATABASE_HOST=127.0.0.1'
       - 'DATABASE_PORT=5432'
-      - 'DATABASE_NAME=${DATABASE_NAME}'
+      - 'DATABASE_NAME='"${DATABASE_NAME}"'
       - 'DATABASE_USER=postgres'
       - 'GCP_SECRET_MANAGER_ENABLED=true'
       - 'GCP_PROJECT_ID=$PROJECT_ID'
@@ -356,7 +356,7 @@ deploy_all() {
   local subs=$(build_substitutions "${backend_url}" "${auth0_domain}" "${auth0_client_id}" "${auth0_audience}")
   
   echo -e "${BLUE}Running full deployment via Cloud Build...${NC}"
-  echo -e "${BLUE}Steps: build-backend → push-backend → migrations → seeders → deploy-backend → build-frontend → deploy-frontend${NC}"
+  echo -e "${BLUE}Pipeline: backend image (push → migrations → seeders → deploy-backend) in parallel with frontend image (push → deploy-frontend).${NC}"
   echo ""
   
   gcloud builds submit --config=cloudbuild.yaml \
@@ -421,7 +421,7 @@ case $DEPLOY_TARGET in
     echo -e "  frontend   - Deploy frontend only (build, push, deploy)"
     echo -e "  migrations - Run database migrations only"
     echo -e "  seeders    - Run database seeders only"
-    echo -e "  all        - Full deployment (default): backend → migrations → seeders → frontend"
+    echo -e "  all        - Full deployment (default) via cloudbuild.yaml: migrations + seeders before backend deploy"
     exit 1
     ;;
 esac

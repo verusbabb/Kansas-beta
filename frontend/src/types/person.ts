@@ -5,12 +5,15 @@ export interface CreatePersonPayload {
   kind: PersonKind
   firstName: string
   lastName: string
-  addressLine1: string
-  city: string
-  state: string
-  zip: string
+  /** Any subset of mailing address fields may be omitted or empty. */
+  addressLine1?: string
+  city?: string
+  state?: string
+  zip?: string
   email: string
-  phone?: string
+  externalContactId?: string
+  homePhone?: string
+  mobilePhone?: string
   pledgeClassYear?: number
 }
 
@@ -19,12 +22,14 @@ export interface UpdatePersonPayload {
   kind?: PersonKind
   firstName?: string
   lastName?: string
-  addressLine1?: string
-  city?: string
-  state?: string
-  zip?: string
+  addressLine1?: string | null
+  city?: string | null
+  state?: string | null
+  zip?: string | null
   email?: string
-  phone?: string | null
+  externalContactId?: string | null
+  homePhone?: string | null
+  mobilePhone?: string | null
   pledgeClassYear?: number | null
 }
 
@@ -32,12 +37,14 @@ export interface PersonResponse {
   id: string
   firstName: string
   lastName: string
-  addressLine1: string
-  city: string
-  state: string
-  zip: string
+  addressLine1?: string | null
+  city?: string | null
+  state?: string | null
+  zip?: string | null
   email: string
-  phone?: string | null
+  externalContactId?: string | null
+  homePhone?: string | null
+  mobilePhone?: string | null
   pledgeClassYear?: number | null
   isMember: boolean
   isParent: boolean
@@ -47,4 +54,13 @@ export interface PersonResponse {
   hasHeadshot?: boolean
   createdAt: string
   updatedAt: string
+}
+
+/** POST /people/import */
+export interface PeopleBulkImportResponse {
+  importedCount: number
+  skippedCount: number
+  skippedFileContent: string
+  /** Present when skippedCount > 0; use for download filename (.csv vs .tsv). */
+  skippedFileFormat?: 'csv' | 'tsv'
 }
