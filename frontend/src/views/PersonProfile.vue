@@ -64,10 +64,19 @@
                 <span
                   v-if="formatUsPhoneForDisplay(profile.person.mobilePhone)"
                   class="whitespace-nowrap inline-block"
-                  :class="profilePhoneBlurClass"
-                  :title="profilePhoneBlurTitle"
                 >
                   {{ formatUsPhoneForDisplay(profile.person.mobilePhone) }}
+                </span>
+                <span
+                  v-else-if="profile.person.hasMobilePhone"
+                  v-tooltip.top="PHONE_NUMBERS_VIEW_PERMISSION_TOOLTIP"
+                  class="inline-flex items-center gap-2 text-surface-600 text-sm cursor-default"
+                  role="img"
+                  :aria-label="PHONE_NUMBERS_VIEW_PERMISSION_TOOLTIP"
+                >
+                  <i class="pi pi-lock text-xs opacity-70 shrink-0" aria-hidden="true" />
+                  <span>Phone on file</span>
+                  <span class="inline-block h-3 w-20 rounded bg-surface-200" aria-hidden="true" />
                 </span>
                 <span v-else class="text-surface-400">—</span>
               </dd>
@@ -76,10 +85,19 @@
                 <span
                   v-if="formatUsPhoneForDisplay(profile.person.homePhone)"
                   class="whitespace-nowrap inline-block"
-                  :class="profilePhoneBlurClass"
-                  :title="profilePhoneBlurTitle"
                 >
                   {{ formatUsPhoneForDisplay(profile.person.homePhone) }}
+                </span>
+                <span
+                  v-else-if="profile.person.hasHomePhone"
+                  v-tooltip.top="PHONE_NUMBERS_VIEW_PERMISSION_TOOLTIP"
+                  class="inline-flex items-center gap-2 text-surface-600 text-sm cursor-default"
+                  role="img"
+                  :aria-label="PHONE_NUMBERS_VIEW_PERMISSION_TOOLTIP"
+                >
+                  <i class="pi pi-lock text-xs opacity-70 shrink-0" aria-hidden="true" />
+                  <span>Phone on file</span>
+                  <span class="inline-block h-3 w-20 rounded bg-surface-200" aria-hidden="true" />
                 </span>
                 <span v-else class="text-surface-400">—</span>
               </dd>
@@ -160,7 +178,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, computed } from 'vue'
+import { ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import Card from 'primevue/card'
 import Button from 'primevue/button'
@@ -172,23 +190,13 @@ import type { PersonProfileResponse } from '@/types/personProfile'
 import type { PersonResponse } from '@/types/person'
 import type { PersonRelationshipResponse } from '@/types/personRelationship'
 import type { ExecTermPublic } from '@/types/execTeam'
-import { formatUsPhoneForDisplay } from '@/utils/usPhone'
+import { formatUsPhoneForDisplay, PHONE_NUMBERS_VIEW_PERMISSION_TOOLTIP } from '@/utils/usPhone'
 import { useAuthStore } from '@/stores/auth'
 
 const route = useRoute()
 const router = useRouter()
 const peopleStore = usePeopleStore()
 const authStore = useAuthStore()
-
-const showProfilePhonesClearly = computed(() => authStore.isAdmin)
-
-const profilePhoneBlurClass = computed(() =>
-  showProfilePhonesClearly.value ? '' : 'select-none blur-[6px]',
-)
-
-const profilePhoneBlurTitle = computed(() =>
-  showProfilePhonesClearly.value ? undefined : 'Phone numbers are visible to site administrators only',
-)
 
 const loading = ref(true)
 const loadError = ref<string | null>(null)
@@ -239,9 +247,11 @@ async function load(id: string) {
 }
 
 watch(
-  () => route.params.id,
-  (id) => {
-    if (typeof id === 'string' && id) void load(id)
+  () => ({ id: route.params.id, authed: authStore.isAuthenticated }),
+  async ({ id, authed }) => {
+    if (typeof id !== 'string' || !id) return
+    if (authed) await authStore.fetchUserProfile()
+    void load(id)
   },
   { immediate: true },
 )

@@ -7,6 +7,8 @@ import { JwtStrategy } from './strategies/jwt.strategy'
 import { JwtAuthGuard } from './guards/jwt-auth.guard'
 import { RolesGuard } from './guards/roles.guard'
 import { UserLookupGuard } from './guards/user-lookup.guard'
+import { OptionalJwtAuthGuard } from './guards/optional-jwt-auth.guard'
+import { OptionalUserLookupGuard } from './guards/optional-user-lookup.guard'
 
 @Module({
   imports: [
@@ -14,7 +16,21 @@ import { UserLookupGuard } from './guards/user-lookup.guard'
     SequelizeModule.forFeature([User]),
     ConfigModule,
   ],
-  providers: [JwtStrategy, JwtAuthGuard, RolesGuard, UserLookupGuard],
-  exports: [JwtAuthGuard, RolesGuard, UserLookupGuard, PassportModule],
+  providers: [
+    JwtStrategy,
+    JwtAuthGuard,
+    RolesGuard,
+    UserLookupGuard,
+    OptionalJwtAuthGuard,
+    OptionalUserLookupGuard,
+  ],
+  exports: [
+    JwtAuthGuard,
+    RolesGuard,
+    UserLookupGuard,
+    OptionalJwtAuthGuard,
+    OptionalUserLookupGuard,
+    PassportModule,
+  ],
 })
 export class AuthModule {}

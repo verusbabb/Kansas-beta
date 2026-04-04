@@ -45,6 +45,10 @@ export interface PersonResponse {
   externalContactId?: string | null
   homePhone?: string | null
   mobilePhone?: string | null
+  /** True when a home number exists; may be true while `homePhone` is null for privacy. */
+  hasHomePhone?: boolean
+  /** True when a mobile number exists; may be true while `mobilePhone` is null for privacy. */
+  hasMobilePhone?: boolean
   pledgeClassYear?: number | null
   isMember: boolean
   isParent: boolean

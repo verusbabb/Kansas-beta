@@ -8,6 +8,7 @@ import { InjectModel } from '@nestjs/sequelize'
 import { Op } from 'sequelize'
 import { PinoLogger } from 'nestjs-pino'
 import { Person } from '../database/entities/person.entity'
+import { User, UserRole } from '../database/entities/user.entity'
 import { PersonRelationship } from '../database/entities/person-relationship.entity'
 import { CreatePersonDto, PersonKindDto } from './dto/create-person.dto'
 import { UpdatePersonDto } from './dto/update-person.dto'
@@ -105,7 +106,22 @@ export class PeopleService {
     }
   }
 
-  private toResponseDto(person: Person, hasLegacyMemberLink: boolean): PersonResponseDto {
+  private personHasStoredPhone(value: string | null | undefined): boolean {
+    if (value == null) return false
+    return String(value).trim().length > 0
+  }
+
+  private viewerMayRevealPhoneNumbers(viewer: User | undefined): boolean {
+    return viewer?.role === UserRole.EDITOR || viewer?.role === UserRole.ADMIN
+  }
+
+  private toResponseDto(
+    person: Person,
+    hasLegacyMemberLink: boolean,
+    revealPhoneFields = true,
+  ): PersonResponseDto {
+    const hasMobilePhone = this.personHasStoredPhone(person.mobilePhone)
+    const hasHomePhone = this.personHasStoredPhone(person.homePhone)
     return {
       id: person.id,
       firstName: person.firstName,
@@ -116,8 +132,10 @@ export class PeopleService {
       zip: person.zip,
       email: person.email,
       externalContactId: person.externalContactId ?? null,
-      homePhone: person.homePhone ?? null,
-      mobilePhone: person.mobilePhone ?? null,
+      homePhone: revealPhoneFields ? (person.homePhone ?? null) : null,
+      mobilePhone: revealPhoneFields ? (person.mobilePhone ?? null) : null,
+      hasMobilePhone,
+      hasHomePhone,
       pledgeClassYear: person.pledgeClassYear ?? null,
       isMember: person.isMember,
       isParent: person.isParent,
@@ -268,7 +286,8 @@ export class PeopleService {
   /**
    * All non-deleted people, ordered for directory display.
    */
-  async findAll(): Promise<PersonResponseDto[]> {
+  async findAll(viewer?: User): Promise<PersonResponseDto[]> {
+    const revealPhones = this.viewerMayRevealPhoneNumbers(viewer)
     const legacyIds = await this.legacyMemberLinkPersonIds()
     const rows = await this.personModel.findAll({
       order: [
@@ -276,19 +295,20 @@ export class PeopleService {
         ['firstName', 'ASC'],
       ],
     })
-    return rows.map((p) => this.toResponseDto(p, legacyIds.has(p.id)))
+    return rows.map((p) => this.toResponseDto(p, legacyIds.has(p.id), revealPhones))
   }
 
   /**
    * Full profile for authenticated viewers (and above): directory row, connections, exec history.
    */
-  async findProfileById(id: string): Promise<PersonProfileResponseDto> {
+  async findProfileById(id: string, viewer?: User): Promise<PersonProfileResponseDto> {
     const person = await this.personModel.findByPk(id)
     if (!person) {
       throw new NotFoundException('Person not found')
     }
     const hasLegacy = await this.personHasLegacyMemberLink(person.id)
-    const personDto = this.toResponseDto(person, hasLegacy)
+    const revealPhones = this.viewerMayRevealPhoneNumbers(viewer)
+    const personDto = this.toResponseDto(person, hasLegacy, revealPhones)
     const [relationships, execHistory, headshotUrl] = await Promise.all([
       this.personRelationshipsService.findAllForPerson(id),
       this.execTeamService.findExecHistoryForPerson(id),

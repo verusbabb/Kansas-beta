@@ -143,10 +143,22 @@
                   <span
                     v-if="formatPhonesDisplay(data)"
                     class="text-surface-800 whitespace-normal text-sm inline-block max-w-full"
-                    :class="phoneBlurClass"
-                    :title="phoneBlurTitle"
                   >
                     {{ formatPhonesDisplay(data) }}
+                  </span>
+                  <span
+                    v-else-if="data.hasMobilePhone || data.hasHomePhone"
+                    v-tooltip.top="PHONE_NUMBERS_VIEW_PERMISSION_TOOLTIP"
+                    class="inline-flex items-center gap-2 text-surface-600 text-sm cursor-default max-w-full"
+                    role="img"
+                    :aria-label="PHONE_NUMBERS_VIEW_PERMISSION_TOOLTIP"
+                  >
+                    <i class="pi pi-lock text-xs opacity-70 shrink-0" aria-hidden="true" />
+                    <span class="shrink-0">Phone on file</span>
+                    <span
+                      class="inline-block h-3 min-w-[5.5rem] flex-1 max-w-[7rem] rounded bg-surface-200"
+                      aria-hidden="true"
+                    />
                   </span>
                   <span v-else class="text-surface-400">—</span>
                 </template>
@@ -572,7 +584,11 @@ import type { PersonRelationshipResponse } from '@/types/personRelationship'
 import { usePersonRelationshipsStore } from '@/stores/personRelationships'
 import { PERSON_RELATIONSHIP_TYPE_OPTIONS } from '@/constants/relationshipTypes'
 import { US_STATE_CODE_SET, US_STATE_OPTIONS, normalizeUsStateForSelect } from '@/constants/usStates'
-import { formatUsPhoneForDisplay, usPhoneDigits } from '@/utils/usPhone'
+import {
+  formatUsPhoneForDisplay,
+  PHONE_NUMBERS_VIEW_PERMISSION_TOOLTIP,
+  usPhoneDigits,
+} from '@/utils/usPhone'
 
 const props = withDefaults(
   defineProps<{
@@ -831,19 +847,6 @@ watch([searchQuery, yearFilter, roleFilter, showLegacyTiesOnly], () => {
 
 const canEdit = computed(() => props.variant === 'admin' && authStore.isEditor)
 
-/** Admin directory shows phones to editors; public People table shows clear phones only to admins. */
-const showDirectoryPhonesClearly = computed(
-  () => props.variant === 'admin' || authStore.isAdmin,
-)
-
-const phoneBlurClass = computed(() =>
-  showDirectoryPhonesClearly.value ? '' : 'select-none blur-[6px]',
-)
-
-const phoneBlurTitle = computed(() =>
-  showDirectoryPhonesClearly.value ? undefined : 'Phone numbers are visible to site administrators only',
-)
-
 const tableMinWidthClass = computed(() => {
   if (props.variant === 'admin' && canEdit.value) return 'min-w-[860px]'
   return 'min-w-[780px]'
@@ -932,6 +935,15 @@ function formatPhonesDisplay(p: PersonResponse): string {
   return parts.join(' · ')
 }
 
+/** When the API redacts digits, still allow “phone” searches to find those rows. */
+function phoneRedactedSearchHint(person: PersonResponse): string {
+  if (!person.hasMobilePhone && !person.hasHomePhone) return ''
+  if (formatUsPhoneForDisplay(person.mobilePhone ?? '') || formatUsPhoneForDisplay(person.homePhone ?? '')) {
+    return ''
+  }
+  return 'phone on file'
+}
+
 function matchesSearch(person: PersonResponse, q: string): boolean {
   if (!q) return true
   const needle = q.toLowerCase().trim()
@@ -951,6 +963,7 @@ function matchesSearch(person: PersonResponse, q: string): boolean {
     homeRaw,
     phoneDigits,
     phoneFormatted,
+    phoneRedactedSearchHint(person),
     person.city,
     person.state,
     person.zip,
@@ -1257,6 +1270,7 @@ watch(
   () => authStore.isAuthenticated,
   async (authed) => {
     if (authed) await authStore.fetchUserProfile()
+    void peopleStore.fetchPeople({ silent: true })
   },
 )
 

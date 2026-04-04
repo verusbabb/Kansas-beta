@@ -36,6 +36,17 @@ export class PersonResponseDto {
   @ApiPropertyOptional()
   mobilePhone?: string | null
 
+  @ApiProperty({
+    description:
+      'True when a mobile number is stored; present even when `mobilePhone` is omitted for privacy.',
+  })
+  hasMobilePhone!: boolean
+
+  @ApiProperty({
+    description: 'True when a home number is stored; present even when `homePhone` is omitted for privacy.',
+  })
+  hasHomePhone!: boolean
+
   @ApiPropertyOptional()
   pledgeClassYear?: number | null
 

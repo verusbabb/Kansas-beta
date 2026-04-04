@@ -9,6 +9,7 @@ import {
   Patch,
   Post,
   Delete,
+  Req,
   UseGuards,
   UseInterceptors,
   UploadedFile,
@@ -29,6 +30,9 @@ import { BulkImportResponseDto } from './dto/bulk-import-response.dto'
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard'
 import { RolesGuard } from '../auth/guards/roles.guard'
 import { UserLookupGuard } from '../auth/guards/user-lookup.guard'
+import { OptionalJwtAuthGuard } from '../auth/guards/optional-jwt-auth.guard'
+import { OptionalUserLookupGuard } from '../auth/guards/optional-user-lookup.guard'
+import { User } from '../database/entities/user.entity'
 import { Roles } from '../auth/decorators/roles.decorator'
 import { UserRole } from '../database/entities/user.entity'
 import type { PersonHeadshotFile } from './people.service'
@@ -44,13 +48,15 @@ export class PeopleController {
   }
 
   @Get()
+  @UseGuards(OptionalJwtAuthGuard, OptionalUserLookupGuard)
   @ApiOperation({
     summary: 'List directory people (public)',
-    description: 'Returns all people in the chapter directory for display on the public site.',
+    description:
+      'Returns all people in the chapter directory. Send a valid editor/admin Bearer token to receive phone number values; otherwise `mobilePhone` and `homePhone` are null while `hasMobilePhone` / `hasHomePhone` indicate whether numbers exist.',
   })
   @ApiResponse({ status: HttpStatus.OK, type: [PersonResponseDto] })
-  async findAll(): Promise<PersonResponseDto[]> {
-    return this.peopleService.findAll()
+  async findAll(@Req() req: { user?: User }): Promise<PersonResponseDto[]> {
+    return this.peopleService.findAll(req.user)
   }
 
   @Post('import')
@@ -79,16 +85,20 @@ export class PeopleController {
   }
 
   @Get(':id')
+  @UseGuards(OptionalJwtAuthGuard, OptionalUserLookupGuard)
   @ApiParam({ name: 'id', description: 'Person UUID' })
   @ApiOperation({
     summary: 'Directory person profile (public)',
     description:
-      'Same payload for guests and signed-in users: contact and directory fields, connections, exec history, headshot URL when present. Phone numbers may be obscured in the UI for non-admins.',
+      'Contact and directory fields, connections, exec history, headshot URL when present. Phone values are included for editor/admin callers with a valid token; other callers receive null phones with `hasMobilePhone` / `hasHomePhone` flags.',
   })
   @ApiResponse({ status: HttpStatus.OK, type: PersonProfileResponseDto })
   @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'Person not found' })
-  async findProfile(@Param('id', ParseUUIDPipe) id: string): Promise<PersonProfileResponseDto> {
-    return this.peopleService.findProfileById(id)
+  async findProfile(
+    @Req() req: { user?: User },
+    @Param('id', ParseUUIDPipe) id: string,
+  ): Promise<PersonProfileResponseDto> {
+    return this.peopleService.findProfileById(id, req.user)
   }
 
   @Post(':id/headshot')
