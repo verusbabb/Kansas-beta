@@ -10,8 +10,10 @@ export interface PersonExecHistoryEntry {
 /** Matches backend `PersonProfileResponseDto` */
 export interface PersonProfileResponse {
   person: PersonResponse
-  /** Signed GCS URL when a headshot exists (e.g. exec uploads); short-lived. */
+  /** Signed URL for directory/profile photo when present. */
   headshotUrl?: string | null
+  /** Signed URL for exec roster photo when present. */
+  execRosterHeadshotUrl?: string | null
   relationships: PersonRelationshipResponse[]
   execHistory: PersonExecHistoryEntry[]
 }

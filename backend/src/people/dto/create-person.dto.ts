@@ -7,6 +7,7 @@ import {
   IsInt,
   IsOptional,
   IsString,
+  IsUrl,
   Max,
   Min,
   MinLength,
@@ -107,6 +108,16 @@ export class CreatePersonDto {
   @IsOptional()
   @IsString()
   mobilePhone?: string
+
+  @ApiPropertyOptional({
+    example: 'https://www.linkedin.com/in/example',
+    description: 'Public LinkedIn profile URL',
+  })
+  @Transform(trimEmptyToUndefined)
+  @IsOptional()
+  @IsUrl({ require_protocol: true }, { message: 'LinkedIn must be a valid http(s) URL' })
+  @MaxLength(512)
+  linkedinProfileUrl?: string
 
   @ApiPropertyOptional({
     description: 'Graduation / pledge class year (members only)',

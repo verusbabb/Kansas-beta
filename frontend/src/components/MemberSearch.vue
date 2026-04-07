@@ -1,5 +1,8 @@
 <template>
-  <ConfirmDialog />
+  <!-- Admin embeds MemberSearch under Admin.vue, which already mounts ConfirmDialog. A second
+       instance would receive the same bus events (group undefined) and stack two modals — e.g.
+       "Keep editing" needs two clicks. Public directory pages only use this component's dialog. -->
+  <ConfirmDialog v-if="variant === 'public'" />
   <Card class="mb-6">
     <template #title>
       <div class="flex items-center gap-2">
@@ -131,11 +134,25 @@
               <Column field="email" header="Email" sortable>
                 <template #body="{ data }">
                   <a
+                    v-if="data.email"
                     :href="`mailto:${data.email}`"
                     class="text-[#6F8FAF] hover:underline break-all"
                   >
                     {{ data.email }}
                   </a>
+                  <span
+                    v-else-if="data.hasEmailOnFile"
+                    v-tooltip.top="contactHiddenTooltip"
+                    class="inline-flex items-center gap-2 text-surface-600 text-sm cursor-default max-w-full"
+                    role="img"
+                    :aria-label="contactHiddenTooltip"
+                  >
+                    <i class="pi pi-lock text-xs opacity-70 shrink-0" aria-hidden="true" />
+                    <span class="select-none blur-sm text-surface-500 truncate" aria-hidden="true"
+                      >email on file</span
+                    >
+                  </span>
+                  <span v-else class="text-surface-400">—</span>
                 </template>
               </Column>
               <Column header="Phones" :sortable="false">
@@ -148,10 +165,10 @@
                   </span>
                   <span
                     v-else-if="data.hasMobilePhone || data.hasHomePhone"
-                    v-tooltip.top="PHONE_NUMBERS_VIEW_PERMISSION_TOOLTIP"
+                    v-tooltip.top="contactHiddenTooltip"
                     class="inline-flex items-center gap-2 text-surface-600 text-sm cursor-default max-w-full"
                     role="img"
-                    :aria-label="PHONE_NUMBERS_VIEW_PERMISSION_TOOLTIP"
+                    :aria-label="contactHiddenTooltip"
                   >
                     <i class="pi pi-lock text-xs opacity-70 shrink-0" aria-hidden="true" />
                     <span class="shrink-0">Phone on file</span>
@@ -165,7 +182,24 @@
               </Column>
               <Column header="Address" :sortable="false">
                 <template #body="{ data }">
-                  <span class="text-surface-700 whitespace-normal">{{ formatAddress(data) }}</span>
+                  <span
+                    v-if="formatAddress(data) !== '—'"
+                    class="text-surface-700 whitespace-normal"
+                    >{{ formatAddress(data) }}</span
+                  >
+                  <span
+                    v-else-if="data.hasAddressOnFile"
+                    v-tooltip.top="contactHiddenTooltip"
+                    class="inline-flex items-center gap-2 text-surface-600 text-sm cursor-default max-w-full"
+                    role="img"
+                    :aria-label="contactHiddenTooltip"
+                  >
+                    <i class="pi pi-lock text-xs opacity-70 shrink-0" aria-hidden="true" />
+                    <span class="select-none blur-sm text-surface-500" aria-hidden="true"
+                      >address on file</span
+                    >
+                  </span>
+                  <span v-else class="text-surface-400">—</span>
                 </template>
               </Column>
               <Column field="pledgeClassYear" header="PC Class" sortable>
@@ -356,13 +390,13 @@
   </Card>
 
   <Dialog
-    v-model:visible="editDialogVisible"
+    :visible="editDialogVisible"
     modal
     header="Edit directory person"
     :style="{ width: '50rem' }"
     :breakpoints="{ '1199px': '75vw', '575px': '95vw' }"
     :dismissableMask="true"
-    @hide="resetEditForm"
+    @update:visible="onEditDialogVisibleUpdate"
   >
     <form novalidate @submit.prevent="submitEdit" class="flex flex-col gap-5">
       <div class="flex flex-col gap-2">
@@ -484,16 +518,20 @@
       </div>
 
       <div class="flex flex-col gap-2">
-        <label for="edit-person-external-id" class="font-semibold text-surface-700">
-          CRM Contact ID
-        </label>
+        <label for="edit-person-linkedin" class="font-semibold text-surface-700">LinkedIn</label>
         <InputText
-          id="edit-person-external-id"
-          v-model="editForm.externalContactId"
-          class="w-full font-mono text-sm"
-          placeholder="From import / Salesforce"
+          id="edit-person-linkedin"
+          v-model="editForm.linkedinProfileUrl"
+          type="url"
+          placeholder="https://www.linkedin.com/in/…"
+          :class="{ 'p-invalid': editErrors.linkedinProfileUrl }"
+          class="w-full"
+          autocomplete="url"
         />
-        <small class="text-surface-500">Clear the field and save to remove the link to imports.</small>
+        <small v-if="editErrors.linkedinProfileUrl" class="p-error">{{
+          editErrors.linkedinProfileUrl
+        }}</small>
+        <small v-else class="text-surface-500">Optional — leave blank to remove.</small>
       </div>
 
       <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -504,6 +542,30 @@
         <div class="flex flex-col gap-2">
           <label for="edit-person-home" class="font-semibold text-surface-700">Home phone</label>
           <InputText id="edit-person-home" v-model="editForm.homePhone" class="w-full" />
+        </div>
+      </div>
+
+      <div class="flex flex-col gap-3 border-t border-surface-200 pt-4">
+        <p class="font-semibold text-surface-700 m-0">Visible to other signed-in members</p>
+        <p class="text-sm text-surface-600 m-0">
+          Turn off to hide that field from viewers (guests never see contact info). Editors still see full
+          rows in this admin directory.
+        </p>
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <label for="edit-share-email" class="text-surface-800">Email</label>
+          <ToggleSwitch v-model="editForm.shareEmailWithLoggedInMembers" inputId="edit-share-email" />
+        </div>
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <label for="edit-share-phones" class="text-surface-800">Phone numbers</label>
+          <ToggleSwitch v-model="editForm.sharePhonesWithLoggedInMembers" inputId="edit-share-phones" />
+        </div>
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <label for="edit-share-address" class="text-surface-800">Mailing address</label>
+          <ToggleSwitch v-model="editForm.shareAddressWithLoggedInMembers" inputId="edit-share-address" />
+        </div>
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <label for="edit-share-li" class="text-surface-800">LinkedIn</label>
+          <ToggleSwitch v-model="editForm.shareLinkedInWithLoggedInMembers" inputId="edit-share-li" />
         </div>
       </div>
 
@@ -543,7 +605,7 @@
             severity="secondary"
             outlined
             :disabled="editSaving || deleteSaving"
-            @click="editDialogVisible = false"
+            @click="onEditDialogVisibleUpdate(false)"
           />
           <Button
             type="submit"
@@ -560,7 +622,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch, nextTick } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import Card from 'primevue/card'
 import InputText from 'primevue/inputtext'
 import InputNumber from 'primevue/inputnumber'
@@ -584,11 +646,9 @@ import type { PersonRelationshipResponse } from '@/types/personRelationship'
 import { usePersonRelationshipsStore } from '@/stores/personRelationships'
 import { PERSON_RELATIONSHIP_TYPE_OPTIONS } from '@/constants/relationshipTypes'
 import { US_STATE_CODE_SET, US_STATE_OPTIONS, normalizeUsStateForSelect } from '@/constants/usStates'
-import {
-  formatUsPhoneForDisplay,
-  PHONE_NUMBERS_VIEW_PERMISSION_TOOLTIP,
-  usPhoneDigits,
-} from '@/utils/usPhone'
+import { formatUsPhoneForDisplay, usPhoneDigits } from '@/utils/usPhone'
+import { directoryContactHiddenTooltip } from '@/utils/directoryPrivacy'
+import { registerAdminUnsaved } from '@/utils/adminUnsavedRegistry'
 
 const props = withDefaults(
   defineProps<{
@@ -602,6 +662,9 @@ const toast = useToast()
 const confirm = useConfirm()
 const peopleStore = usePeopleStore()
 const authStore = useAuthStore()
+const contactHiddenTooltip = computed(() =>
+  directoryContactHiddenTooltip(authStore.isAuthenticated),
+)
 const personRelStore = usePersonRelationshipsStore()
 
 /** DataTable row expansion: keyed by person id when `dataKey` is set */
@@ -869,6 +932,8 @@ const kindOptions = [
 ]
 
 const editDialogVisible = ref(false)
+/** Snapshot of `editForm` when the dialog was opened (admin only), for dirty detection. */
+const editFormBaseline = ref('')
 const editSaving = ref(false)
 const deleteSaving = ref(false)
 const editingId = ref<string | null>(null)
@@ -882,10 +947,14 @@ const editForm = ref({
   state: '',
   zip: '',
   email: '',
-  externalContactId: '',
+  linkedinProfileUrl: '',
   homePhone: '',
   mobilePhone: '',
   pledgeClassYear: null as number | null,
+  shareEmailWithLoggedInMembers: true,
+  sharePhonesWithLoggedInMembers: true,
+  shareAddressWithLoggedInMembers: true,
+  shareLinkedInWithLoggedInMembers: true,
 })
 
 const editErrors = ref({
@@ -897,6 +966,7 @@ const editErrors = ref({
   state: '',
   zip: '',
   email: '',
+  linkedinProfileUrl: '',
   pledgeClassYear: '',
 })
 
@@ -953,12 +1023,20 @@ function matchesSearch(person: PersonResponse, q: string): boolean {
   const phoneFormatted = [formatUsPhoneForDisplay(mobileRaw), formatUsPhoneForDisplay(homeRaw)]
     .filter(Boolean)
     .join(' ')
+  const emailHint =
+    person.hasEmailOnFile && !(person.email && String(person.email).trim()) ? 'email on file' : ''
+  const addressHint =
+    person.hasAddressOnFile && formatAddress(person) === '—' ? 'address on file' : ''
+
   const hay = [
     person.firstName,
     person.lastName,
     `${person.firstName} ${person.lastName}`,
-    person.email,
+    person.email ?? '',
+    emailHint,
     person.externalContactId ?? '',
+    person.linkedinProfileUrl ?? '',
+    person.hasLinkedInOnFile && !person.linkedinProfileUrl?.trim() ? 'linkedin on file' : '',
     mobileRaw,
     homeRaw,
     phoneDigits,
@@ -969,6 +1047,7 @@ function matchesSearch(person: PersonResponse, q: string): boolean {
     person.zip,
     person.addressLine1,
     formatAddress(person),
+    addressHint,
   ]
     .join(' ')
     .toLowerCase()
@@ -1047,8 +1126,43 @@ function clearEditErrors() {
     state: '',
     zip: '',
     email: '',
+    linkedinProfileUrl: '',
     pledgeClassYear: '',
   }
+}
+
+function snapshotEditFormState(): string {
+  return JSON.stringify(editForm.value)
+}
+
+function isAdminEditDialogDirty(): boolean {
+  if (props.variant !== 'admin' || !editDialogVisible.value) return false
+  return snapshotEditFormState() !== editFormBaseline.value
+}
+
+function onEditDialogVisibleUpdate(next: boolean) {
+  if (next) {
+    editDialogVisible.value = true
+    return
+  }
+  if (!editDialogVisible.value) return
+  if (props.variant !== 'admin' || !isAdminEditDialogDirty()) {
+    editDialogVisible.value = false
+    resetEditForm()
+    return
+  }
+  confirm.require({
+    message: 'Discard unsaved changes to this directory entry?',
+    header: 'Unsaved changes',
+    icon: 'pi pi-exclamation-triangle',
+    rejectClass: 'p-button-secondary p-button-outlined',
+    rejectLabel: 'Keep editing',
+    acceptLabel: 'Discard',
+    accept: () => {
+      editDialogVisible.value = false
+      resetEditForm()
+    },
+  })
 }
 
 function resetEditForm() {
@@ -1062,10 +1176,14 @@ function resetEditForm() {
     state: '',
     zip: '',
     email: '',
-    externalContactId: '',
+    linkedinProfileUrl: '',
     homePhone: '',
     mobilePhone: '',
     pledgeClassYear: null,
+    shareEmailWithLoggedInMembers: true,
+    sharePhonesWithLoggedInMembers: true,
+    shareAddressWithLoggedInMembers: true,
+    shareLinkedInWithLoggedInMembers: true,
   }
   clearEditErrors()
 }
@@ -1080,13 +1198,18 @@ function openEditDialog(p: PersonResponse) {
     city: p.city ?? '',
     state: normalizeUsStateForSelect(p.state),
     zip: p.zip ?? '',
-    email: p.email,
-    externalContactId: p.externalContactId ?? '',
+    email: p.email ?? '',
+    linkedinProfileUrl: p.linkedinProfileUrl ?? '',
     mobilePhone: formatUsPhoneForDisplay(p.mobilePhone ?? ''),
     homePhone: formatUsPhoneForDisplay(p.homePhone ?? ''),
     pledgeClassYear: p.pledgeClassYear ?? null,
+    shareEmailWithLoggedInMembers: p.shareEmailWithLoggedInMembers ?? true,
+    sharePhonesWithLoggedInMembers: p.sharePhonesWithLoggedInMembers ?? true,
+    shareAddressWithLoggedInMembers: p.shareAddressWithLoggedInMembers ?? true,
+    shareLinkedInWithLoggedInMembers: p.shareLinkedInWithLoggedInMembers ?? true,
   }
   clearEditErrors()
+  editFormBaseline.value = snapshotEditFormState()
   editDialogVisible.value = true
 }
 
@@ -1119,6 +1242,19 @@ function validateEditForm(): boolean {
     editErrors.value.email = 'Enter a valid email'
     ok = false
   }
+  const li = f.linkedinProfileUrl.trim()
+  if (li) {
+    try {
+      const u = new URL(li)
+      if (u.protocol !== 'http:' && u.protocol !== 'https:') {
+        editErrors.value.linkedinProfileUrl = 'Use a link starting with http:// or https://'
+        ok = false
+      }
+    } catch {
+      editErrors.value.linkedinProfileUrl = 'Enter a valid URL'
+      ok = false
+    }
+  }
   if (showEditPledgeField.value && f.pledgeClassYear != null) {
     const y = f.pledgeClassYear
     if (y < 1900 || y > 2100) {
@@ -1146,7 +1282,7 @@ async function submitEdit() {
         f.state && US_STATE_CODE_SET.has(f.state) ? f.state.trim().toUpperCase() : null,
       zip: f.zip.trim() || null,
       email: f.email.trim(),
-      externalContactId: f.externalContactId.trim() || null,
+      linkedinProfileUrl: f.linkedinProfileUrl.trim() ? f.linkedinProfileUrl.trim() : null,
       mobilePhone: f.mobilePhone.trim() || null,
       homePhone: f.homePhone.trim() || null,
     }
@@ -1155,6 +1291,11 @@ async function submitEdit() {
     } else {
       payload.pledgeClassYear = null
     }
+
+    payload.shareEmailWithLoggedInMembers = f.shareEmailWithLoggedInMembers
+    payload.sharePhonesWithLoggedInMembers = f.sharePhonesWithLoggedInMembers
+    payload.shareAddressWithLoggedInMembers = f.shareAddressWithLoggedInMembers
+    payload.shareLinkedInWithLoggedInMembers = f.shareLinkedInWithLoggedInMembers
 
     await peopleStore.updatePerson(personId, payload)
 
@@ -1258,6 +1399,27 @@ function confirmDeletePerson() {
     },
   })
 }
+
+let unregisterMemberSearchUnsaved: (() => void) | null = null
+
+function registerMemberSearchUnsaved() {
+  unregisterMemberSearchUnsaved?.()
+  unregisterMemberSearchUnsaved = null
+  if (props.variant !== 'admin') return
+  unregisterMemberSearchUnsaved = registerAdminUnsaved({
+    id: 'member-search-directory-edit',
+    isDirty: () => isAdminEditDialogDirty(),
+    discard: () => {
+      editDialogVisible.value = false
+      resetEditForm()
+    },
+  })
+}
+
+watch(() => props.variant, registerMemberSearchUnsaved, { immediate: true })
+onUnmounted(() => {
+  unregisterMemberSearchUnsaved?.()
+})
 
 onMounted(async () => {
   void peopleStore.fetchPeople()

@@ -154,11 +154,16 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import Card from 'primevue/card'
 import Button from 'primevue/button'
 import ConfirmDialog from 'primevue/confirmdialog'
-import { useRoute, useRouter } from 'vue-router'
+import { useConfirm } from 'primevue/useconfirm'
+import { useRoute, useRouter, onBeforeRouteLeave } from 'vue-router'
+import {
+  adminDiscardAllUnsaved,
+  adminHasUnsavedChanges,
+} from '@/utils/adminUnsavedRegistry'
 import AdminNewsletters from '@/components/AdminNewsletters.vue'
 import AdminUsers from '@/components/AdminUsers.vue'
 import AdminCalendarEvents from '@/components/AdminCalendarEvents.vue'
@@ -173,6 +178,7 @@ import MemberSearch from '@/components/MemberSearch.vue'
 
 const route = useRoute()
 const router = useRouter()
+const confirm = useConfirm()
 
 // Initialize activeSection from URL query parameter or default to 'overview'
 const validSectionIds = [
@@ -219,16 +225,60 @@ const toggleSettingsMenu = () => {
   settingsMenuOpen.value = !settingsMenuOpen.value
 }
 
-// Function to set active section and update URL
-const setActiveSection = (section: string) => {
-  activeSection.value = section
-  router.push({ query: { ...route.query, section } })
-  
-  // Open settings menu if selecting a settings sub-section
-  if (section.startsWith('settings')) {
-    settingsMenuOpen.value = true
+function confirmLeaveUnsavedEdits(): Promise<boolean> {
+  if (!adminHasUnsavedChanges()) return Promise.resolve(true)
+  return new Promise((resolve) => {
+    confirm.require({
+      message:
+        'You have unsaved changes. If you leave this page or section, those edits will be lost.',
+      header: 'Unsaved changes',
+      icon: 'pi pi-exclamation-triangle',
+      rejectClass: 'p-button-secondary p-button-outlined',
+      rejectLabel: 'Stay',
+      acceptLabel: 'Leave without saving',
+      acceptClass: 'p-button-danger',
+      accept: () => {
+        adminDiscardAllUnsaved()
+        resolve(true)
+      },
+      reject: () => resolve(false),
+    })
+  })
+}
+
+function warnBeforeUnload(e: BeforeUnloadEvent) {
+  if (adminHasUnsavedChanges()) {
+    e.preventDefault()
+    e.returnValue = ''
   }
 }
+
+// Function to set active section and update URL
+const setActiveSection = (section: string) => {
+  if (section === activeSection.value) return
+  void (async () => {
+    const ok = await confirmLeaveUnsavedEdits()
+    if (!ok) return
+    activeSection.value = section
+    router.push({ query: { ...route.query, section } })
+
+    if (section.startsWith('settings')) {
+      settingsMenuOpen.value = true
+    }
+  })()
+}
+
+onBeforeRouteLeave(async () => {
+  return confirmLeaveUnsavedEdits()
+})
+
+onMounted(() => {
+  window.addEventListener('beforeunload', warnBeforeUnload)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('beforeunload', warnBeforeUnload)
+})
 
 const navItems = [
   {

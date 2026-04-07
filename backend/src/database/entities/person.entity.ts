@@ -87,6 +87,42 @@ export class Person extends BaseEntity {
   })
   mobilePhone?: string | null
 
+  /** Public LinkedIn profile URL (https://…), optional. */
+  @Column({
+    type: DataType.STRING(512),
+    allowNull: true,
+  })
+  linkedinProfileUrl?: string | null
+
+  /** Opt-out: when false, logged-in chapter viewers do not receive `email` in API (guests never do). Default true. */
+  @Column({
+    type: DataType.BOOLEAN,
+    allowNull: false,
+    defaultValue: true,
+  })
+  shareEmailWithLoggedInMembers!: boolean
+
+  @Column({
+    type: DataType.BOOLEAN,
+    allowNull: false,
+    defaultValue: true,
+  })
+  sharePhonesWithLoggedInMembers!: boolean
+
+  @Column({
+    type: DataType.BOOLEAN,
+    allowNull: false,
+    defaultValue: true,
+  })
+  shareAddressWithLoggedInMembers!: boolean
+
+  @Column({
+    type: DataType.BOOLEAN,
+    allowNull: false,
+    defaultValue: true,
+  })
+  shareLinkedInWithLoggedInMembers!: boolean
+
   /** Graduation / pledge class year; only meaningful for members */
   @Index
   @Column({
@@ -113,10 +149,17 @@ export class Person extends BaseEntity {
   })
   isParent!: boolean
 
-  /** GCS object path for optional headshot (signed URLs for display). */
+  /** GCS path for optional current directory / profile photo. */
   @Column({
     type: DataType.STRING(512),
     allowNull: true,
   })
-  headshotFilePath?: string | null
+  profileHeadshotFilePath?: string | null
+
+  /** GCS path for optional exec-team roster photo (era when they held office). */
+  @Column({
+    type: DataType.STRING(512),
+    allowNull: true,
+  })
+  execRosterHeadshotFilePath?: string | null
 }

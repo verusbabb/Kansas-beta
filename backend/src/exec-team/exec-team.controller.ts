@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   Delete,
+  ForbiddenException,
   Get,
   HttpCode,
   HttpStatus,
@@ -11,6 +12,7 @@ import {
   Post,
   Put,
   Query,
+  Req,
   UseGuards,
 } from '@nestjs/common'
 import {
@@ -26,7 +28,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard'
 import { RolesGuard } from '../auth/guards/roles.guard'
 import { UserLookupGuard } from '../auth/guards/user-lookup.guard'
 import { Roles } from '../auth/decorators/roles.decorator'
-import { UserRole } from '../database/entities/user.entity'
+import { User, UserRole } from '../database/entities/user.entity'
 import { ExecTeamService } from './exec-team.service'
 import { ExecPositionPublicDto } from './dto/exec-position-public.dto'
 import { ExecTermPublicDto } from './dto/exec-term-public.dto'
@@ -34,6 +36,9 @@ import { ExecRosterResponseDto } from './dto/exec-roster-response.dto'
 import { CreateExecTermDto } from './dto/create-exec-term.dto'
 import { UpdateExecTermDto } from './dto/update-exec-term.dto'
 import { ReplaceExecRosterDto } from './dto/replace-exec-roster.dto'
+import { ClaimMyExecAssignmentDto } from './dto/claim-my-exec-assignment.dto'
+import { ReleaseMyExecAssignmentDto } from './dto/release-my-exec-assignment.dto'
+import { PersonExecHistoryEntryDto } from './dto/person-exec-history-entry.dto'
 
 @ApiTags('Exec team')
 @Controller('exec-team')
@@ -130,5 +135,55 @@ export class ExecTeamController {
     @Body() dto: ReplaceExecRosterDto,
   ): Promise<ExecRosterResponseDto> {
     return this.execTeamService.replaceRoster(id, dto)
+  }
+
+  @Post('my-exec-assignment')
+  @UseGuards(JwtAuthGuard, UserLookupGuard)
+  @ApiBearerAuth()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Claim one executive office for your linked profile (member)',
+    description:
+      'Creates the Fall/Spring term if it does not exist yet (never sets current term). ' +
+      'Updates only this position for that term. Fails with 409 if another member already holds the office.',
+  })
+  @ApiResponse({ status: HttpStatus.OK, type: PersonExecHistoryEntryDto })
+  @ApiResponse({ status: HttpStatus.CONFLICT, description: 'Office already assigned to someone else' })
+  @ApiResponse({ status: HttpStatus.FORBIDDEN, description: 'Not linked or not a member' })
+  async claimMyExecAssignment(
+    @Req() req: { user: User },
+    @Body() dto: ClaimMyExecAssignmentDto,
+  ): Promise<PersonExecHistoryEntryDto> {
+    const personId = req.user.personId
+    if (!personId) {
+      throw new ForbiddenException(
+        'Your account must be linked to a directory profile to add executive offices.',
+      )
+    }
+    return this.execTeamService.claimMyExecAssignment(personId, dto)
+  }
+
+  @Delete('my-exec-assignment')
+  @UseGuards(JwtAuthGuard, UserLookupGuard)
+  @ApiBearerAuth()
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({
+    summary: 'Remove one executive office from your linked profile (member)',
+    description: 'Clears only your assignment for that position and term.',
+  })
+  @ApiResponse({ status: HttpStatus.NO_CONTENT, description: 'Removed' })
+  @ApiResponse({ status: HttpStatus.FORBIDDEN, description: 'Not linked, not a member, or slot held by someone else' })
+  @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'Term or assignment not found' })
+  async releaseMyExecAssignment(
+    @Req() req: { user: User },
+    @Body() dto: ReleaseMyExecAssignmentDto,
+  ): Promise<void> {
+    const personId = req.user.personId
+    if (!personId) {
+      throw new ForbiddenException(
+        'Your account must be linked to a directory profile to update executive offices.',
+      )
+    }
+    return this.execTeamService.releaseMyExecAssignment(personId, dto)
   }
 }

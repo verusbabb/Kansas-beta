@@ -6,7 +6,9 @@ import {
   Logger,
 } from '@nestjs/common'
 import { InjectModel } from '@nestjs/sequelize'
+import { Op } from 'sequelize'
 import { User } from '../../database/entities/user.entity'
+import { Person } from '../../database/entities/person.entity'
 import { JwtPayload } from '../strategies/jwt.strategy'
 
 /**
@@ -29,6 +31,8 @@ export class UserLookupGuard implements CanActivate {
   constructor(
     @InjectModel(User)
     private userModel: typeof User,
+    @InjectModel(Person)
+    private personModel: typeof Person,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -67,6 +71,7 @@ export class UserLookupGuard implements CanActivate {
 
       if (user) {
         // User found by auth0Id - they're already linked
+        await this.linkPersonIdIfUnset(user)
         request.user = user
         return true
       }
@@ -91,6 +96,7 @@ export class UserLookupGuard implements CanActivate {
           this.logger.log('Linked Auth0 account to user', { email, auth0Id })
         }
 
+        await this.linkPersonIdIfUnset(user)
         request.user = user
         return true
       }
@@ -116,5 +122,21 @@ export class UserLookupGuard implements CanActivate {
         'Error authenticating user. Please try again or contact support.',
       )
     }
+  }
+
+  /** When exactly one directory person matches the user email, set `user.personId`. */
+  private async linkPersonIdIfUnset(user: User): Promise<void> {
+    if (user.personId) return
+    const norm = user.email.trim().toLowerCase()
+    const matches = await this.personModel.findAll({
+      where: { email: { [Op.iLike]: norm } },
+    })
+    if (matches.length !== 1) return
+    user.personId = matches[0].id
+    await user.save()
+    this.logger.log('Linked user to directory person by email', {
+      userId: user.id,
+      personId: user.personId,
+    })
   }
 }

@@ -15,6 +15,8 @@ export interface UserResponseDto {
   lastName: string
   role: UserRole
   auth0Id: string | null
+  /** Linked directory person when unambiguous email match exists. */
+  personId?: string | null
   createdAt: string
   updatedAt: string
   isProtected?: boolean

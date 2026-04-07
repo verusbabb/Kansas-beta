@@ -23,7 +23,8 @@
               Click <strong>Save roster</strong> below the table. Assignments are not saved until you do.
             </li>
             <li class="text-surface-500">
-              Optional: after someone is assigned, use <strong>Upload</strong> to add a headshot (stored on their
+              Optional: after someone is assigned, use <strong>Upload</strong> to add an
+              <strong>executive roster</strong> photo (stored on their
               directory record).
             </li>
           </ol>
@@ -33,7 +34,7 @@
           <div class="flex flex-col gap-1 min-w-[12rem]">
             <label class="text-xs font-medium text-surface-600">Term</label>
             <Select
-              v-model="selectedTermId"
+              :modelValue="selectedTermId"
               :options="termOptions"
               optionLabel="label"
               optionValue="value"
@@ -44,6 +45,7 @@
               size="small"
               class="w-full sm:w-64"
               :disabled="loadingMeta"
+              @update:model-value="requestSelectTerm"
             />
           </div>
           <Button
@@ -162,7 +164,10 @@
                     @click="triggerFileInput(data.positionId)"
                   />
                   <Button
-                    v-if="headshotHint(assignmentByPosition[data.positionId])"
+                    v-if="
+                      assignmentByPosition[data.positionId] != null &&
+                      headshotHint(assignmentByPosition[data.positionId]!)
+                    "
                     type="button"
                     icon="pi pi-times"
                     size="small"
@@ -264,7 +269,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import Card from 'primevue/card'
 import Button from 'primevue/button'
 import Select from 'primevue/select'
@@ -280,6 +285,7 @@ import { useToast } from 'primevue/usetoast'
 import apiClient from '@/services/api'
 import { isAxiosRejection } from '@/services/api'
 import { usePeopleStore } from '@/stores/people'
+import { registerAdminUnsaved } from '@/utils/adminUnsavedRegistry'
 import type {
   ExecTermPublic,
   ExecPositionPublic,
@@ -297,6 +303,8 @@ const positions = ref<ExecPositionPublic[]>([])
 const lastRosterSlots = ref<ExecRosterSlot[]>([])
 const selectedTermId = ref<string | null>(null)
 const assignmentByPosition = ref<Record<string, string | null>>({})
+/** Last saved roster from server for the current term (for dirty check + discard). */
+const savedAssignmentByPosition = ref<Record<string, string | null>>({})
 
 const loadingMeta = ref(true)
 const rosterLoading = ref(false)
@@ -364,7 +372,7 @@ const positionRows = computed(() =>
 
 function headshotHint(personId: string): boolean {
   const p = peopleStore.list.find((x) => x.id === personId)
-  return !!p?.hasHeadshot
+  return !!p?.hasExecRosterHeadshot
 }
 
 function setAssignment(positionId: string, personId: string | null) {
@@ -372,6 +380,48 @@ function setAssignment(positionId: string, personId: string | null) {
     ...assignmentByPosition.value,
     [positionId]: personId,
   }
+}
+
+function assignmentSnapshot(map: Record<string, string | null>): string {
+  const ids = positionListForRoster.value.map((p) => p.id).sort()
+  const o: Record<string, string | null> = {}
+  for (const id of ids) o[id] = map[id] ?? null
+  return JSON.stringify(o)
+}
+
+function isRosterDirty(): boolean {
+  if (!selectedTermId.value || rosterLoading.value) return false
+  if (positionListForRoster.value.length === 0) return false
+  return assignmentSnapshot(assignmentByPosition.value) !== assignmentSnapshot(savedAssignmentByPosition.value)
+}
+
+function discardRosterEdits() {
+  assignmentByPosition.value = { ...savedAssignmentByPosition.value }
+}
+
+function setSelectedTermIdForced(next: string | null) {
+  selectedTermId.value = next
+}
+
+function requestSelectTerm(next: string | null) {
+  if (next === selectedTermId.value) return
+  if (selectedTermId.value && isRosterDirty()) {
+    confirm.require({
+      message:
+        'You have unsaved roster changes for this term. Switch anyway? Your edits will be discarded.',
+      header: 'Unsaved roster changes',
+      icon: 'pi pi-exclamation-triangle',
+      rejectClass: 'p-button-secondary p-button-outlined',
+      rejectLabel: 'Cancel',
+      acceptLabel: 'Switch and discard edits',
+      acceptClass: 'p-button-danger',
+      accept: () => {
+        setSelectedTermIdForced(next)
+      },
+    })
+    return
+  }
+  setSelectedTermIdForced(next)
 }
 
 async function loadMeta() {
@@ -387,7 +437,7 @@ async function loadMeta() {
     positions.value = Array.isArray(posRes.data) ? posRes.data : []
     if (!selectedTermId.value && terms.value.length > 0) {
       const cur = terms.value.find((t) => t.isCurrent)
-      selectedTermId.value = cur?.id ?? terms.value[0].id
+      setSelectedTermIdForced(cur?.id ?? terms.value[0].id)
     }
   } catch {
     metaError.value = 'Could not load exec team metadata.'
@@ -400,6 +450,7 @@ async function loadRosterForSelected() {
   const id = selectedTermId.value
   if (!id) {
     assignmentByPosition.value = {}
+    savedAssignmentByPosition.value = {}
     lastRosterSlots.value = []
     return
   }
@@ -414,9 +465,11 @@ async function loadRosterForSelected() {
       map[s.position.id] = s.person?.id ?? null
     }
     assignmentByPosition.value = map
+    savedAssignmentByPosition.value = { ...map }
   } catch {
     toast.add({ severity: 'error', summary: 'Error', detail: 'Could not load roster.', life: 4000 })
     assignmentByPosition.value = {}
+    savedAssignmentByPosition.value = {}
     lastRosterSlots.value = []
   } finally {
     rosterLoading.value = false
@@ -427,6 +480,7 @@ watch(selectedTermId, (id) => {
   if (id) void loadRosterForSelected()
   else {
     assignmentByPosition.value = {}
+    savedAssignmentByPosition.value = {}
     lastRosterSlots.value = []
   }
 })
@@ -473,7 +527,22 @@ async function createTerm() {
     newTermOpen.value = false
     resetNewTermForm()
     await loadMeta()
-    selectedTermId.value = newId
+    const pickNewTerm = () => setSelectedTermIdForced(newId)
+    if (isRosterDirty()) {
+      confirm.require({
+        message:
+          'You have unsaved roster changes. Open the new term anyway? Your edits to the current term will be discarded.',
+        header: 'Unsaved roster changes',
+        icon: 'pi pi-exclamation-triangle',
+        rejectClass: 'p-button-secondary p-button-outlined',
+        rejectLabel: 'Cancel',
+        acceptLabel: 'Open new term',
+        acceptClass: 'p-button-danger',
+        accept: pickNewTerm,
+      })
+    } else {
+      pickNewTerm()
+    }
     toast.add({ severity: 'success', summary: 'Created', detail: 'Term created.', life: 3000 })
   } catch (err: unknown) {
     if (!isAxiosRejection(err)) {
@@ -532,12 +601,13 @@ async function runDeleteTerm(id: string) {
   deletingTerm.value = true
   try {
     await apiClient.delete(`/exec-team/terms/${id}`)
-    selectedTermId.value = null
+    setSelectedTermIdForced(null)
     assignmentByPosition.value = {}
+    savedAssignmentByPosition.value = {}
     await loadMeta()
     if (terms.value.length > 0) {
       const cur = terms.value.find((t) => t.isCurrent)
-      selectedTermId.value = cur?.id ?? terms.value[0].id
+      setSelectedTermIdForced(cur?.id ?? terms.value[0].id)
       await loadRosterForSelected()
     }
     toast.add({ severity: 'success', summary: 'Deleted', detail: 'Term removed.', life: 3000 })
@@ -555,7 +625,7 @@ async function onHeadshotFile(e: Event, personId: string) {
   if (!file) return
   uploadingPersonId.value = personId
   try {
-    await peopleStore.uploadHeadshot(personId, file)
+    await peopleStore.uploadExecRosterHeadshot(personId, file)
     toast.add({ severity: 'success', summary: 'Uploaded', detail: 'Headshot saved.', life: 3000 })
   } catch {
     toast.add({ severity: 'error', summary: 'Error', detail: 'Upload failed.', life: 4000 })
@@ -567,7 +637,7 @@ async function onHeadshotFile(e: Event, personId: string) {
 async function clearHeadshotFor(personId: string) {
   clearingPersonId.value = personId
   try {
-    await peopleStore.clearHeadshot(personId)
+    await peopleStore.clearExecRosterHeadshot(personId)
     toast.add({ severity: 'success', summary: 'Removed', detail: 'Headshot cleared.', life: 3000 })
   } catch {
     toast.add({ severity: 'error', summary: 'Error', detail: 'Could not remove headshot.', life: 4000 })
@@ -576,7 +646,18 @@ async function clearHeadshotFor(personId: string) {
   }
 }
 
+let unregisterExecUnsaved: (() => void) | null = null
+
 onMounted(() => {
   void loadMeta()
+  unregisterExecUnsaved = registerAdminUnsaved({
+    id: 'admin-exec-roster',
+    isDirty: () => isRosterDirty(),
+    discard: discardRosterEdits,
+  })
+})
+
+onUnmounted(() => {
+  unregisterExecUnsaved?.()
 })
 </script>

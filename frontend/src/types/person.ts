@@ -12,6 +12,8 @@ export interface CreatePersonPayload {
   zip?: string
   email: string
   externalContactId?: string
+  /** Public LinkedIn profile URL (https://…) */
+  linkedinProfileUrl?: string
   homePhone?: string
   mobilePhone?: string
   pledgeClassYear?: number
@@ -28,9 +30,14 @@ export interface UpdatePersonPayload {
   zip?: string | null
   email?: string
   externalContactId?: string | null
+  linkedinProfileUrl?: string | null
   homePhone?: string | null
   mobilePhone?: string | null
   pledgeClassYear?: number | null
+  shareEmailWithLoggedInMembers?: boolean
+  sharePhonesWithLoggedInMembers?: boolean
+  shareAddressWithLoggedInMembers?: boolean
+  shareLinkedInWithLoggedInMembers?: boolean
 }
 
 export interface PersonResponse {
@@ -41,8 +48,16 @@ export interface PersonResponse {
   city?: string | null
   state?: string | null
   zip?: string | null
-  email: string
+  /** Null when redacted (guests or member opted out). */
+  email?: string | null
+  /** True when an email exists in the directory; use with `email: null` for redacted UI. */
+  hasEmailOnFile?: boolean
   externalContactId?: string | null
+  linkedinProfileUrl?: string | null
+  /** True when a URL exists; use with `linkedinProfileUrl: null` for redacted UI. */
+  hasLinkedInOnFile?: boolean
+  /** True when any address line is stored; use when address fields are null. */
+  hasAddressOnFile?: boolean
   homePhone?: string | null
   mobilePhone?: string | null
   /** True when a home number exists; may be true while `homePhone` is null for privacy. */
@@ -54,8 +69,14 @@ export interface PersonResponse {
   isParent: boolean
   /** At least one member↔member relationship (both sides chapter members), not parent-only family links. */
   hasLegacyMemberLink: boolean
-  /** True when a headshot is stored (exec team / display). */
-  hasHeadshot?: boolean
+  /** Directory / profile photo (current). */
+  hasProfileHeadshot?: boolean
+  /** Executive roster (era) photo. */
+  hasExecRosterHeadshot?: boolean
+  shareEmailWithLoggedInMembers?: boolean
+  sharePhonesWithLoggedInMembers?: boolean
+  shareAddressWithLoggedInMembers?: boolean
+  shareLinkedInWithLoggedInMembers?: boolean
   createdAt: string
   updatedAt: string
 }

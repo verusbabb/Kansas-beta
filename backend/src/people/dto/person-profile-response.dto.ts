@@ -10,9 +10,16 @@ export class PersonProfileResponseDto {
   @ApiPropertyOptional({
     nullable: true,
     description:
-      'Time-limited signed URL for headshot when `person.hasHeadshot` (same TTL as exec roster).',
+      'Time-limited signed URL for the directory/profile photo when `person.hasProfileHeadshot`.',
   })
   headshotUrl?: string | null
+
+  @ApiPropertyOptional({
+    nullable: true,
+    description:
+      'Time-limited signed URL for the exec roster photo when `person.hasExecRosterHeadshot`.',
+  })
+  execRosterHeadshotUrl?: string | null
 
   @ApiProperty({ type: [PersonRelationshipResponseDto] })
   relationships!: PersonRelationshipResponseDto[]

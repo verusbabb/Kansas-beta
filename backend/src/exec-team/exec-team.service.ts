@@ -1,11 +1,12 @@
 import {
   BadRequestException,
   ConflictException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common'
 import { InjectModel } from '@nestjs/sequelize'
-import { Op } from 'sequelize'
+import { Op, Transaction, UniqueConstraintError } from 'sequelize'
 import { PinoLogger } from 'nestjs-pino'
 import { ExecPosition } from '../database/entities/exec-position.entity'
 import { ExecTerm } from '../database/entities/exec-term.entity'
@@ -21,7 +22,10 @@ import { ExecRosterResponseDto } from './dto/exec-roster-response.dto'
 import { ExecRosterSlotDto } from './dto/exec-roster-slot.dto'
 import { ExecRosterPersonDto } from './dto/exec-roster-person.dto'
 import { PersonExecHistoryEntryDto } from './dto/person-exec-history-entry.dto'
+import { ClaimMyExecAssignmentDto } from './dto/claim-my-exec-assignment.dto'
+import { ReleaseMyExecAssignmentDto } from './dto/release-my-exec-assignment.dto'
 import { execRoleEmailForPositionCode } from './exec-position-role-emails'
+import type { ExecSeason } from '../database/entities/exec-term.entity'
 
 /** Signed URL TTL for roster headshots (embedded in public HTML). */
 const HEADSHOT_URL_EXPIRY_MINUTES = 7 * 24 * 60
@@ -94,10 +98,10 @@ export class ExecTeamService {
   }
 
   private async headshotUrlForPerson(person: Person | null | undefined): Promise<string | null> {
-    if (!person?.headshotFilePath) return null
+    if (!person?.execRosterHeadshotFilePath) return null
     try {
       return await this.storageService.getSignedUrl(
-        person.headshotFilePath,
+        person.execRosterHeadshotFilePath,
         HEADSHOT_URL_EXPIRY_MINUTES,
       )
     } catch (e) {
@@ -253,7 +257,6 @@ export class ExecTeamService {
       (await this.execPositionModel.findAll({ attributes: ['id'] })).map((p) => p.id),
     )
     const seenPositions = new Set<string>()
-    const memberIds: string[] = []
 
     for (const row of dto.assignments) {
       if (!positionIds.has(row.positionId)) {
@@ -263,16 +266,12 @@ export class ExecTeamService {
         throw new BadRequestException(`Duplicate position in payload: ${row.positionId}`)
       }
       seenPositions.add(row.positionId)
-      const pid = row.personId
-      if (pid != null && pid !== '') {
-        memberIds.push(pid)
-      }
     }
 
+    const memberIds = dto.assignments
+      .map((row) => row.personId)
+      .filter((pid): pid is string => pid != null && pid !== '')
     const uniqueMembers = [...new Set(memberIds)]
-    if (uniqueMembers.length !== memberIds.length) {
-      throw new BadRequestException('The same member cannot hold more than one exec position in a term')
-    }
 
     if (uniqueMembers.length > 0) {
       const people = await this.personModel.findAll({
@@ -308,5 +307,151 @@ export class ExecTeamService {
 
     this.logger.info('Replaced exec roster', { termId })
     return this.getRosterForTerm(termId)
+  }
+
+  /**
+   * Creates a Fall/Spring term if missing. Never sets isCurrent (admin-only).
+   * Handles concurrent creates via unique (year, season).
+   */
+  private async findOrCreateTermForSelfAssignment(
+    year: number,
+    season: ExecSeason,
+    transaction: Transaction,
+  ): Promise<ExecTerm> {
+    let term = await this.execTermModel.findOne({
+      where: { year, season },
+      transaction,
+    })
+    if (term) return term
+
+    const label = `${season === 'fall' ? 'Fall' : 'Spring'} ${year}`
+    try {
+      term = await this.execTermModel.create(
+        { year, season, label, isCurrent: false },
+        { transaction },
+      )
+      return term
+    } catch (e) {
+      if (e instanceof UniqueConstraintError) {
+        const again = await this.execTermModel.findOne({
+          where: { year, season },
+          transaction,
+        })
+        if (again) return again
+      }
+      throw e
+    }
+  }
+
+  /**
+   * Linked member assigns themselves to one roster slot (creates term if needed). Does not replace the full roster.
+   */
+  async claimMyExecAssignment(
+    personId: string,
+    dto: ClaimMyExecAssignmentDto,
+  ): Promise<PersonExecHistoryEntryDto> {
+    const person = await this.personModel.findByPk(personId)
+    if (!person) {
+      throw new NotFoundException('Person not found')
+    }
+    if (!person.isMember) {
+      throw new ForbiddenException(
+        'Only chapter members can add executive offices to their profile.',
+      )
+    }
+
+    const position = await this.execPositionModel.findByPk(dto.positionId)
+    if (!position) {
+      throw new BadRequestException('Unknown executive position')
+    }
+
+    return this.execTermModel.sequelize!.transaction(async (transaction) => {
+      const term = await this.findOrCreateTermForSelfAssignment(
+        dto.year,
+        dto.season,
+        transaction,
+      )
+
+      let assignment = await this.execAssignmentModel.findOne({
+        where: { execTermId: term.id, execPositionId: dto.positionId },
+        transaction,
+      })
+
+      if (!assignment) {
+        assignment = await this.execAssignmentModel.create(
+          {
+            execTermId: term.id,
+            execPositionId: dto.positionId,
+            personId,
+          },
+          { transaction },
+        )
+      } else if (assignment.personId === personId) {
+        // idempotent
+      } else if (assignment.personId) {
+        const other = await this.personModel.findByPk(assignment.personId, { transaction })
+        const name = other ? `${other.firstName} ${other.lastName}`.trim() : 'another member'
+        throw new ConflictException(
+          `That executive office for this term is already assigned to ${name}. ` +
+            `Contact an administrator if the roster should be updated.`,
+        )
+      } else {
+        assignment.personId = personId
+        await assignment.save({ transaction })
+      }
+
+      this.logger.info('Member claimed exec assignment', {
+        personId,
+        termId: term.id,
+        positionId: dto.positionId,
+      })
+
+      return {
+        term: this.toTermDto(term),
+        position: this.toPositionDto(position),
+      }
+    })
+  }
+
+  /**
+   * Linked member clears one roster slot they hold (sparse row removed).
+   */
+  async releaseMyExecAssignment(
+    personId: string,
+    dto: ReleaseMyExecAssignmentDto,
+  ): Promise<void> {
+    const person = await this.personModel.findByPk(personId)
+    if (!person) {
+      throw new NotFoundException('Person not found')
+    }
+    if (!person.isMember) {
+      throw new ForbiddenException(
+        'Only chapter members can update executive offices on their profile.',
+      )
+    }
+
+    const term = await this.execTermModel.findOne({
+      where: { year: dto.year, season: dto.season },
+    })
+    if (!term) {
+      throw new NotFoundException('No executive term matches that year and season')
+    }
+
+    const assignment = await this.execAssignmentModel.findOne({
+      where: { execTermId: term.id, execPositionId: dto.positionId },
+    })
+    if (!assignment) {
+      throw new NotFoundException('You are not listed for that office in that term')
+    }
+    if (assignment.personId !== personId) {
+      throw new ForbiddenException('You can only remove executive offices from your own profile')
+    }
+
+    await assignment.destroy()
+    this.logger.info('Member released exec assignment', {
+      personId,
+      termId: term.id,
+      positionId: dto.positionId,
+    })
   }
 }

@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   ConflictException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common'
@@ -52,15 +53,16 @@ export class PeopleService {
     this.logger.setContext(PeopleService.name)
   }
 
-  private async headshotSignedUrlForPerson(person: Person): Promise<string | null> {
-    if (!person.headshotFilePath) return null
+  private async signedUrlForHeadshotPath(
+    path: string | null | undefined,
+    personId: string,
+    logContext: string,
+  ): Promise<string | null> {
+    if (!path) return null
     try {
-      return await this.storageService.getSignedUrl(
-        person.headshotFilePath,
-        PROFILE_HEADSHOT_URL_EXPIRY_MINUTES,
-      )
+      return await this.storageService.getSignedUrl(path, PROFILE_HEADSHOT_URL_EXPIRY_MINUTES)
     } catch (e) {
-      this.logger.warn('Profile headshot signed URL failed', { personId: person.id, error: e })
+      this.logger.warn(`${logContext} signed URL failed`, { personId, error: e })
       return null
     }
   }
@@ -111,39 +113,106 @@ export class PeopleService {
     return String(value).trim().length > 0
   }
 
-  private viewerMayRevealPhoneNumbers(viewer: User | undefined): boolean {
+  private viewerIsEditorOrAdmin(viewer: User | undefined): boolean {
     return viewer?.role === UserRole.EDITOR || viewer?.role === UserRole.ADMIN
   }
 
+  private isSelfView(viewer: User | undefined, person: Person): boolean {
+    if (!viewer) return false
+    if (viewer.personId && viewer.personId === person.id) return true
+    return viewer.email.trim().toLowerCase() === person.email.trim().toLowerCase()
+  }
+
+  private personHasAddress(person: Person): boolean {
+    return !!(
+      person.addressLine1?.trim() ||
+      person.city?.trim() ||
+      person.state?.trim() ||
+      person.zip?.trim()
+    )
+  }
+
+  private hasLinkedInStored(person: Person): boolean {
+    return !!(person.linkedinProfileUrl && String(person.linkedinProfileUrl).trim())
+  }
+
+  /**
+   * @param options.fullDetail — editor/admin directory list and admin mutation responses (raw row + share flags).
+   */
   private toResponseDto(
     person: Person,
     hasLegacyMemberLink: boolean,
-    revealPhoneFields = true,
+    options: { viewer?: User; fullDetail?: boolean } = {},
   ): PersonResponseDto {
+    const fullDetail = options.fullDetail === true
+    const viewer = options.viewer
+    const self = this.isSelfView(viewer, person)
+    const guest = !viewer
+
+    let redactEmail = false
+    let redactPhones = false
+    let redactAddress = false
+    let redactLinkedIn = false
+    let redactExternalId = false
+
+    if (!fullDetail) {
+      redactExternalId = guest
+      if (guest) {
+        redactEmail = true
+        redactPhones = true
+        redactAddress = true
+        redactLinkedIn = true
+      } else if (!self) {
+        redactEmail = !person.shareEmailWithLoggedInMembers
+        redactPhones = !person.sharePhonesWithLoggedInMembers
+        redactAddress = !person.shareAddressWithLoggedInMembers
+        redactLinkedIn = !person.shareLinkedInWithLoggedInMembers
+      }
+    }
+
     const hasMobilePhone = this.personHasStoredPhone(person.mobilePhone)
     const hasHomePhone = this.personHasStoredPhone(person.homePhone)
-    return {
+    const hasEmailOnFile = !!person.email?.trim()
+    const hasAddressOnFile = this.personHasAddress(person)
+    const hasLinkedInOnFile = this.hasLinkedInStored(person)
+    const includeShareFlags = fullDetail || self
+
+    const dto: PersonResponseDto = {
       id: person.id,
       firstName: person.firstName,
       lastName: person.lastName,
-      addressLine1: person.addressLine1,
-      city: person.city,
-      state: person.state,
-      zip: person.zip,
-      email: person.email,
-      externalContactId: person.externalContactId ?? null,
-      homePhone: revealPhoneFields ? (person.homePhone ?? null) : null,
-      mobilePhone: revealPhoneFields ? (person.mobilePhone ?? null) : null,
+      addressLine1: redactAddress ? null : person.addressLine1,
+      city: redactAddress ? null : person.city,
+      state: redactAddress ? null : person.state,
+      zip: redactAddress ? null : person.zip,
+      email: redactEmail ? null : person.email,
+      hasEmailOnFile,
+      externalContactId: redactExternalId ? null : (person.externalContactId ?? null),
+      homePhone: redactPhones ? null : (person.homePhone ?? null),
+      mobilePhone: redactPhones ? null : (person.mobilePhone ?? null),
       hasMobilePhone,
       hasHomePhone,
       pledgeClassYear: person.pledgeClassYear ?? null,
       isMember: person.isMember,
       isParent: person.isParent,
       hasLegacyMemberLink,
-      hasHeadshot: !!person.headshotFilePath,
+      hasProfileHeadshot: !!person.profileHeadshotFilePath,
+      hasExecRosterHeadshot: !!person.execRosterHeadshotFilePath,
+      linkedinProfileUrl: redactLinkedIn ? null : (person.linkedinProfileUrl ?? null),
+      hasLinkedInOnFile,
+      hasAddressOnFile,
       createdAt: person.createdAt,
       updatedAt: person.updatedAt,
     }
+
+    if (includeShareFlags) {
+      dto.shareEmailWithLoggedInMembers = person.shareEmailWithLoggedInMembers
+      dto.sharePhonesWithLoggedInMembers = person.sharePhonesWithLoggedInMembers
+      dto.shareAddressWithLoggedInMembers = person.shareAddressWithLoggedInMembers
+      dto.shareLinkedInWithLoggedInMembers = person.shareLinkedInWithLoggedInMembers
+    }
+
+    return dto
   }
 
   /**
@@ -247,9 +316,14 @@ export class PeopleService {
         existing.isMember = isMember
         existing.isParent = isParent
         existing.externalContactId = ext
+        if (dto.linkedinProfileUrl !== undefined) {
+          existing.linkedinProfileUrl = this.emptyToNullText(dto.linkedinProfileUrl)
+        }
         await existing.save()
         this.logger.info('Restored soft-deleted person', { id: existing.id, email: existing.email })
-        return this.toResponseDto(existing, await this.personHasLegacyMemberLink(existing.id))
+        return this.toResponseDto(existing, await this.personHasLegacyMemberLink(existing.id), {
+          fullDetail: true,
+        })
       }
       throw new ConflictException(`Person with email ${dto.email} already exists`)
     }
@@ -278,16 +352,17 @@ export class PeopleService {
       isMember,
       isParent,
       externalContactId: ext,
+      linkedinProfileUrl: this.emptyToNullText(dto.linkedinProfileUrl),
     })
 
-    return this.toResponseDto(person, false)
+    return this.toResponseDto(person, false, { fullDetail: true })
   }
 
   /**
    * All non-deleted people, ordered for directory display.
    */
   async findAll(viewer?: User): Promise<PersonResponseDto[]> {
-    const revealPhones = this.viewerMayRevealPhoneNumbers(viewer)
+    const fullDetail = this.viewerIsEditorOrAdmin(viewer)
     const legacyIds = await this.legacyMemberLinkPersonIds()
     const rows = await this.personModel.findAll({
       order: [
@@ -295,7 +370,9 @@ export class PeopleService {
         ['firstName', 'ASC'],
       ],
     })
-    return rows.map((p) => this.toResponseDto(p, legacyIds.has(p.id), revealPhones))
+    return rows.map((p) =>
+      this.toResponseDto(p, legacyIds.has(p.id), { viewer, fullDetail }),
+    )
   }
 
   /**
@@ -307,20 +384,50 @@ export class PeopleService {
       throw new NotFoundException('Person not found')
     }
     const hasLegacy = await this.personHasLegacyMemberLink(person.id)
-    const revealPhones = this.viewerMayRevealPhoneNumbers(viewer)
-    const personDto = this.toResponseDto(person, hasLegacy, revealPhones)
-    const [relationships, execHistory, headshotUrl] = await Promise.all([
-      this.personRelationshipsService.findAllForPerson(id),
+    const personDto = this.toResponseDto(person, hasLegacy, { viewer })
+    const [relationships, execHistory, headshotUrl, execRosterHeadshotUrl] = await Promise.all([
+      this.personRelationshipsService.findAllForPerson(id, viewer),
       this.execTeamService.findExecHistoryForPerson(id),
-      this.headshotSignedUrlForPerson(person),
+      this.signedUrlForHeadshotPath(
+        person.profileHeadshotFilePath,
+        person.id,
+        'Profile headshot',
+      ),
+      this.signedUrlForHeadshotPath(
+        person.execRosterHeadshotFilePath,
+        person.id,
+        'Exec roster headshot',
+      ),
     ])
-    return { person: personDto, headshotUrl, relationships, execHistory }
+    return { person: personDto, headshotUrl, execRosterHeadshotUrl, relationships, execHistory }
   }
 
-  async update(id: string, dto: UpdatePersonDto): Promise<PersonResponseDto> {
+  async update(id: string, dto: UpdatePersonDto, currentUser: User): Promise<PersonResponseDto> {
     const person = await this.personModel.findByPk(id)
     if (!person) {
       throw new NotFoundException('Person not found')
+    }
+
+    const isEditor = currentUser.role === UserRole.EDITOR || currentUser.role === UserRole.ADMIN
+    const isSelf = this.isSelfView(currentUser, person)
+    if (!isEditor && !isSelf) {
+      throw new ForbiddenException(
+        'You can only update your own directory profile unless you are an editor or admin.',
+      )
+    }
+
+    if (isSelf && !isEditor) {
+      const accountLinked =
+        currentUser.personId != null && currentUser.personId === person.id
+      await this.applySelfPersonPatch(person, dto, accountLinked)
+      if (!person.isMember && !person.isParent) {
+        throw new BadRequestException('Person must be a member, parent, or both')
+      }
+      await person.save()
+      this.logger.info('Self-updated person', { id: person.id })
+      return this.toResponseDto(person, await this.personHasLegacyMemberLink(person.id), {
+        viewer: currentUser,
+      })
     }
 
     if (dto.email !== undefined) {
@@ -374,11 +481,29 @@ export class PeopleService {
       person.externalContactId = ext
     }
 
+    if (dto.linkedinProfileUrl !== undefined) {
+      person.linkedinProfileUrl =
+        dto.linkedinProfileUrl === null ? null : this.emptyToNullText(dto.linkedinProfileUrl)
+    }
+
     if (dto.homePhone !== undefined) {
       person.homePhone = normalizeUsPhoneForStorage(dto.homePhone)
     }
     if (dto.mobilePhone !== undefined) {
       person.mobilePhone = normalizeUsPhoneForStorage(dto.mobilePhone)
+    }
+
+    if (dto.shareEmailWithLoggedInMembers !== undefined) {
+      person.shareEmailWithLoggedInMembers = dto.shareEmailWithLoggedInMembers
+    }
+    if (dto.sharePhonesWithLoggedInMembers !== undefined) {
+      person.sharePhonesWithLoggedInMembers = dto.sharePhonesWithLoggedInMembers
+    }
+    if (dto.shareAddressWithLoggedInMembers !== undefined) {
+      person.shareAddressWithLoggedInMembers = dto.shareAddressWithLoggedInMembers
+    }
+    if (dto.shareLinkedInWithLoggedInMembers !== undefined) {
+      person.shareLinkedInWithLoggedInMembers = dto.shareLinkedInWithLoggedInMembers
     }
 
     person.isMember = isMember
@@ -396,7 +521,108 @@ export class PeopleService {
 
     await person.save()
     this.logger.info('Updated person', { id: person.id })
-    return this.toResponseDto(person, await this.personHasLegacyMemberLink(person.id))
+    return this.toResponseDto(person, await this.personHasLegacyMemberLink(person.id), {
+      fullDetail: true,
+    })
+  }
+
+  /**
+   * Self-service: no `kind` / `externalContactId` / `email`.
+   * Contact fields require `users.personId` to match this person; otherwise only share toggles apply.
+   */
+  private selfPatchHasNonShareFields(dto: UpdatePersonDto): boolean {
+    const keys: (keyof UpdatePersonDto)[] = [
+      'kind',
+      'firstName',
+      'lastName',
+      'addressLine1',
+      'city',
+      'state',
+      'zip',
+      'email',
+      'externalContactId',
+      'homePhone',
+      'mobilePhone',
+      'linkedinProfileUrl',
+      'pledgeClassYear',
+    ]
+    return keys.some((k) => dto[k] !== undefined)
+  }
+
+  private applySelfShareFlags(person: Person, dto: UpdatePersonDto): void {
+    if (dto.shareEmailWithLoggedInMembers !== undefined) {
+      person.shareEmailWithLoggedInMembers = dto.shareEmailWithLoggedInMembers
+    }
+    if (dto.sharePhonesWithLoggedInMembers !== undefined) {
+      person.sharePhonesWithLoggedInMembers = dto.sharePhonesWithLoggedInMembers
+    }
+    if (dto.shareAddressWithLoggedInMembers !== undefined) {
+      person.shareAddressWithLoggedInMembers = dto.shareAddressWithLoggedInMembers
+    }
+    if (dto.shareLinkedInWithLoggedInMembers !== undefined) {
+      person.shareLinkedInWithLoggedInMembers = dto.shareLinkedInWithLoggedInMembers
+    }
+  }
+
+  private async applySelfPersonPatch(
+    person: Person,
+    dto: UpdatePersonDto,
+    accountLinkedToPerson: boolean,
+  ): Promise<void> {
+    if (dto.email !== undefined) {
+      throw new BadRequestException(
+        'Directory email cannot be changed here; it is tied to your login. Ask an administrator to update your account email if needed.',
+      )
+    }
+
+    if (!accountLinkedToPerson) {
+      if (this.selfPatchHasNonShareFields(dto)) {
+        throw new ForbiddenException(
+          'Your account must be linked to this directory profile before updating contact details. Sign out and sign in again, or ask an administrator. You can still change who can see your information.',
+        )
+      }
+      this.applySelfShareFlags(person, dto)
+      return
+    }
+
+    if (dto.firstName !== undefined) person.firstName = dto.firstName
+    if (dto.lastName !== undefined) person.lastName = dto.lastName
+    if (dto.addressLine1 !== undefined) {
+      person.addressLine1 = this.emptyToNullText(dto.addressLine1)
+    }
+    if (dto.city !== undefined) {
+      person.city = this.emptyToNullText(dto.city)
+    }
+    if (dto.state !== undefined) {
+      person.state = dto.state === null ? null : String(dto.state).trim().toUpperCase()
+    }
+    if (dto.zip !== undefined) {
+      person.zip = this.emptyToNullText(dto.zip)
+    }
+
+    if (dto.linkedinProfileUrl !== undefined) {
+      person.linkedinProfileUrl =
+        dto.linkedinProfileUrl === null ? null : this.emptyToNullText(dto.linkedinProfileUrl)
+    }
+
+    if (dto.homePhone !== undefined) {
+      person.homePhone = normalizeUsPhoneForStorage(dto.homePhone)
+    }
+    if (dto.mobilePhone !== undefined) {
+      person.mobilePhone = normalizeUsPhoneForStorage(dto.mobilePhone)
+    }
+
+    if (dto.pledgeClassYear !== undefined) {
+      if (!person.isMember) {
+        if (dto.pledgeClassYear != null) {
+          throw new BadRequestException('Pledge class year applies to members only')
+        }
+      } else {
+        person.pledgeClassYear = dto.pledgeClassYear
+      }
+    }
+
+    this.applySelfShareFlags(person, dto)
   }
 
   /**
@@ -411,15 +637,21 @@ export class PeopleService {
     this.logger.info('Soft-deleted person', { id })
   }
 
-  async uploadHeadshot(id: string, file: PersonHeadshotFile): Promise<PersonResponseDto> {
-    const person = await this.personModel.findByPk(id)
-    if (!person) {
-      throw new NotFoundException('Person not found')
+  /**
+   * Editors/admins may set any person's photos. Linked users may set their own row only.
+   */
+  private assertCanMutatePersonPhotos(person: Person, user: User): void {
+    const isEditor = user.role === UserRole.EDITOR || user.role === UserRole.ADMIN
+    if (isEditor) return
+    const linked = user.personId != null && user.personId === person.id
+    if (!linked) {
+      throw new ForbiddenException(
+        'You can only upload or remove photos for your own linked directory profile.',
+      )
     }
-    if (!person.isMember) {
-      throw new BadRequestException('Headshots are only for chapter members')
-    }
+  }
 
+  private validatePersonHeadshotFile(file: PersonHeadshotFile): void {
     const validImageTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif']
     if (!file.mimetype || !validImageTypes.includes(file.mimetype)) {
       throw new BadRequestException('File must be an image (JPEG, PNG, WebP, or GIF)')
@@ -428,44 +660,105 @@ export class PeopleService {
     if (file.size > maxSize) {
       throw new BadRequestException('File size must be less than 10MB')
     }
+  }
 
+  private async replacePersonHeadshotAt(
+    person: Person,
+    file: PersonHeadshotFile,
+    column: 'profileHeadshotFilePath' | 'execRosterHeadshotFilePath',
+    gcsFolder: string,
+  ): Promise<void> {
+    this.validatePersonHeadshotFile(file)
     const now = new Date()
     const y = now.getFullYear()
     const m = String(now.getMonth() + 1).padStart(2, '0')
     const ts = now.getTime()
     const safeName = file.originalname.replace(/[^a-zA-Z0-9.-]/g, '_')
-    const filePath = `people-headshots/${y}/${m}/${id}/${ts}-${safeName}`
-
-    if (person.headshotFilePath) {
+    const filePath = `${gcsFolder}/${y}/${m}/${person.id}/${ts}-${safeName}`
+    const oldPath = person[column]
+    if (oldPath) {
       try {
-        await this.storageService.deleteFile(person.headshotFilePath)
+        await this.storageService.deleteFile(oldPath)
       } catch {
         /* ignore */
       }
     }
-
     const uploaded = await this.storageService.uploadFile(file.buffer, filePath, file.mimetype)
-    person.headshotFilePath = uploaded
+    person[column] = uploaded
     await person.save()
-    this.logger.info('Uploaded person headshot', { id })
-    return this.toResponseDto(person, await this.personHasLegacyMemberLink(person.id))
   }
 
-  async clearHeadshot(id: string): Promise<PersonResponseDto> {
+  private async clearPersonHeadshotAt(
+    person: Person,
+    column: 'profileHeadshotFilePath' | 'execRosterHeadshotFilePath',
+  ): Promise<void> {
+    const oldPath = person[column]
+    if (!oldPath) return
+    try {
+      await this.storageService.deleteFile(oldPath)
+    } catch {
+      /* ignore */
+    }
+    person[column] = null
+    await person.save()
+  }
+
+  private async headshotMutationResponse(person: Person, currentUser: User): Promise<PersonResponseDto> {
+    const hasLegacy = await this.personHasLegacyMemberLink(person.id)
+    const isEditor = currentUser.role === UserRole.EDITOR || currentUser.role === UserRole.ADMIN
+    return this.toResponseDto(person, hasLegacy, isEditor ? { fullDetail: true } : { viewer: currentUser })
+  }
+
+  async uploadProfileHeadshot(id: string, file: PersonHeadshotFile, currentUser: User): Promise<PersonResponseDto> {
     const person = await this.personModel.findByPk(id)
     if (!person) {
       throw new NotFoundException('Person not found')
     }
-    if (person.headshotFilePath) {
-      try {
-        await this.storageService.deleteFile(person.headshotFilePath)
-      } catch {
-        /* ignore */
-      }
-      person.headshotFilePath = null
-      await person.save()
+    this.assertCanMutatePersonPhotos(person, currentUser)
+    if (!person.isMember && !person.isParent) {
+      throw new BadRequestException('Profile photos are only for directory members and parents')
     }
-    return this.toResponseDto(person, await this.personHasLegacyMemberLink(person.id))
+    await this.replacePersonHeadshotAt(person, file, 'profileHeadshotFilePath', 'people-profile-headshots')
+    this.logger.info('Uploaded profile headshot', { id })
+    return this.headshotMutationResponse(person, currentUser)
+  }
+
+  async clearProfileHeadshot(id: string, currentUser: User): Promise<PersonResponseDto> {
+    const person = await this.personModel.findByPk(id)
+    if (!person) {
+      throw new NotFoundException('Person not found')
+    }
+    this.assertCanMutatePersonPhotos(person, currentUser)
+    await this.clearPersonHeadshotAt(person, 'profileHeadshotFilePath')
+    return this.headshotMutationResponse(person, currentUser)
+  }
+
+  async uploadExecRosterHeadshot(
+    id: string,
+    file: PersonHeadshotFile,
+    currentUser: User,
+  ): Promise<PersonResponseDto> {
+    const person = await this.personModel.findByPk(id)
+    if (!person) {
+      throw new NotFoundException('Person not found')
+    }
+    this.assertCanMutatePersonPhotos(person, currentUser)
+    if (!person.isMember) {
+      throw new BadRequestException('Executive roster photos are only for chapter members')
+    }
+    await this.replacePersonHeadshotAt(person, file, 'execRosterHeadshotFilePath', 'people-exec-headshots')
+    this.logger.info('Uploaded exec roster headshot', { id })
+    return this.headshotMutationResponse(person, currentUser)
+  }
+
+  async clearExecRosterHeadshot(id: string, currentUser: User): Promise<PersonResponseDto> {
+    const person = await this.personModel.findByPk(id)
+    if (!person) {
+      throw new NotFoundException('Person not found')
+    }
+    this.assertCanMutatePersonPhotos(person, currentUser)
+    await this.clearPersonHeadshotAt(person, 'execRosterHeadshotFilePath')
+    return this.headshotMutationResponse(person, currentUser)
   }
 
   /**

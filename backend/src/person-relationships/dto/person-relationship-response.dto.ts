@@ -10,8 +10,16 @@ export class PersonRelationshipCounterpartDto {
   @ApiProperty()
   lastName!: string
 
-  @ApiProperty()
-  email!: string
+  @ApiPropertyOptional({
+    nullable: true,
+    description: 'Null for guests or when the counterpart opted out of sharing email (same rules as directory).',
+  })
+  email?: string | null
+
+  @ApiPropertyOptional({
+    description: 'True when an email exists; use with `email: null` for redacted UI.',
+  })
+  hasEmailOnFile?: boolean
 
   @ApiProperty()
   isMember!: boolean

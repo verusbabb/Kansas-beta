@@ -52,7 +52,7 @@ export class PeopleController {
   @ApiOperation({
     summary: 'List directory people (public)',
     description:
-      'Returns all people in the chapter directory. Send a valid editor/admin Bearer token to receive phone number values; otherwise `mobilePhone` and `homePhone` are null while `hasMobilePhone` / `hasHomePhone` indicate whether numbers exist.',
+      'Guests receive redacted contact fields (email, phones, address, LinkedIn, CRM id) with `has*` flags where values exist. Signed-in viewers see fields each person has chosen to share with chapter members. Editors and admins receive full rows for the admin directory.',
   })
   @ApiResponse({ status: HttpStatus.OK, type: [PersonResponseDto] })
   async findAll(@Req() req: { user?: User }): Promise<PersonResponseDto[]> {
@@ -90,7 +90,7 @@ export class PeopleController {
   @ApiOperation({
     summary: 'Directory person profile (public)',
     description:
-      'Contact and directory fields, connections, exec history, headshot URL when present. Phone values are included for editor/admin callers with a valid token; other callers receive null phones with `hasMobilePhone` / `hasHomePhone` flags.',
+      'Same privacy rules as GET /people: guests see redacted contact fields; signed-in members see shared fields; you always see your own full row. Includes connections, exec history, and signed URLs for profile and exec roster photos when present.',
   })
   @ApiResponse({ status: HttpStatus.OK, type: PersonProfileResponseDto })
   @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'Person not found' })
@@ -101,19 +101,21 @@ export class PeopleController {
     return this.peopleService.findProfileById(id, req.user)
   }
 
-  @Post(':id/headshot')
-  @UseGuards(JwtAuthGuard, UserLookupGuard, RolesGuard)
-  @Roles(UserRole.EDITOR, UserRole.ADMIN)
+  @Post(':id/profile-headshot')
+  @UseGuards(JwtAuthGuard, UserLookupGuard)
   @UseInterceptors(FileInterceptor('file'))
   @HttpCode(HttpStatus.OK)
   @ApiBearerAuth()
   @ApiParam({ name: 'id', description: 'Person UUID' })
   @ApiOperation({
-    summary: 'Upload or replace headshot for a member (editor/admin)',
-    description: 'Stored in GCS; used on the executive team roster. Members only.',
+    summary: 'Upload or replace directory/profile headshot (editor/admin or linked self)',
+    description:
+      'Current photo for the person profile and directory. Members and parents. Stored under `people-profile-headshots/` in GCS.',
   })
   @ApiResponse({ status: HttpStatus.OK, type: PersonResponseDto })
-  async uploadHeadshot(
+  @ApiResponse({ status: HttpStatus.FORBIDDEN, description: 'Not your linked profile and not editor/admin' })
+  async uploadProfileHeadshot(
+    @Req() req: { user: User },
     @Param('id', ParseUUIDPipe) id: string,
     @UploadedFile(
       new ParseFilePipe({
@@ -128,39 +130,93 @@ export class PeopleController {
     if (!file) {
       throw new BadRequestException('File is required')
     }
-    return this.peopleService.uploadHeadshot(id, file)
+    return this.peopleService.uploadProfileHeadshot(id, file, req.user)
   }
 
-  @Delete(':id/headshot')
-  @UseGuards(JwtAuthGuard, UserLookupGuard, RolesGuard)
-  @Roles(UserRole.EDITOR, UserRole.ADMIN)
+  @Delete(':id/profile-headshot')
+  @UseGuards(JwtAuthGuard, UserLookupGuard)
   @HttpCode(HttpStatus.OK)
   @ApiBearerAuth()
   @ApiParam({ name: 'id', description: 'Person UUID' })
-  @ApiOperation({ summary: 'Remove headshot image (editor/admin)' })
+  @ApiOperation({ summary: 'Remove directory/profile headshot (editor/admin or linked self)' })
   @ApiResponse({ status: HttpStatus.OK, type: PersonResponseDto })
-  async clearHeadshot(@Param('id', ParseUUIDPipe) id: string): Promise<PersonResponseDto> {
-    return this.peopleService.clearHeadshot(id)
+  @ApiResponse({ status: HttpStatus.FORBIDDEN, description: 'Not your linked profile and not editor/admin' })
+  async clearProfileHeadshot(
+    @Req() req: { user: User },
+    @Param('id', ParseUUIDPipe) id: string,
+  ): Promise<PersonResponseDto> {
+    return this.peopleService.clearProfileHeadshot(id, req.user)
   }
 
-  @Patch(':id')
-  @UseGuards(JwtAuthGuard, UserLookupGuard, RolesGuard)
-  @Roles(UserRole.EDITOR, UserRole.ADMIN)
+  @Post(':id/exec-roster-headshot')
+  @UseGuards(JwtAuthGuard, UserLookupGuard)
+  @UseInterceptors(FileInterceptor('file'))
+  @HttpCode(HttpStatus.OK)
   @ApiBearerAuth()
   @ApiParam({ name: 'id', description: 'Person UUID' })
   @ApiOperation({
-    summary: 'Update a directory person (editor/admin)',
-    description: 'Partial update; email must remain unique.',
+    summary: 'Upload or replace executive roster headshot (editor/admin or linked member self)',
+    description:
+      'Era photo for the exec team roster. Chapter members only. Stored under `people-exec-headshots/` in GCS.',
+  })
+  @ApiResponse({ status: HttpStatus.OK, type: PersonResponseDto })
+  @ApiResponse({ status: HttpStatus.FORBIDDEN, description: 'Not your linked profile and not editor/admin' })
+  async uploadExecRosterHeadshot(
+    @Req() req: { user: User },
+    @Param('id', ParseUUIDPipe) id: string,
+    @UploadedFile(
+      new ParseFilePipe({
+        validators: [
+          new MaxFileSizeValidator({ maxSize: 10 * 1024 * 1024 }),
+          new FileTypeValidator({ fileType: 'image/(jpeg|jpg|png|webp|gif)' }),
+        ],
+      }),
+    )
+    file: PersonHeadshotFile,
+  ): Promise<PersonResponseDto> {
+    if (!file) {
+      throw new BadRequestException('File is required')
+    }
+    return this.peopleService.uploadExecRosterHeadshot(id, file, req.user)
+  }
+
+  @Delete(':id/exec-roster-headshot')
+  @UseGuards(JwtAuthGuard, UserLookupGuard)
+  @HttpCode(HttpStatus.OK)
+  @ApiBearerAuth()
+  @ApiParam({ name: 'id', description: 'Person UUID' })
+  @ApiOperation({ summary: 'Remove executive roster headshot (editor/admin or linked member self)' })
+  @ApiResponse({ status: HttpStatus.OK, type: PersonResponseDto })
+  @ApiResponse({ status: HttpStatus.FORBIDDEN, description: 'Not your linked profile and not editor/admin' })
+  async clearExecRosterHeadshot(
+    @Req() req: { user: User },
+    @Param('id', ParseUUIDPipe) id: string,
+  ): Promise<PersonResponseDto> {
+    return this.peopleService.clearExecRosterHeadshot(id, req.user)
+  }
+
+  @Patch(':id')
+  @UseGuards(JwtAuthGuard, UserLookupGuard)
+  @ApiBearerAuth()
+  @ApiParam({ name: 'id', description: 'Person UUID' })
+  @ApiOperation({
+    summary: 'Update a directory person (self or editor/admin)',
+    description:
+      'Editors and admins may update any field. Viewers may update only their own linked directory row (profile fields and share-with-members toggles); `kind` and `externalContactId` are ignored for self-service.',
   })
   @ApiResponse({ status: HttpStatus.OK, type: PersonResponseDto })
   @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'Person not found' })
   @ApiResponse({ status: HttpStatus.CONFLICT, description: 'Email already in use' })
-  @ApiResponse({ status: HttpStatus.FORBIDDEN, description: 'Editor or admin required' })
+  @ApiResponse({
+    status: HttpStatus.FORBIDDEN,
+    description: 'Must be the directory person or an editor/admin',
+  })
   async update(
+    @Req() req: { user: User },
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdatePersonDto,
   ): Promise<PersonResponseDto> {
-    return this.peopleService.update(id, dto)
+    return this.peopleService.update(id, dto, req.user)
   }
 
   @Delete(':id')

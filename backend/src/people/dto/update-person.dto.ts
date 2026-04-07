@@ -1,12 +1,14 @@
 import { ApiPropertyOptional } from '@nestjs/swagger'
 import { Transform } from 'class-transformer'
 import {
+  IsBoolean,
   IsEmail,
   IsEnum,
   IsIn,
   IsInt,
   IsOptional,
   IsString,
+  IsUrl,
   Max,
   Min,
   MinLength,
@@ -109,6 +111,14 @@ export class UpdatePersonDto {
   @IsString()
   mobilePhone?: string | null
 
+  @ApiPropertyOptional({ description: 'Omit unchanged; null clears' })
+  @IsOptional()
+  @Transform(patchTextOrNull)
+  @ValidateIf((_, v) => v !== null && v !== undefined)
+  @IsUrl({ require_protocol: true }, { message: 'LinkedIn must be a valid http(s) URL' })
+  @MaxLength(512)
+  linkedinProfileUrl?: string | null
+
   /** Omit to leave unchanged; send null to clear when person is a member. */
   @ApiPropertyOptional()
   @IsOptional()
@@ -116,4 +126,33 @@ export class UpdatePersonDto {
   @Min(1900)
   @Max(2100)
   pledgeClassYear?: number | null
+
+  @ApiPropertyOptional({
+    description:
+      'When false, signed-in chapter members (other than this person) do not receive `email` in API responses. Editors/admins still see full rows in the admin directory.',
+  })
+  @IsOptional()
+  @IsBoolean()
+  shareEmailWithLoggedInMembers?: boolean
+
+  @ApiPropertyOptional({
+    description: 'When false, phone values are omitted for other signed-in members (not editor/admin directory list).',
+  })
+  @IsOptional()
+  @IsBoolean()
+  sharePhonesWithLoggedInMembers?: boolean
+
+  @ApiPropertyOptional({
+    description: 'When false, mailing address fields are omitted for other signed-in members.',
+  })
+  @IsOptional()
+  @IsBoolean()
+  shareAddressWithLoggedInMembers?: boolean
+
+  @ApiPropertyOptional({
+    description: 'When false, LinkedIn URL is omitted for other signed-in members.',
+  })
+  @IsOptional()
+  @IsBoolean()
+  shareLinkedInWithLoggedInMembers?: boolean
 }

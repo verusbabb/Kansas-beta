@@ -165,6 +165,23 @@
           </div>
 
           <div class="flex flex-col gap-2">
+            <label for="person-linkedin" class="font-semibold text-surface-700">
+              LinkedIn
+            </label>
+            <InputText
+              id="person-linkedin"
+              v-model="form.linkedinProfileUrl"
+              type="url"
+              placeholder="https://www.linkedin.com/in/…"
+              :class="{ 'p-invalid': errors.linkedinProfileUrl }"
+              class="w-full md:max-w-xl"
+              autocomplete="url"
+            />
+            <small v-if="errors.linkedinProfileUrl" class="p-error">{{ errors.linkedinProfileUrl }}</small>
+            <small v-else class="text-surface-500">Optional — public profile URL only.</small>
+          </div>
+
+          <div class="flex flex-col gap-2">
             <label for="person-external-contact-id" class="font-semibold text-surface-700">
               CRM Contact ID
             </label>
@@ -274,6 +291,7 @@ const form = ref({
   state: '',
   zip: '',
   email: '',
+  linkedinProfileUrl: '',
   externalContactId: '',
   homePhone: '',
   mobilePhone: '',
@@ -289,6 +307,7 @@ const errors = ref({
   state: '',
   zip: '',
   email: '',
+  linkedinProfileUrl: '',
   pledgeClassYear: '',
 })
 
@@ -322,6 +341,7 @@ function clearErrors() {
     state: '',
     zip: '',
     email: '',
+    linkedinProfileUrl: '',
     pledgeClassYear: '',
   }
 }
@@ -355,6 +375,20 @@ function validate(): boolean {
     ok = false
   }
 
+  const li = f.linkedinProfileUrl.trim()
+  if (li) {
+    try {
+      const u = new URL(li)
+      if (u.protocol !== 'http:' && u.protocol !== 'https:') {
+        errors.value.linkedinProfileUrl = 'Use a link starting with http:// or https://'
+        ok = false
+      }
+    } catch {
+      errors.value.linkedinProfileUrl = 'Enter a valid URL'
+      ok = false
+    }
+  }
+
   if (showPledgeField.value && f.pledgeClassYear != null) {
     const y = f.pledgeClassYear
     if (y < 1900 || y > 2100) {
@@ -376,6 +410,7 @@ function resetForm() {
     state: '',
     zip: '',
     email: '',
+    linkedinProfileUrl: '',
     externalContactId: '',
     homePhone: '',
     mobilePhone: '',
@@ -404,6 +439,8 @@ async function handleSubmit() {
     }
     const zip = form.value.zip.trim()
     if (zip) payload.zip = zip
+    const linkedin = form.value.linkedinProfileUrl.trim()
+    if (linkedin) payload.linkedinProfileUrl = linkedin
     const ext = form.value.externalContactId.trim()
     if (ext) payload.externalContactId = ext
     const mobile = form.value.mobilePhone.trim()

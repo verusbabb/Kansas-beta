@@ -233,6 +233,7 @@ export class UsersService {
       lastName: user.lastName,
       role: user.role,
       auth0Id: user.auth0Id,
+      personId: user.personId ?? null,
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,
       isProtected: this.isProtectedUser(user),

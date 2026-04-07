@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   ConflictException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common'
@@ -8,6 +9,7 @@ import { InjectModel } from '@nestjs/sequelize'
 import { PinoLogger } from 'nestjs-pino'
 import { Op, UniqueConstraintError } from 'sequelize'
 import { Person } from '../database/entities/person.entity'
+import { User, UserRole } from '../database/entities/user.entity'
 import { PersonRelationship } from '../database/entities/person-relationship.entity'
 import { isAllowedRelationshipType } from './constants/relationship-types'
 import {
@@ -36,12 +38,43 @@ export class PersonRelationshipsService {
     this.logger.setContext(PersonRelationshipsService.name)
   }
 
-  private counterpartDto(person: Person): PersonRelationshipCounterpartDto {
+  /** Editors/admins, or the directory person when `users.personId` matches `personId`. */
+  private assertCanManageRelationshipsForPerson(personId: string, viewer: User): void {
+    const editor = viewer.role === UserRole.EDITOR || viewer.role === UserRole.ADMIN
+    const self = viewer.personId != null && viewer.personId === personId
+    if (!editor && !self) {
+      throw new ForbiddenException(
+        'You can only manage connections for your own profile unless you are an editor or admin.',
+      )
+    }
+  }
+
+  private viewerIsEditorOrAdmin(viewer: User | undefined): boolean {
+    return viewer?.role === UserRole.EDITOR || viewer?.role === UserRole.ADMIN
+  }
+
+  private isSelfView(viewer: User | undefined, person: Person): boolean {
+    if (!viewer) return false
+    if (viewer.personId && viewer.personId === person.id) return true
+    return viewer.email.trim().toLowerCase() === person.email.trim().toLowerCase()
+  }
+
+  private counterpartDto(person: Person, viewer?: User): PersonRelationshipCounterpartDto {
+    const hasEmailOnFile = !!person.email?.trim()
+    let email: string | null = person.email
+    if (!this.viewerIsEditorOrAdmin(viewer)) {
+      if (!viewer) {
+        email = null
+      } else if (!this.isSelfView(viewer, person) && !person.shareEmailWithLoggedInMembers) {
+        email = null
+      }
+    }
     return {
       id: person.id,
       firstName: person.firstName,
       lastName: person.lastName,
-      email: person.email,
+      email,
+      hasEmailOnFile,
       isMember: person.isMember,
       isParent: person.isParent,
       removedFromDirectory: person.deletedAt != null,
@@ -49,7 +82,11 @@ export class PersonRelationshipsService {
     }
   }
 
-  private toResponseDto(rel: PersonRelationship, viewerId: string): PersonRelationshipResponseDto {
+  private toResponseDto(
+    rel: PersonRelationship,
+    viewerId: string,
+    viewer?: User,
+  ): PersonRelationshipResponseDto {
     const viewerIsFrom = rel.fromPersonId === viewerId
     const viewerPerson = viewerIsFrom ? rel.fromPerson : rel.toPerson
     const counterpartPerson = viewerIsFrom ? rel.toPerson : rel.fromPerson
@@ -62,7 +99,7 @@ export class PersonRelationshipsService {
       id: rel.id,
       fromPersonId: rel.fromPersonId,
       toPersonId: rel.toPersonId,
-      counterpart: this.counterpartDto(counterpartPerson),
+      counterpart: this.counterpartDto(counterpartPerson, viewer),
       relationshipType: rel.relationshipType ?? null,
       notes: rel.notes ?? null,
       viewerIsFrom,
@@ -81,7 +118,10 @@ export class PersonRelationshipsService {
     return value
   }
 
-  async findAllForPerson(personId: string): Promise<PersonRelationshipResponseDto[]> {
+  async findAllForPerson(
+    personId: string,
+    viewer?: User,
+  ): Promise<PersonRelationshipResponseDto[]> {
     await this.requireActivePerson(personId)
 
     const rows = await this.relationshipModel.findAll({
@@ -95,7 +135,7 @@ export class PersonRelationshipsService {
       order: [['createdAt', 'ASC']],
     })
 
-    return rows.map((r) => this.toResponseDto(r, personId))
+    return rows.map((r) => this.toResponseDto(r, personId, viewer))
   }
 
   private async requireActivePerson(id: string): Promise<Person> {
@@ -132,10 +172,13 @@ export class PersonRelationshipsService {
   async create(
     personId: string,
     dto: CreatePersonRelationshipDto,
+    viewer: User,
   ): Promise<PersonRelationshipResponseDto> {
     if (dto.otherPersonId === personId) {
       throw new BadRequestException('Cannot relate a person to themselves')
     }
+
+    this.assertCanManageRelationshipsForPerson(personId, viewer)
 
     await this.requireActivePerson(personId)
     await this.requireActivePerson(dto.otherPersonId)
@@ -175,7 +218,7 @@ export class PersonRelationshipsService {
         toPersonId,
       })
 
-      return this.toResponseDto(withIncludes!, personId)
+      return this.toResponseDto(withIncludes!, personId, viewer)
     } catch (err) {
       if (err instanceof UniqueConstraintError) {
         throw new ConflictException(
@@ -190,10 +233,13 @@ export class PersonRelationshipsService {
     personId: string,
     relationshipId: string,
     dto: UpdatePersonRelationshipDto,
+    viewer: User,
   ): Promise<PersonRelationshipResponseDto> {
     if (dto.relationshipType === undefined && dto.notes === undefined) {
       throw new BadRequestException('No fields to update')
     }
+
+    this.assertCanManageRelationshipsForPerson(personId, viewer)
 
     const rel = await this.loadRelationshipForPerson(personId, relationshipId)
 
@@ -214,10 +260,11 @@ export class PersonRelationshipsService {
       ],
     })
 
-    return this.toResponseDto(reloaded!, personId)
+    return this.toResponseDto(reloaded!, personId, viewer)
   }
 
-  async remove(personId: string, relationshipId: string): Promise<void> {
+  async remove(personId: string, relationshipId: string, viewer: User): Promise<void> {
+    this.assertCanManageRelationshipsForPerson(personId, viewer)
     const rel = await this.loadRelationshipForPerson(personId, relationshipId)
     await rel.destroy()
     this.logger.info('Soft-deleted person relationship', { id: relationshipId })

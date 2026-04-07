@@ -22,11 +22,20 @@ export class PersonResponseDto {
   @ApiPropertyOptional({ nullable: true })
   zip?: string | null
 
-  @ApiProperty()
-  email!: string
+  @ApiPropertyOptional({
+    nullable: true,
+    description: 'Null for guests or when the member has opted out of sharing email with signed-in members.',
+  })
+  email?: string | null
 
   @ApiPropertyOptional({
-    description: 'External CRM contact id when linked (e.g. Salesforce); null if added only in this app.',
+    description: 'True when an email is stored; use with `email: null` for redacted display.',
+  })
+  hasEmailOnFile?: boolean
+
+  @ApiPropertyOptional({
+    description: 'External CRM contact id when linked (e.g. Salesforce); null if added only in this app or when redacted.',
+    nullable: true,
   })
   externalContactId?: string | null
 
@@ -50,6 +59,42 @@ export class PersonResponseDto {
   @ApiPropertyOptional()
   pledgeClassYear?: number | null
 
+  @ApiPropertyOptional({
+    description: 'LinkedIn profile URL when provided and visible',
+    nullable: true,
+  })
+  linkedinProfileUrl?: string | null
+
+  @ApiPropertyOptional({
+    description: 'True when a LinkedIn URL is stored; use when `linkedinProfileUrl` is null for redacted display.',
+  })
+  hasLinkedInOnFile?: boolean
+
+  @ApiPropertyOptional({
+    description: 'True when any mailing-address field is stored; use when address fields are null for redacted display.',
+  })
+  hasAddressOnFile?: boolean
+
+  @ApiPropertyOptional({
+    description: 'Present when viewing your own profile or editor/admin full rows.',
+  })
+  shareEmailWithLoggedInMembers?: boolean
+
+  @ApiPropertyOptional({
+    description: 'Present when viewing your own profile or editor/admin full rows.',
+  })
+  sharePhonesWithLoggedInMembers?: boolean
+
+  @ApiPropertyOptional({
+    description: 'Present when viewing your own profile or editor/admin full rows.',
+  })
+  shareAddressWithLoggedInMembers?: boolean
+
+  @ApiPropertyOptional({
+    description: 'Present when viewing your own profile or editor/admin full rows.',
+  })
+  shareLinkedInWithLoggedInMembers?: boolean
+
   @ApiProperty()
   isMember!: boolean
 
@@ -63,9 +108,14 @@ export class PersonResponseDto {
   hasLegacyMemberLink!: boolean
 
   @ApiPropertyOptional({
-    description: 'True if a headshot image is stored (GCS); used for exec team display.',
+    description: 'True if a directory/profile headshot is stored (GCS).',
   })
-  hasHeadshot?: boolean
+  hasProfileHeadshot?: boolean
+
+  @ApiPropertyOptional({
+    description: 'True if an executive roster (era) headshot is stored (GCS).',
+  })
+  hasExecRosterHeadshot?: boolean
 
   @ApiProperty()
   createdAt!: Date

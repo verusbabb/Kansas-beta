@@ -1,6 +1,17 @@
-import { Table, Column, DataType, PrimaryKey, Default, Index, Unique } from 'sequelize-typescript'
+import {
+  Table,
+  Column,
+  DataType,
+  PrimaryKey,
+  Default,
+  Index,
+  Unique,
+  ForeignKey,
+  BelongsTo,
+} from 'sequelize-typescript'
 import { BaseEntity } from './base.entity'
 import { v4 as uuidv4 } from 'uuid'
+import { Person } from './person.entity'
 
 /**
  * User role enum
@@ -66,4 +77,16 @@ export class User extends BaseEntity {
     unique: true,
   })
   auth0Id!: string | null
+
+  /** Linked directory person (same email); set on login when unambiguous. */
+  @ForeignKey(() => Person)
+  @Index
+  @Column({
+    type: DataType.UUID,
+    allowNull: true,
+  })
+  personId!: string | null
+
+  @BelongsTo(() => Person)
+  person?: Person
 }

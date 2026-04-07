@@ -1,4 +1,4 @@
-import { ApiProperty } from '@nestjs/swagger'
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
 import { UserRole } from '../../database/entities/user.entity'
 
 export class UserResponseDto {
@@ -39,6 +39,12 @@ export class UserResponseDto {
     nullable: true,
   })
   auth0Id!: string | null
+
+  @ApiPropertyOptional({
+    description: 'Linked chapter directory person id when unambiguous email match exists',
+    nullable: true,
+  })
+  personId?: string | null
 
   @ApiProperty({
     description: 'Timestamp when the user was created',

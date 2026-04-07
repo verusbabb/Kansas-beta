@@ -127,7 +127,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import Card from 'primevue/card'
 import Button from 'primevue/button'
 import InputText from 'primevue/inputtext'
@@ -137,6 +137,7 @@ import { useToast } from 'primevue/usetoast'
 import apiClient, { isAxiosRejection } from '@/services/api'
 import type { HouseMomPublic, UpdateHouseMomPayload } from '@/types/houseMom'
 import { formatUsPhoneForDisplay } from '@/utils/usPhone'
+import { registerAdminUnsaved } from '@/utils/adminUnsavedRegistry'
 
 const toast = useToast()
 
@@ -166,6 +167,8 @@ const form = ref({
 })
 
 const errors = ref({ email: '' })
+/** JSON snapshot after last successful load/save for dirty detection. */
+const savedHouseMomSnapshot = ref('')
 const serverPhotoUrl = ref<string | null>(null)
 const pendingFile = ref<File | null>(null)
 const fileInputRef = ref<HTMLInputElement | null>(null)
@@ -176,6 +179,16 @@ const hasStoredPhoto = computed(() => Boolean(serverPhotoUrl.value))
 
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
+function houseMomFormSnapshot(): string {
+  return JSON.stringify({
+    firstName: form.value.firstName,
+    lastName: form.value.lastName,
+    email: form.value.email,
+    phone: form.value.phone,
+    bioHtml: form.value.bioHtml,
+  })
+}
+
 function applyFromServer(row: HouseMomPublic) {
   form.value.firstName = row.firstName ?? ''
   form.value.lastName = row.lastName ?? ''
@@ -183,6 +196,18 @@ function applyFromServer(row: HouseMomPublic) {
   form.value.phone = formatUsPhoneForDisplay(row.phone ?? '')
   form.value.bioHtml = row.bioHtml ?? ''
   serverPhotoUrl.value = row.photoUrl ?? null
+  savedHouseMomSnapshot.value = houseMomFormSnapshot()
+}
+
+function isHouseMomFormDirty(): boolean {
+  if (loading.value || loadError.value) return false
+  return houseMomFormSnapshot() !== savedHouseMomSnapshot.value || pendingFile.value != null
+}
+
+async function discardHouseMomEdits() {
+  pendingFile.value = null
+  if (fileInputRef.value) fileInputRef.value.value = ''
+  await fetchHouseMom()
 }
 
 async function fetchHouseMom() {
@@ -275,8 +300,21 @@ async function saveProfile() {
   }
 }
 
+let unregisterHouseMom: (() => void) | null = null
+
 onMounted(() => {
   void fetchHouseMom()
+  unregisterHouseMom = registerAdminUnsaved({
+    id: 'admin-house-mom',
+    isDirty: () => isHouseMomFormDirty(),
+    discard: () => {
+      void discardHouseMomEdits()
+    },
+  })
+})
+
+onUnmounted(() => {
+  unregisterHouseMom?.()
 })
 </script>
 

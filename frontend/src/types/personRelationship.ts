@@ -7,7 +7,8 @@ export interface PersonRelationshipCounterpart {
   id: string
   firstName: string
   lastName: string
-  email: string
+  email?: string | null
+  hasEmailOnFile?: boolean
   isMember: boolean
   isParent: boolean
   removedFromDirectory: boolean

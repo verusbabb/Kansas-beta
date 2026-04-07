@@ -60,10 +60,10 @@ export const usePeopleStore = defineStore('people', {
       this.list = this.list.filter((p) => p.id !== id)
     },
 
-    async uploadHeadshot(id: string, file: File): Promise<PersonResponse> {
+    async uploadProfileHeadshot(id: string, file: File): Promise<PersonResponse> {
       const fd = new FormData()
       fd.append('file', file)
-      const { data } = await apiClient.post<PersonResponse>(`/people/${id}/headshot`, fd, {
+      const { data } = await apiClient.post<PersonResponse>(`/people/${id}/profile-headshot`, fd, {
         headers: { 'Content-Type': 'multipart/form-data' },
       })
       const idx = this.list.findIndex((p) => p.id === id)
@@ -71,8 +71,26 @@ export const usePeopleStore = defineStore('people', {
       return data
     },
 
-    async clearHeadshot(id: string): Promise<PersonResponse> {
-      const { data } = await apiClient.delete<PersonResponse>(`/people/${id}/headshot`)
+    async clearProfileHeadshot(id: string): Promise<PersonResponse> {
+      const { data } = await apiClient.delete<PersonResponse>(`/people/${id}/profile-headshot`)
+      const idx = this.list.findIndex((p) => p.id === id)
+      if (idx >= 0) this.list[idx] = data
+      return data
+    },
+
+    async uploadExecRosterHeadshot(id: string, file: File): Promise<PersonResponse> {
+      const fd = new FormData()
+      fd.append('file', file)
+      const { data } = await apiClient.post<PersonResponse>(`/people/${id}/exec-roster-headshot`, fd, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      })
+      const idx = this.list.findIndex((p) => p.id === id)
+      if (idx >= 0) this.list[idx] = data
+      return data
+    },
+
+    async clearExecRosterHeadshot(id: string): Promise<PersonResponse> {
+      const { data } = await apiClient.delete<PersonResponse>(`/people/${id}/exec-roster-headshot`)
       const idx = this.list.findIndex((p) => p.id === id)
       if (idx >= 0) this.list[idx] = data
       return data

@@ -1,6 +1,8 @@
 import { CanActivate, ExecutionContext, Injectable, Logger } from '@nestjs/common'
 import { InjectModel } from '@nestjs/sequelize'
+import { Op } from 'sequelize'
 import { User } from '../../database/entities/user.entity'
+import { Person } from '../../database/entities/person.entity'
 import { JwtPayload } from '../strategies/jwt.strategy'
 
 /**
@@ -14,6 +16,8 @@ export class OptionalUserLookupGuard implements CanActivate {
   constructor(
     @InjectModel(User)
     private readonly userModel: typeof User,
+    @InjectModel(Person)
+    private readonly personModel: typeof Person,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -38,6 +42,7 @@ export class OptionalUserLookupGuard implements CanActivate {
       let user = await this.userModel.findOne({ where: { auth0Id } })
 
       if (user) {
+        await this.linkPersonIdIfUnset(user)
         request.user = user
         return true
       }
@@ -54,6 +59,7 @@ export class OptionalUserLookupGuard implements CanActivate {
           await user.save()
           this.logger.log('Linked Auth0 account to user (optional path)', { email, auth0Id })
         }
+        await this.linkPersonIdIfUnset(user)
         request.user = user
         return true
       }
@@ -68,5 +74,20 @@ export class OptionalUserLookupGuard implements CanActivate {
       request.user = undefined
       return true
     }
+  }
+
+  private async linkPersonIdIfUnset(user: User): Promise<void> {
+    if (user.personId) return
+    const norm = user.email.trim().toLowerCase()
+    const matches = await this.personModel.findAll({
+      where: { email: { [Op.iLike]: norm } },
+    })
+    if (matches.length !== 1) return
+    user.personId = matches[0].id
+    await user.save()
+    this.logger.log('Linked user to directory person by email (optional path)', {
+      userId: user.id,
+      personId: user.personId,
+    })
   }
 }

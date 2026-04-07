@@ -21,6 +21,3 @@ export function formatUsPhoneForDisplay(value: string | null | undefined): strin
   return trimmed
 }
 
-/** Shown when phone values are withheld but the directory indicates a number exists. */
-export const PHONE_NUMBERS_VIEW_PERMISSION_TOOLTIP =
-  'Permissions required to view phone numbers.'

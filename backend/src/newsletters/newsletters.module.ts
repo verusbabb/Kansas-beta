@@ -4,12 +4,13 @@ import { NewslettersController } from './newsletters.controller'
 import { NewslettersService } from './newsletters.service'
 import { Newsletter } from '../database/entities/newsletter.entity'
 import { User } from '../database/entities/user.entity'
+import { Person } from '../database/entities/person.entity'
 import { AuthModule } from '../auth/auth.module'
 import { StorageModule } from '../storage/storage.module'
 
 @Module({
   imports: [
-    SequelizeModule.forFeature([Newsletter, User]), // User model needed for UserLookupGuard
+    SequelizeModule.forFeature([Newsletter, User, Person]), // User + Person for UserLookupGuard
     AuthModule,
     StorageModule,
   ],

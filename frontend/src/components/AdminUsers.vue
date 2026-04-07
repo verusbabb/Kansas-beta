@@ -218,11 +218,12 @@
 
     <!-- Edit User Dialog -->
     <Dialog
-      v-model:visible="editUserDialogVisible"
+      :visible="editUserDialogVisible"
       modal
       header="Edit User"
       :style="{ width: '50rem' }"
       :breakpoints="{ '1199px': '75vw', '575px': '90vw' }"
+      @update:visible="onEditUserDialogVisible"
     >
       <form @submit.prevent="handleUpdateUser" class="flex flex-col gap-5">
         <!-- First Name and Last Name Row -->
@@ -307,7 +308,7 @@
             label="Cancel"
             severity="secondary"
             outlined
-            @click="editUserDialogVisible = false"
+            @click="onEditUserDialogVisible(false)"
             :disabled="isUpdatingUser"
           />
           <Button
@@ -325,7 +326,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import Card from 'primevue/card'
 import Button from 'primevue/button'
 import InputText from 'primevue/inputtext'
@@ -335,6 +336,7 @@ import { useToast } from 'primevue/usetoast'
 import { useConfirm } from 'primevue/useconfirm'
 import { useUserStore } from '@/stores/user'
 import { UserRole } from '@/types/user'
+import { registerAdminUnsaved } from '@/utils/adminUnsavedRegistry'
 
 const toast = useToast()
 const confirm = useConfirm()
@@ -391,6 +393,41 @@ const editUserErrors = ref({
 
 const isUpdatingUser = ref(false)
 
+const editUserBaseline = ref('')
+
+function snapshotEditUserForm(): string {
+  return JSON.stringify(editUserForm.value)
+}
+
+function isEditUserDialogDirty(): boolean {
+  return editUserDialogVisible.value && snapshotEditUserForm() !== editUserBaseline.value
+}
+
+function onEditUserDialogVisible(next: boolean) {
+  if (next) {
+    editUserDialogVisible.value = true
+    return
+  }
+  if (!editUserDialogVisible.value) return
+  if (!isEditUserDialogDirty()) {
+    editUserDialogVisible.value = false
+    editingUserId.value = null
+    return
+  }
+  confirm.require({
+    message: 'Discard unsaved changes to this user?',
+    header: 'Unsaved changes',
+    icon: 'pi pi-exclamation-triangle',
+    rejectClass: 'p-button-secondary p-button-outlined',
+    rejectLabel: 'Keep editing',
+    acceptLabel: 'Discard',
+    accept: () => {
+      editUserDialogVisible.value = false
+      editingUserId.value = null
+    },
+  })
+}
+
 // Role options for dropdown
 const roleOptions = [
   { label: 'Admin', value: UserRole.ADMIN },
@@ -428,6 +465,8 @@ const isEditUserFormValid = computed(() => {
 })
 
 // Fetch users on mount
+let unregisterAdminUsersEdit: (() => void) | null = null
+
 onMounted(async () => {
   try {
     await userStore.fetchUsers()
@@ -439,6 +478,18 @@ onMounted(async () => {
       life: 3000,
     })
   }
+  unregisterAdminUsersEdit = registerAdminUnsaved({
+    id: 'admin-users-edit',
+    isDirty: () => isEditUserDialogDirty(),
+    discard: () => {
+      editUserDialogVisible.value = false
+      editingUserId.value = null
+    },
+  })
+})
+
+onUnmounted(() => {
+  unregisterAdminUsersEdit?.()
 })
 
 const validateUserForm = () => {
@@ -545,6 +596,7 @@ const handleEditUser = (user: any) => {
     role: '',
   }
   editingUserId.value = user.id
+  editUserBaseline.value = snapshotEditUserForm()
   editUserDialogVisible.value = true
 }
 
