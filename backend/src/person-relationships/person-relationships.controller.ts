@@ -60,9 +60,9 @@ export class PersonRelationshipsController {
   @ApiBearerAuth()
   @ApiParam({ name: 'personId', description: 'Person UUID (anchor for direction)' })
   @ApiOperation({
-    summary: 'Add a connection (editor/admin or own profile)',
+    summary: 'Add a connection (site admin or own profile)',
     description:
-      'Editors/admins may add for any person. Signed-in members may add only when `personId` is their linked directory profile. ' +
+      'Site administrators may add for any person. Signed-in members may add only when `personId` is their linked directory profile. ' +
       'Use `direction` to place the anchor person on `from` or `to`. ' +
       '`other_is_from`: counterpart is `from`, anchor is `to`. ' +
       '`other_is_to`: anchor is `from`, counterpart is `to`.',
@@ -73,7 +73,7 @@ export class PersonRelationshipsController {
   @ApiResponse({ status: HttpStatus.CONFLICT, description: 'Duplicate directed link' })
   @ApiResponse({
     status: HttpStatus.FORBIDDEN,
-    description: 'Must be editor/admin or the directory person (linked account)',
+    description: 'Must be a site administrator or the directory person (linked account)',
   })
   async create(
     @Req() req: { user: User },
@@ -89,7 +89,7 @@ export class PersonRelationshipsController {
   @ApiParam({ name: 'personId', description: 'Person UUID' })
   @ApiParam({ name: 'relationshipId', description: 'Relationship UUID' })
   @ApiOperation({
-    summary: 'Update relationship type or notes (editor/admin or own profile)',
+    summary: 'Update relationship type or notes (site admin or own profile)',
     description: 'Send `relationshipType: null` to clear the type (unspecified link).',
   })
   @ApiResponse({ status: HttpStatus.OK, type: PersonRelationshipResponseDto })
@@ -97,7 +97,7 @@ export class PersonRelationshipsController {
   @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'Person or relationship not found' })
   @ApiResponse({
     status: HttpStatus.FORBIDDEN,
-    description: 'Must be editor/admin or the directory person (linked account)',
+    description: 'Must be a site administrator or the directory person (linked account)',
   })
   async update(
     @Req() req: { user: User },
@@ -115,14 +115,14 @@ export class PersonRelationshipsController {
   @ApiParam({ name: 'personId', description: 'Person UUID' })
   @ApiParam({ name: 'relationshipId', description: 'Relationship UUID' })
   @ApiOperation({
-    summary: 'Remove a connection (editor/admin or own profile)',
+    summary: 'Remove a connection (site admin or own profile)',
     description: 'Soft-deletes the relationship row.',
   })
   @ApiResponse({ status: HttpStatus.NO_CONTENT, description: 'Relationship removed' })
   @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'Person or relationship not found' })
   @ApiResponse({
     status: HttpStatus.FORBIDDEN,
-    description: 'Must be editor/admin or the directory person (linked account)',
+    description: 'Must be a site administrator or the directory person (linked account)',
   })
   async remove(
     @Req() req: { user: User },

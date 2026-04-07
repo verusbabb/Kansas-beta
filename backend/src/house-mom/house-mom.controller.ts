@@ -46,22 +46,22 @@ export class HouseMomController {
 
   @Put()
   @UseGuards(JwtAuthGuard, UserLookupGuard, RolesGuard)
-  @Roles(UserRole.EDITOR, UserRole.ADMIN)
+  @Roles(UserRole.ADMIN)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Update house mom name, contact, and bio (editor/admin)' })
+  @ApiOperation({ summary: 'Update house mom name, contact, and bio (admin only)' })
   @ApiResponse({ status: HttpStatus.OK, type: HouseMomPublicDto })
-  @ApiResponse({ status: HttpStatus.FORBIDDEN, description: 'Editor or admin required' })
+  @ApiResponse({ status: HttpStatus.FORBIDDEN, description: 'Admin required' })
   async update(@Body() dto: UpdateHouseMomDto): Promise<HouseMomPublicDto> {
     return this.houseMomService.updateProfile(dto)
   }
 
   @Post('photo')
   @UseGuards(JwtAuthGuard, UserLookupGuard, RolesGuard)
-  @Roles(UserRole.EDITOR, UserRole.ADMIN)
+  @Roles(UserRole.ADMIN)
   @UseInterceptors(FileInterceptor('file'))
   @HttpCode(HttpStatus.OK)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Upload or replace house mom photo (editor/admin)' })
+  @ApiOperation({ summary: 'Upload or replace house mom photo (admin only)' })
   @ApiResponse({ status: HttpStatus.OK, type: HouseMomPublicDto })
   async uploadPhoto(
     @UploadedFile(
@@ -82,10 +82,10 @@ export class HouseMomController {
 
   @Delete('photo')
   @UseGuards(JwtAuthGuard, UserLookupGuard, RolesGuard)
-  @Roles(UserRole.EDITOR, UserRole.ADMIN)
+  @Roles(UserRole.ADMIN)
   @HttpCode(HttpStatus.OK)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Remove house mom photo (editor/admin)' })
+  @ApiOperation({ summary: 'Remove house mom photo (admin only)' })
   @ApiResponse({ status: HttpStatus.OK, type: HouseMomPublicDto })
   async clearPhoto(): Promise<HouseMomPublicDto> {
     return this.houseMomService.clearPhoto()

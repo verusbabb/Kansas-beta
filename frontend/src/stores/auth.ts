@@ -38,6 +38,16 @@ export const useAuthStore = defineStore('auth', () => {
     return userRole.value === 'admin'
   })
 
+  /** True when the user has the `editor` role (not admins — use `isAdmin` for that). */
+  const isEditorRole = computed(() => {
+    return userRole.value === 'editor'
+  })
+
+  /** Admin panel: full nav for admins; Manage Site Content for editors. */
+  const canAccessAdminPanel = computed(() => {
+    return userRole.value === 'admin' || userRole.value === 'editor'
+  })
+
   const isEditor = computed(() => {
     return userRole.value === 'editor' || userRole.value === 'admin'
   })
@@ -223,6 +233,8 @@ export const useAuthStore = defineStore('auth', () => {
     isAuthenticated,
     userRole,
     isAdmin,
+    isEditorRole,
+    canAccessAdminPanel,
     isEditor,
     isViewer,
     // Actions

@@ -56,7 +56,7 @@ export class NewslettersController {
   @ApiBearerAuth()
   @ApiConsumes('multipart/form-data')
   @ApiOperation({
-    summary: 'Create a new newsletter with PDF upload (editor/admin only)',
+    summary: 'Create a new newsletter with PDF upload (editor/admin)',
     description: 'Upload a PDF file and create a newsletter record with season and year',
   })
   @ApiBody({
@@ -98,7 +98,7 @@ export class NewslettersController {
   })
   @ApiResponse({
     status: 403,
-    description: 'Forbidden - Editor or Admin role required',
+    description: 'Forbidden - Editor or admin role required',
   })
   async create(
     @UploadedFile(
@@ -190,7 +190,7 @@ export class NewslettersController {
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiBearerAuth()
   @ApiOperation({
-    summary: 'Delete a newsletter (editor/admin only)',
+    summary: 'Delete a newsletter (editor/admin)',
     description: 'Soft delete a newsletter by its UUID',
   })
   @ApiParam({
@@ -208,7 +208,7 @@ export class NewslettersController {
   })
   @ApiResponse({
     status: 403,
-    description: 'Forbidden - Editor or Admin role required',
+    description: 'Forbidden - Editor or admin role required',
   })
   @ApiResponse({
     status: 404,

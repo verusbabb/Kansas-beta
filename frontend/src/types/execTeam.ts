@@ -17,7 +17,8 @@ export interface ExecRosterPerson {
   id: string
   firstName: string
   lastName: string
-  email: string
+  /** Set only for the chapter’s current term. */
+  email?: string | null
   phone?: string | null
   headshotUrl?: string | null
 }

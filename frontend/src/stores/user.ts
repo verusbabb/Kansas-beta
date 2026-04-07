@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import apiClient from '@/services/api'
-import { UserResponseDto, CreateUserDto, UpdateUserDto } from '@/types/user'
+import { UserResponseDto, CreateUserDto, UpdateUserDto, UserRole } from '@/types/user'
 
 export const useUserStore = defineStore('user', {
   state: () => ({
@@ -50,6 +50,32 @@ export const useUserStore = defineStore('user', {
         throw error
       } finally {
         this.loading = false
+      }
+    },
+
+    /**
+     * Assign or update app role for a directory person (creates user if needed).
+     */
+    async assignDirectoryPersonRole(personId: string, role: UserRole) {
+      this.error = null
+      try {
+        const response = await apiClient.patch<UserResponseDto>(
+          `/users/directory-person/${personId}`,
+          { role },
+        )
+        const data = response.data
+        const index = this.users.findIndex((u) => u.id === data.id)
+        if (index > -1) {
+          this.users[index] = data
+        } else {
+          this.users.push(data)
+        }
+        this.users.sort((a, b) => a.email.localeCompare(b.email))
+        return data
+      } catch (error) {
+        this.error = 'Failed to assign role'
+        console.error('Error assigning directory role:', error)
+        throw error
       }
     },
 

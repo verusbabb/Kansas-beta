@@ -113,8 +113,9 @@ export class PeopleService {
     return String(value).trim().length > 0
   }
 
-  private viewerIsEditorOrAdmin(viewer: User | undefined): boolean {
-    return viewer?.role === UserRole.EDITOR || viewer?.role === UserRole.ADMIN
+  /** Full directory row (all PII + share flags) — admins only. Editors see the same redaction as viewers. */
+  private viewerIsAdmin(viewer: User | undefined): boolean {
+    return viewer?.role === UserRole.ADMIN
   }
 
   private isSelfView(viewer: User | undefined, person: Person): boolean {
@@ -137,7 +138,7 @@ export class PeopleService {
   }
 
   /**
-   * @param options.fullDetail — editor/admin directory list and admin mutation responses (raw row + share flags).
+   * @param options.fullDetail — admin directory list and admin mutation responses (raw row + share flags).
    */
   private toResponseDto(
     person: Person,
@@ -362,7 +363,7 @@ export class PeopleService {
    * All non-deleted people, ordered for directory display.
    */
   async findAll(viewer?: User): Promise<PersonResponseDto[]> {
-    const fullDetail = this.viewerIsEditorOrAdmin(viewer)
+    const fullDetail = this.viewerIsAdmin(viewer)
     const legacyIds = await this.legacyMemberLinkPersonIds()
     const rows = await this.personModel.findAll({
       order: [
@@ -384,7 +385,8 @@ export class PeopleService {
       throw new NotFoundException('Person not found')
     }
     const hasLegacy = await this.personHasLegacyMemberLink(person.id)
-    const personDto = this.toResponseDto(person, hasLegacy, { viewer })
+    const profileFullDetail = this.viewerIsAdmin(viewer)
+    const personDto = this.toResponseDto(person, hasLegacy, { viewer, fullDetail: profileFullDetail })
     const [relationships, execHistory, headshotUrl, execRosterHeadshotUrl] = await Promise.all([
       this.personRelationshipsService.findAllForPerson(id, viewer),
       this.execTeamService.findExecHistoryForPerson(id),
@@ -408,15 +410,16 @@ export class PeopleService {
       throw new NotFoundException('Person not found')
     }
 
-    const isEditor = currentUser.role === UserRole.EDITOR || currentUser.role === UserRole.ADMIN
+    const isAdmin = currentUser.role === UserRole.ADMIN
     const isSelf = this.isSelfView(currentUser, person)
-    if (!isEditor && !isSelf) {
+
+    if (!isSelf && !isAdmin) {
       throw new ForbiddenException(
-        'You can only update your own directory profile unless you are an editor or admin.',
+        'Only site administrators can update another person’s directory record. You can update only your own profile.',
       )
     }
 
-    if (isSelf && !isEditor) {
+    if (isSelf) {
       const accountLinked =
         currentUser.personId != null && currentUser.personId === person.id
       await this.applySelfPersonPatch(person, dto, accountLinked)
@@ -430,6 +433,7 @@ export class PeopleService {
       })
     }
 
+    // Admin-only: update someone else’s row (admin panel)
     if (dto.email !== undefined) {
       const normalized = dto.email.toLowerCase().trim()
       if (normalized !== person.email) {
@@ -638,11 +642,10 @@ export class PeopleService {
   }
 
   /**
-   * Editors/admins may set any person's photos. Linked users may set their own row only.
+   * Admins may set any person's photos. Other users may change only their own linked row.
    */
   private assertCanMutatePersonPhotos(person: Person, user: User): void {
-    const isEditor = user.role === UserRole.EDITOR || user.role === UserRole.ADMIN
-    if (isEditor) return
+    if (user.role === UserRole.ADMIN) return
     const linked = user.personId != null && user.personId === person.id
     if (!linked) {
       throw new ForbiddenException(
@@ -705,8 +708,8 @@ export class PeopleService {
 
   private async headshotMutationResponse(person: Person, currentUser: User): Promise<PersonResponseDto> {
     const hasLegacy = await this.personHasLegacyMemberLink(person.id)
-    const isEditor = currentUser.role === UserRole.EDITOR || currentUser.role === UserRole.ADMIN
-    return this.toResponseDto(person, hasLegacy, isEditor ? { fullDetail: true } : { viewer: currentUser })
+    const viewerIsAdmin = currentUser.role === UserRole.ADMIN
+    return this.toResponseDto(person, hasLegacy, viewerIsAdmin ? { fullDetail: true } : { viewer: currentUser })
   }
 
   async uploadProfileHeadshot(id: string, file: PersonHeadshotFile, currentUser: User): Promise<PersonResponseDto> {

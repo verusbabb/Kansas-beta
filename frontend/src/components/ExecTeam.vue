@@ -43,6 +43,13 @@
           <strong>current</strong> term; those inboxes stay with the office and are reassigned after
           elections.
         </p>
+        <p
+          v-if="!loading && roster?.term && !showExecPhones"
+          class="text-sm text-surface-500 m-0"
+          :class="{ 'mt-1': roster?.term && !showRoleEmails }"
+        >
+          Phone numbers are shown only for the <strong>current</strong> term.
+        </p>
 
         <div v-if="loading" class="text-center py-12 text-surface-600">
           <i class="pi pi-spin pi-spinner text-3xl text-[#6F8FAF]"></i>
@@ -80,22 +87,23 @@
               {{ slot.person!.firstName }} {{ slot.person!.lastName }}
             </h3>
             <p class="text-sm font-medium text-[#6F8FAF] mb-2">{{ slot.position.displayName }}</p>
+            <template v-if="showExecPhones">
+              <a
+                v-if="slot.person!.phone && formatUsPhoneForDisplay(slot.person!.phone)"
+                :href="`tel:${slot.person!.phone.replace(/\D/g, '')}`"
+                class="text-sm text-surface-700 hover:text-[#6F8FAF] hover:underline"
+              >
+                {{ formatUsPhoneForDisplay(slot.person!.phone) }}
+              </a>
+              <span v-else class="text-sm text-surface-400">—</span>
+            </template>
             <a
-              v-if="slot.person!.phone && formatUsPhoneForDisplay(slot.person!.phone)"
-              :href="`tel:${slot.person!.phone.replace(/\D/g, '')}`"
-              class="text-sm text-surface-700 hover:text-[#6F8FAF] hover:underline"
-            >
-              {{ formatUsPhoneForDisplay(slot.person!.phone) }}
-            </a>
-            <span v-else class="text-sm text-surface-400">—</span>
-            <a
-              v-if="showRoleEmails"
+              v-if="showRoleEmails && slot.person!.email"
               :href="`mailto:${slot.person!.email}`"
               class="text-sm text-[#6F8FAF] hover:underline break-all mt-1"
             >
               {{ slot.person!.email }}
             </a>
-            <span v-else class="text-sm text-surface-400 mt-1">—</span>
           </div>
         </div>
 
@@ -139,6 +147,9 @@ const filledSlots = computed(() => {
 
 /** Role mailboxes stay with the office; only show them when viewing the chapter’s current term. */
 const showRoleEmails = computed(() => roster.value?.term?.isCurrent === true)
+
+/** Personal phones only for the current term; historical rosters omit them. */
+const showExecPhones = computed(() => roster.value?.term?.isCurrent === true)
 
 const termSelectOptions = computed(() =>
   terms.value.map((t) => ({

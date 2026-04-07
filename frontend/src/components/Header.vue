@@ -113,8 +113,8 @@
       },
     ];
 
-    // Only include Admin tab if user is an admin
-    if (authStore.isAdmin) {
+    // Admins and site editors (settings-only in /admin); viewers never see this link
+    if (authStore.canAccessAdminPanel) {
       baseItems.push({
         label: "Admin",
         icon: "pi pi-cog",

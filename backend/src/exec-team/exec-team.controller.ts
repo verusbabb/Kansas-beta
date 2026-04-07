@@ -78,10 +78,10 @@ export class ExecTeamController {
 
   @Post('terms')
   @UseGuards(JwtAuthGuard, UserLookupGuard, RolesGuard)
-  @Roles(UserRole.EDITOR, UserRole.ADMIN)
+  @Roles(UserRole.ADMIN)
   @ApiBearerAuth()
   @HttpCode(HttpStatus.CREATED)
-  @ApiOperation({ summary: 'Create a fall/spring term (editor/admin)' })
+  @ApiOperation({ summary: 'Create a fall/spring term (admin only)' })
   @ApiResponse({ status: HttpStatus.CREATED, type: ExecTermPublicDto })
   async createTerm(@Body() dto: CreateExecTermDto): Promise<ExecTermPublicDto> {
     return this.execTeamService.createTerm(dto)
@@ -89,10 +89,10 @@ export class ExecTeamController {
 
   @Patch('terms/:id')
   @UseGuards(JwtAuthGuard, UserLookupGuard, RolesGuard)
-  @Roles(UserRole.EDITOR, UserRole.ADMIN)
+  @Roles(UserRole.ADMIN)
   @ApiBearerAuth()
   @ApiParam({ name: 'id', description: 'Exec term UUID' })
-  @ApiOperation({ summary: 'Update term label or current flag (editor/admin)' })
+  @ApiOperation({ summary: 'Update term label or current flag (admin only)' })
   @ApiResponse({ status: HttpStatus.OK, type: ExecTermPublicDto })
   async updateTerm(
     @Param('id', ParseUUIDPipe) id: string,
@@ -103,21 +103,21 @@ export class ExecTeamController {
 
   @Delete('terms/:id')
   @UseGuards(JwtAuthGuard, UserLookupGuard, RolesGuard)
-  @Roles(UserRole.EDITOR, UserRole.ADMIN)
+  @Roles(UserRole.ADMIN)
   @ApiBearerAuth()
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiParam({ name: 'id', description: 'Exec term UUID' })
-  @ApiOperation({ summary: 'Delete term and its assignments (editor/admin)' })
+  @ApiOperation({ summary: 'Delete term and its assignments (admin only)' })
   async deleteTerm(@Param('id', ParseUUIDPipe) id: string): Promise<void> {
     return this.execTeamService.deleteTerm(id)
   }
 
   @Get('terms/:id/roster')
   @UseGuards(JwtAuthGuard, UserLookupGuard, RolesGuard)
-  @Roles(UserRole.EDITOR, UserRole.ADMIN)
+  @Roles(UserRole.ADMIN)
   @ApiBearerAuth()
   @ApiParam({ name: 'id', description: 'Exec term UUID' })
-  @ApiOperation({ summary: 'Roster for a specific term (editor/admin)' })
+  @ApiOperation({ summary: 'Roster for a specific term (admin only)' })
   @ApiResponse({ status: HttpStatus.OK, type: ExecRosterResponseDto })
   async rosterForTerm(@Param('id', ParseUUIDPipe) id: string): Promise<ExecRosterResponseDto> {
     return this.execTeamService.getRosterForTerm(id)
@@ -125,10 +125,10 @@ export class ExecTeamController {
 
   @Put('terms/:id/roster')
   @UseGuards(JwtAuthGuard, UserLookupGuard, RolesGuard)
-  @Roles(UserRole.EDITOR, UserRole.ADMIN)
+  @Roles(UserRole.ADMIN)
   @ApiBearerAuth()
   @ApiParam({ name: 'id', description: 'Exec term UUID' })
-  @ApiOperation({ summary: 'Replace all assignments for a term (editor/admin)' })
+  @ApiOperation({ summary: 'Replace all assignments for a term (admin only)' })
   @ApiResponse({ status: HttpStatus.OK, type: ExecRosterResponseDto })
   async replaceRoster(
     @Param('id', ParseUUIDPipe) id: string,

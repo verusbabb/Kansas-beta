@@ -3,10 +3,13 @@ import {
   NotFoundException,
   ConflictException,
   ForbiddenException,
+  BadRequestException,
 } from '@nestjs/common'
 import { InjectModel } from '@nestjs/sequelize'
 import { PinoLogger } from 'nestjs-pino'
+import { Op } from 'sequelize'
 import { User, UserRole } from '../database/entities/user.entity'
+import { Person } from '../database/entities/person.entity'
 import { CreateUserDto } from './dto/create-user.dto'
 import { UpdateUserDto } from './dto/update-user.dto'
 import { UserResponseDto } from './dto/user-response.dto'
@@ -21,6 +24,8 @@ export class UsersService {
   constructor(
     @InjectModel(User)
     private userModel: typeof User,
+    @InjectModel(Person)
+    private personModel: typeof Person,
     private readonly logger: PinoLogger,
   ) {
     this.logger.setContext(UsersService.name)
@@ -85,6 +90,84 @@ export class UsersService {
       this.logger.error('Failed to create user', error)
       throw error
     }
+  }
+
+  /**
+   * Create or update the app user tied to a directory person: sync name/email from `people`, set role and `personId`.
+   */
+  async assignRoleForDirectoryPerson(personId: string, role: UserRole): Promise<UserResponseDto> {
+    const person = await this.personModel.findByPk(personId)
+    if (!person) {
+      throw new NotFoundException('Directory person not found')
+    }
+    const rawEmail = person.email?.trim().toLowerCase()
+    if (!rawEmail) {
+      throw new BadRequestException('Directory person has no email; cannot assign an app role')
+    }
+
+    const firstName = person.firstName?.trim() || 'User'
+    const lastName = person.lastName?.trim() || ''
+
+    const byPerson = await this.userModel.findOne({
+      where: { personId },
+      paranoid: false,
+    })
+    if (byPerson) {
+      if (byPerson.deletedAt) {
+        await byPerson.restore()
+      }
+      if (this.isProtectedUser(byPerson)) {
+        throw new ForbiddenException('This user is protected and cannot be edited')
+      }
+      byPerson.role = role
+      byPerson.email = rawEmail
+      byPerson.firstName = firstName
+      byPerson.lastName = lastName
+      byPerson.personId = personId
+      await byPerson.save()
+      this.logger.info('Updated app user role for directory person', { personId, userId: byPerson.id })
+      return this.toResponseDto(byPerson)
+    }
+
+    const byEmail = await this.userModel.findOne({
+      where: { email: { [Op.iLike]: rawEmail } },
+      paranoid: false,
+    })
+    if (byEmail) {
+      if (byEmail.deletedAt) {
+        await byEmail.restore()
+      }
+      if (this.isProtectedUser(byEmail)) {
+        throw new ForbiddenException('This user is protected and cannot be edited')
+      }
+      if (byEmail.personId != null && byEmail.personId !== personId) {
+        throw new ConflictException(
+          'An app account with this email is already linked to a different directory person',
+        )
+      }
+      byEmail.personId = personId
+      byEmail.role = role
+      byEmail.email = rawEmail
+      byEmail.firstName = firstName
+      byEmail.lastName = lastName
+      await byEmail.save()
+      this.logger.info('Linked directory person to existing app user and set role', {
+        personId,
+        userId: byEmail.id,
+      })
+      return this.toResponseDto(byEmail)
+    }
+
+    const user = await this.userModel.create({
+      email: rawEmail,
+      firstName,
+      lastName,
+      role,
+      personId,
+      auth0Id: null,
+    })
+    this.logger.info('Created app user from directory person', { personId, userId: user.id })
+    return this.toResponseDto(user)
   }
 
   /**
@@ -177,7 +260,7 @@ export class UsersService {
       if (updateUserDto.email) user.email = updateUserDto.email
       if (updateUserDto.firstName) user.firstName = updateUserDto.firstName
       if (updateUserDto.lastName) user.lastName = updateUserDto.lastName
-      if (updateUserDto.role) user.role = updateUserDto.role
+      if (updateUserDto.role !== undefined) user.role = updateUserDto.role
 
       await user.save()
 

@@ -6,7 +6,11 @@
       <div class="max-w-6xl mx-auto text-center">
         <div class="text-4xl md:text-5xl font-bold mb-4">Admin Panel</div>
         <div class="text-xl md:text-2xl text-gray-300 mb-6">
-          Manage site content and configuration
+          {{
+            authStore.isAdmin
+              ? 'Manage site content and configuration'
+              : 'Manage site content (home page, calendar, newsletters, rush)'
+          }}
         </div>
         <div class="w-32 h-1 bg-gray-400 mx-auto"></div>
       </div>
@@ -40,18 +44,18 @@
                     </div>
                   </Button>
 
-                  <!-- Settings dropdown menu -->
+                  <!-- Manage Site Content dropdown -->
                   <div v-else class="flex flex-col">
                     <Button
-                      @click="toggleSettingsMenu"
+                      @click="toggleSiteContentMenu"
                       :class="[
                         'w-full justify-start !p-3',
-                        isSettingsActive
+                        isSiteContentActive
                           ? 'bg-gray-200 text-[#6F8FAF] font-semibold'
                           : 'hover:bg-gray-100 text-surface-700'
                       ]"
                       text
-                      :severity="isSettingsActive ? 'secondary' : undefined"
+                      :severity="isSiteContentActive ? 'secondary' : undefined"
                     >
                       <div class="flex items-center gap-3 w-full">
                         <i :class="[item.icon, 'text-lg flex-shrink-0']"></i>
@@ -59,14 +63,14 @@
                         <i 
                           :class="[
                             'pi text-sm flex-shrink-0 transition-transform duration-200',
-                            settingsMenuOpen ? 'pi-angle-up' : 'pi-angle-down'
+                            siteContentMenuOpen ? 'pi-angle-up' : 'pi-angle-down'
                           ]"
                         ></i>
                       </div>
                     </Button>
                     <!-- Submenu items -->
                     <div
-                      v-show="settingsMenuOpen"
+                      v-show="siteContentMenuOpen"
                       class="flex flex-col gap-1 pl-4 mt-1 overflow-hidden transition-all duration-200"
                     >
                       <Button
@@ -124,7 +128,7 @@
             <template #title>
               <div class="flex items-center gap-2">
                 <i class="pi pi-calendar text-[#6F8FAF]"></i>
-                <span>Manage Rush Events</span>
+                <span>Rush Events</span>
               </div>
             </template>
             <template #content>
@@ -142,7 +146,7 @@
           <!-- Health Check Section -->
           <AdminHealthCheck v-if="activeSection === 'health'" />
 
-          <!-- Settings Sub-sections -->
+          <!-- Manage Site Content: Home Page Images -->
           <AdminHomePageImages v-if="activeSection === 'settings-home-images'" />
 
           <!-- Overview Section -->
@@ -175,12 +179,13 @@ import AdminHomePageImages from '@/components/AdminHomePageImages.vue'
 import AdminAddPerson from '@/components/AdminAddPerson.vue'
 import AdminBulkImportPeople from '@/components/AdminBulkImportPeople.vue'
 import MemberSearch from '@/components/MemberSearch.vue'
+import { useAuthStore } from '@/stores/auth'
 
 const route = useRoute()
 const router = useRouter()
 const confirm = useConfirm()
+const authStore = useAuthStore()
 
-// Initialize activeSection from URL query parameter or default to 'overview'
 const validSectionIds = [
   'overview',
   'newsletter',
@@ -191,38 +196,91 @@ const validSectionIds = [
   'alumni',
   'rush',
   'health',
-  'settings',
   'settings-home-images',
-]
-const sectionFromQuery = route.query.section
-const normalizedSection =
-  sectionFromQuery && typeof sectionFromQuery === 'string'
-    ? sectionFromQuery === 'settings-exec-team'
-      ? 'exec-team'
-      : sectionFromQuery
-    : null
-const initialSection =
-  normalizedSection && validSectionIds.includes(normalizedSection) ? normalizedSection : 'overview'
-const activeSection = ref(initialSection)
+] as const
 
-// Settings menu state
-const settingsMenuOpen = ref(false)
+/** Sub-sections under Manage Site Content (editors + admins). */
+const siteContentSectionIds = [
+  'settings-home-images',
+  'alumni',
+  'newsletter',
+  'rush',
+] as const
 
-// Check if any settings sub-section is active
-const isSettingsActive = computed(() => {
-  return activeSection.value.startsWith('settings')
-})
+type SiteContentSectionId = (typeof siteContentSectionIds)[number]
 
-// Watch activeSection to open settings menu if a settings sub-section is active
-watch(activeSection, (newSection) => {
-  if (newSection.startsWith('settings')) {
-    settingsMenuOpen.value = true
+function isSiteContentSection(section: string): section is SiteContentSectionId {
+  return siteContentSectionIds.includes(section as SiteContentSectionId)
+}
+
+/** Sections editors may open in /admin (Manage Site Content only). */
+const editorPanelSectionIds = siteContentSectionIds
+
+function normalizedQuerySection(): string | undefined {
+  const raw = route.query.section
+  if (!raw || typeof raw !== 'string') return undefined
+  return raw === 'settings-exec-team' ? 'exec-team' : raw
+}
+
+function clampSectionForRole(section: string): string {
+  if (authStore.isAdmin) {
+    return validSectionIds.includes(section as (typeof validSectionIds)[number]) ? section : 'overview'
   }
-}, { immediate: true })
+  return isSiteContentSection(section) ? section : 'settings-home-images'
+}
 
-// Function to toggle settings menu
-const toggleSettingsMenu = () => {
-  settingsMenuOpen.value = !settingsMenuOpen.value
+const activeSection = ref(
+  authStore.isAdmin ? 'overview' : 'settings-home-images',
+)
+
+watch(
+  () => [normalizedQuerySection(), authStore.user?.role] as const,
+  () => {
+    const urlSec = normalizedQuerySection()
+    const base =
+      urlSec && validSectionIds.includes(urlSec as (typeof validSectionIds)[number])
+        ? urlSec
+        : authStore.isAdmin
+          ? 'overview'
+          : 'settings-home-images'
+    const next = clampSectionForRole(base)
+    if (activeSection.value !== next) {
+      activeSection.value = next
+    }
+
+    if (!authStore.isAdmin) {
+      const q = route.query.section
+      if (typeof q !== 'string' || q !== next) {
+        router.replace({ query: { ...route.query, section: next } })
+      }
+      return
+    }
+
+    if (urlSec != null && !validSectionIds.includes(urlSec as (typeof validSectionIds)[number])) {
+      router.replace({ query: { ...route.query, section: next } })
+    } else if (route.query.section === 'settings-exec-team') {
+      router.replace({ query: { ...route.query, section: 'exec-team' } })
+    }
+  },
+  { immediate: true },
+)
+
+const siteContentMenuOpen = ref(false)
+
+const isSiteContentActive = computed(() => isSiteContentSection(activeSection.value))
+
+watch(
+  activeSection,
+  (newSection) => {
+    if (isSiteContentSection(newSection)) {
+      siteContentMenuOpen.value = true
+    }
+  },
+  { immediate: true },
+)
+
+function toggleSiteContentMenu() {
+  siteContentMenuOpen.value = !siteContentMenuOpen.value
 }
 
 function confirmLeaveUnsavedEdits(): Promise<boolean> {
@@ -262,8 +320,8 @@ const setActiveSection = (section: string) => {
     activeSection.value = section
     router.push({ query: { ...route.query, section } })
 
-    if (section.startsWith('settings')) {
-      settingsMenuOpen.value = true
+    if (isSiteContentSection(section)) {
+      siteContentMenuOpen.value = true
     }
   })()
 }
@@ -280,63 +338,69 @@ onUnmounted(() => {
   window.removeEventListener('beforeunload', warnBeforeUnload)
 })
 
-const navItems = [
+const manageSiteContentNav = {
+  id: 'site-content',
+  label: 'Manage Site Content',
+  icon: 'pi pi-th-large',
+  items: [
+    {
+      id: 'settings-home-images',
+      label: 'Home Page Images',
+      icon: 'pi pi-image',
+    },
+    {
+      id: 'alumni',
+      label: 'Calendar Events',
+      icon: 'pi pi-calendar',
+    },
+    {
+      id: 'newsletter',
+      label: 'Newsletters',
+      icon: 'pi pi-book',
+    },
+    {
+      id: 'rush',
+      label: 'Rush Events',
+      icon: 'pi pi-star',
+    },
+  ],
+} as const
+
+const fullNavItems = [
   {
     id: 'overview',
     label: 'Overview',
-    icon: 'pi pi-home'
-  },
-  {
-    id: 'newsletter',
-    label: 'Add Newsletter',
-    icon: 'pi pi-book'
+    icon: 'pi pi-home',
   },
   {
     id: 'users',
-    label: 'Add/Manage Site Admins',
-    icon: 'pi pi-users'
+    label: 'Add/Manage User Roles',
+    icon: 'pi pi-users',
   },
   {
     id: 'member',
     label: 'Add/Manage Members and Parents',
-    icon: 'pi pi-user-plus'
+    icon: 'pi pi-user-plus',
   },
   {
     id: 'exec-team',
     label: 'Add/Manage Exec Team',
-    icon: 'pi pi-briefcase'
+    icon: 'pi pi-briefcase',
   },
   {
     id: 'house-mom',
     label: 'Edit House Mom',
-    icon: 'pi pi-heart'
-  },
-  {
-    id: 'alumni',
-    label: 'Add/Manage Calendar',
-    icon: 'pi pi-id-card'
-  },
-  {
-    id: 'rush',
-    label: 'Manage Rush Events',
-    icon: 'pi pi-calendar'
+    icon: 'pi pi-heart',
   },
   {
     id: 'health',
     label: 'Check Database Connection',
-    icon: 'pi pi-database'
+    icon: 'pi pi-database',
   },
-  {
-    id: 'settings',
-    label: 'Site Settings',
-    icon: 'pi pi-cog',
-    items: [
-      {
-        id: 'settings-home-images',
-        label: 'Home Page Images',
-        icon: 'pi pi-image'
-      }
-    ]
-  }
+  { ...manageSiteContentNav },
 ]
+
+const editorNavItems = [{ ...manageSiteContentNav }]
+
+const navItems = computed(() => (authStore.isAdmin ? fullNavItems : editorNavItems))
 </script>

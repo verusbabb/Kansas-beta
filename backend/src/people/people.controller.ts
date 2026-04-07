@@ -52,7 +52,7 @@ export class PeopleController {
   @ApiOperation({
     summary: 'List directory people (public)',
     description:
-      'Guests receive redacted contact fields (email, phones, address, LinkedIn, CRM id) with `has*` flags where values exist. Signed-in viewers see fields each person has chosen to share with chapter members. Editors and admins receive full rows for the admin directory.',
+      'Guests receive redacted contact fields (email, phones, address, LinkedIn, CRM id) with `has*` flags where values exist. Signed-in members see fields each person has chosen to share. Only site administrators receive full rows (admin directory).',
   })
   @ApiResponse({ status: HttpStatus.OK, type: [PersonResponseDto] })
   async findAll(@Req() req: { user?: User }): Promise<PersonResponseDto[]> {
@@ -61,17 +61,17 @@ export class PeopleController {
 
   @Post('import')
   @UseGuards(JwtAuthGuard, UserLookupGuard, RolesGuard)
-  @Roles(UserRole.EDITOR, UserRole.ADMIN)
+  @Roles(UserRole.ADMIN)
   @UseInterceptors(FileInterceptor('file'))
   @HttpCode(HttpStatus.OK)
   @ApiBearerAuth()
   @ApiOperation({
-    summary: 'Bulk import people from CSV or tab-separated file (editor/admin)',
+    summary: 'Bulk import people from CSV or tab-separated file (admin only)',
     description:
       'Required: Contact ID (CRM id), First Name, Last Name, Email, full mailing address, Constituent Code; Preferred Year for Alumni/Undergrad. Upserts by Contact ID (and adopts by email when Contact ID was not set). Optional: Home Phone, Mobile. Skipped rows are returned as skippedFileContent for download.',
   })
   @ApiResponse({ status: HttpStatus.OK, type: BulkImportResponseDto })
-  @ApiResponse({ status: HttpStatus.FORBIDDEN, description: 'Editor or admin required' })
+  @ApiResponse({ status: HttpStatus.FORBIDDEN, description: 'Admin required' })
   async bulkImport(
     @UploadedFile(
       new ParseFilePipe({
@@ -90,7 +90,7 @@ export class PeopleController {
   @ApiOperation({
     summary: 'Directory person profile (public)',
     description:
-      'Same privacy rules as GET /people: guests see redacted contact fields; signed-in members see shared fields; you always see your own full row. Includes connections, exec history, and signed URLs for profile and exec roster photos when present.',
+      'Same privacy rules as GET /people for guests and members; site administrators see full directory fields for any profile. You always see your own full row when viewing yourself. Includes connections, exec history, and signed URLs for profile and exec roster photos when present.',
   })
   @ApiResponse({ status: HttpStatus.OK, type: PersonProfileResponseDto })
   @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'Person not found' })
@@ -113,7 +113,7 @@ export class PeopleController {
       'Current photo for the person profile and directory. Members and parents. Stored under `people-profile-headshots/` in GCS.',
   })
   @ApiResponse({ status: HttpStatus.OK, type: PersonResponseDto })
-  @ApiResponse({ status: HttpStatus.FORBIDDEN, description: 'Not your linked profile and not editor/admin' })
+  @ApiResponse({ status: HttpStatus.FORBIDDEN, description: 'Not your linked profile and not admin' })
   async uploadProfileHeadshot(
     @Req() req: { user: User },
     @Param('id', ParseUUIDPipe) id: string,
@@ -138,9 +138,9 @@ export class PeopleController {
   @HttpCode(HttpStatus.OK)
   @ApiBearerAuth()
   @ApiParam({ name: 'id', description: 'Person UUID' })
-  @ApiOperation({ summary: 'Remove directory/profile headshot (editor/admin or linked self)' })
+  @ApiOperation({ summary: 'Remove directory/profile headshot (admin or linked self)' })
   @ApiResponse({ status: HttpStatus.OK, type: PersonResponseDto })
-  @ApiResponse({ status: HttpStatus.FORBIDDEN, description: 'Not your linked profile and not editor/admin' })
+  @ApiResponse({ status: HttpStatus.FORBIDDEN, description: 'Not your linked profile and not admin' })
   async clearProfileHeadshot(
     @Req() req: { user: User },
     @Param('id', ParseUUIDPipe) id: string,
@@ -160,7 +160,7 @@ export class PeopleController {
       'Era photo for the exec team roster. Chapter members only. Stored under `people-exec-headshots/` in GCS.',
   })
   @ApiResponse({ status: HttpStatus.OK, type: PersonResponseDto })
-  @ApiResponse({ status: HttpStatus.FORBIDDEN, description: 'Not your linked profile and not editor/admin' })
+  @ApiResponse({ status: HttpStatus.FORBIDDEN, description: 'Not your linked profile and not admin' })
   async uploadExecRosterHeadshot(
     @Req() req: { user: User },
     @Param('id', ParseUUIDPipe) id: string,
@@ -185,9 +185,9 @@ export class PeopleController {
   @HttpCode(HttpStatus.OK)
   @ApiBearerAuth()
   @ApiParam({ name: 'id', description: 'Person UUID' })
-  @ApiOperation({ summary: 'Remove executive roster headshot (editor/admin or linked member self)' })
+  @ApiOperation({ summary: 'Remove executive roster headshot (admin or linked member self)' })
   @ApiResponse({ status: HttpStatus.OK, type: PersonResponseDto })
-  @ApiResponse({ status: HttpStatus.FORBIDDEN, description: 'Not your linked profile and not editor/admin' })
+  @ApiResponse({ status: HttpStatus.FORBIDDEN, description: 'Not your linked profile and not admin' })
   async clearExecRosterHeadshot(
     @Req() req: { user: User },
     @Param('id', ParseUUIDPipe) id: string,
@@ -200,16 +200,16 @@ export class PeopleController {
   @ApiBearerAuth()
   @ApiParam({ name: 'id', description: 'Person UUID' })
   @ApiOperation({
-    summary: 'Update a directory person (self or editor/admin)',
+    summary: 'Update a directory person (self or admin)',
     description:
-      'Editors and admins may update any field. Viewers may update only their own linked directory row (profile fields and share-with-members toggles); `kind` and `externalContactId` are ignored for self-service.',
+      'Site administrators may update any directory row (admin panel). Signed-in members may update only their own linked profile (contact fields and share toggles); `kind` and `externalContactId` are ignored for self-service.',
   })
   @ApiResponse({ status: HttpStatus.OK, type: PersonResponseDto })
   @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'Person not found' })
   @ApiResponse({ status: HttpStatus.CONFLICT, description: 'Email already in use' })
   @ApiResponse({
     status: HttpStatus.FORBIDDEN,
-    description: 'Must be the directory person or an editor/admin',
+    description: 'Must be the directory person or a site administrator',
   })
   async update(
     @Req() req: { user: User },
@@ -221,34 +221,34 @@ export class PeopleController {
 
   @Delete(':id')
   @UseGuards(JwtAuthGuard, UserLookupGuard, RolesGuard)
-  @Roles(UserRole.EDITOR, UserRole.ADMIN)
+  @Roles(UserRole.ADMIN)
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiBearerAuth()
   @ApiParam({ name: 'id', description: 'Person UUID' })
   @ApiOperation({
-    summary: 'Remove a directory person (editor/admin)',
+    summary: 'Remove a directory person (admin only)',
     description: 'Soft-deletes the person; they no longer appear in the public directory.',
   })
   @ApiResponse({ status: HttpStatus.NO_CONTENT, description: 'Person removed' })
   @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'Person not found' })
-  @ApiResponse({ status: HttpStatus.FORBIDDEN, description: 'Editor or admin required' })
+  @ApiResponse({ status: HttpStatus.FORBIDDEN, description: 'Admin required' })
   async remove(@Param('id', ParseUUIDPipe) id: string): Promise<void> {
     return this.peopleService.remove(id)
   }
 
   @Post()
   @UseGuards(JwtAuthGuard, UserLookupGuard, RolesGuard)
-  @Roles(UserRole.EDITOR, UserRole.ADMIN)
+  @Roles(UserRole.ADMIN)
   @HttpCode(HttpStatus.CREATED)
   @ApiBearerAuth()
   @ApiOperation({
-    summary: 'Create a chapter directory person (editor/admin)',
+    summary: 'Create a chapter directory person (admin only)',
     description: 'Adds one member and/or parent record with unique email.',
   })
   @ApiResponse({ status: HttpStatus.CREATED, type: PersonResponseDto })
   @ApiResponse({ status: HttpStatus.BAD_REQUEST, description: 'Validation failed' })
   @ApiResponse({ status: HttpStatus.CONFLICT, description: 'Email already in use' })
-  @ApiResponse({ status: HttpStatus.FORBIDDEN, description: 'Editor or admin required' })
+  @ApiResponse({ status: HttpStatus.FORBIDDEN, description: 'Admin required' })
   async create(@Body() dto: CreatePersonDto): Promise<PersonResponseDto> {
     return this.peopleService.create(dto)
   }

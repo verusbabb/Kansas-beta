@@ -908,7 +908,7 @@ watch([searchQuery, yearFilter, roleFilter, showLegacyTiesOnly], () => {
   directoryTableFirst.value = 0
 })
 
-const canEdit = computed(() => props.variant === 'admin' && authStore.isEditor)
+const canEdit = computed(() => props.variant === 'admin' && authStore.isAdmin)
 
 const tableMinWidthClass = computed(() => {
   if (props.variant === 'admin' && canEdit.value) return 'min-w-[860px]'

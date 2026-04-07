@@ -9,12 +9,14 @@ import {
   HttpCode,
   HttpStatus,
   UseGuards,
+  ParseUUIDPipe,
 } from '@nestjs/common'
 import { ApiOperation, ApiResponse, ApiTags, ApiBearerAuth } from '@nestjs/swagger'
 import { PinoLogger } from 'nestjs-pino'
 import { UsersService } from './users.service'
 import { CreateUserDto } from './dto/create-user.dto'
 import { UpdateUserDto } from './dto/update-user.dto'
+import { AssignDirectoryUserRoleDto } from './dto/assign-directory-user-role.dto'
 import { UserResponseDto } from './dto/user-response.dto'
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard'
 import { RolesGuard } from '../auth/guards/roles.guard'
@@ -50,6 +52,28 @@ export class UsersController {
   @ApiResponse({ status: HttpStatus.CONFLICT, description: 'User with email already exists' })
   async create(@Body() createUserDto: CreateUserDto): Promise<UserResponseDto> {
     return this.usersService.create(createUserDto)
+  }
+
+  @Patch('directory-person/:personId')
+  @UseGuards(JwtAuthGuard, UserLookupGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  @ApiOperation({
+    summary: 'Assign or update app role for a directory person (admin only)',
+    description:
+      'Creates an app user from the directory row if needed, or updates role and links `personId`. Uses the directory email and name.',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'User created or updated',
+    type: UserResponseDto,
+  })
+  @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'Directory person not found' })
+  @ApiResponse({ status: HttpStatus.CONFLICT, description: 'Email already linked to another person' })
+  async assignDirectoryPersonRole(
+    @Param('personId', ParseUUIDPipe) personId: string,
+    @Body() dto: AssignDirectoryUserRoleDto,
+  ): Promise<UserResponseDto> {
+    return this.usersService.assignRoleForDirectoryPerson(personId, dto.role)
   }
 
   @Get('me')

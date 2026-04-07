@@ -10,11 +10,12 @@ export class ExecRosterPersonDto {
   @ApiProperty()
   lastName!: string
 
-  @ApiProperty({
+  @ApiPropertyOptional({
+    nullable: true,
     description:
-      'Public contact email for this exec role (chapter mailbox). Falls back to member personal email if unmapped.',
+      'Present only for the current term: public contact email for this exec role (chapter mailbox), or member email if unmapped. Omitted for historical terms.',
   })
-  email!: string
+  email?: string | null
 
   @ApiPropertyOptional()
   phone?: string | null

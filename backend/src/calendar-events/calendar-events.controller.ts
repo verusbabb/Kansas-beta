@@ -38,7 +38,7 @@ export class CalendarEventsController {
   @HttpCode(HttpStatus.CREATED)
   @ApiBearerAuth()
   @ApiOperation({
-    summary: 'Create a new calendar event (editor/admin only)',
+    summary: 'Create a new calendar event (editor/admin)',
     description:
       'Create a new calendar event with name, description, date range, and optional times',
   })
@@ -57,7 +57,7 @@ export class CalendarEventsController {
   })
   @ApiResponse({
     status: 403,
-    description: 'Forbidden - Editor or Admin role required',
+    description: 'Forbidden - Editor or admin role required',
   })
   async create(
     @Body() createCalendarEventDto: CreateCalendarEventDto,
@@ -85,7 +85,7 @@ export class CalendarEventsController {
   @Roles(UserRole.EDITOR, UserRole.ADMIN)
   @ApiBearerAuth()
   @ApiOperation({
-    summary: 'Get all calendar events (editor/admin only)',
+    summary: 'Get all calendar events (editor/admin)',
     description:
       'Retrieve all calendar events including past events, sorted by start date and time',
   })
@@ -100,7 +100,7 @@ export class CalendarEventsController {
   })
   @ApiResponse({
     status: 403,
-    description: 'Forbidden - Editor or Admin role required',
+    description: 'Forbidden - Editor or admin role required',
   })
   async findAll(): Promise<CalendarEventResponseDto[]> {
     return this.calendarEventsService.findAll()
@@ -134,7 +134,7 @@ export class CalendarEventsController {
   @Roles(UserRole.EDITOR, UserRole.ADMIN)
   @ApiBearerAuth()
   @ApiOperation({
-    summary: 'Update a calendar event (editor/admin only)',
+    summary: 'Update a calendar event (editor/admin)',
     description: 'Update an existing calendar event by its UUID',
   })
   @ApiParam({
@@ -157,7 +157,7 @@ export class CalendarEventsController {
   })
   @ApiResponse({
     status: 403,
-    description: 'Forbidden - Editor or Admin role required',
+    description: 'Forbidden - Editor or admin role required',
   })
   @ApiResponse({
     status: 404,
@@ -176,7 +176,7 @@ export class CalendarEventsController {
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiBearerAuth()
   @ApiOperation({
-    summary: 'Delete a calendar event (editor/admin only)',
+    summary: 'Delete a calendar event (editor/admin)',
     description: 'Soft delete a calendar event by its UUID',
   })
   @ApiParam({
@@ -194,7 +194,7 @@ export class CalendarEventsController {
   })
   @ApiResponse({
     status: 403,
-    description: 'Forbidden - Editor or Admin role required',
+    description: 'Forbidden - Editor or admin role required',
   })
   @ApiResponse({
     status: 404,

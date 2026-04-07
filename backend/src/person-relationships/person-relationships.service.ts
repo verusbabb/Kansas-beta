@@ -38,19 +38,19 @@ export class PersonRelationshipsService {
     this.logger.setContext(PersonRelationshipsService.name)
   }
 
-  /** Editors/admins, or the directory person when `users.personId` matches `personId`. */
+  /** Site admins, or the directory person when `users.personId` matches `personId`. */
   private assertCanManageRelationshipsForPerson(personId: string, viewer: User): void {
-    const editor = viewer.role === UserRole.EDITOR || viewer.role === UserRole.ADMIN
+    const isAdmin = viewer.role === UserRole.ADMIN
     const self = viewer.personId != null && viewer.personId === personId
-    if (!editor && !self) {
+    if (!isAdmin && !self) {
       throw new ForbiddenException(
-        'You can only manage connections for your own profile unless you are an editor or admin.',
+        'You can only manage connections for your own profile unless you are a site administrator.',
       )
     }
   }
 
-  private viewerIsEditorOrAdmin(viewer: User | undefined): boolean {
-    return viewer?.role === UserRole.EDITOR || viewer?.role === UserRole.ADMIN
+  private viewerIsAdmin(viewer: User | undefined): boolean {
+    return viewer?.role === UserRole.ADMIN
   }
 
   private isSelfView(viewer: User | undefined, person: Person): boolean {
@@ -62,7 +62,7 @@ export class PersonRelationshipsService {
   private counterpartDto(person: Person, viewer?: User): PersonRelationshipCounterpartDto {
     const hasEmailOnFile = !!person.email?.trim()
     let email: string | null = person.email
-    if (!this.viewerIsEditorOrAdmin(viewer)) {
+    if (!this.viewerIsAdmin(viewer)) {
       if (!viewer) {
         email = null
       } else if (!this.isSelfView(viewer, person) && !person.shareEmailWithLoggedInMembers) {
