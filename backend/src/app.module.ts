@@ -13,6 +13,7 @@ import { CalendarEventsModule } from './calendar-events/calendar-events.module'
 import { RushEventsModule } from './rush-events/rush-events.module'
 import { RushPageWidgetsModule } from './rush-page-widgets/rush-page-widgets.module'
 import { HeroImagesModule } from './hero-images/hero-images.module'
+import { RushPhotosModule } from './rush-photos/rush-photos.module'
 import { PeopleModule } from './people/people.module'
 import { PersonRelationshipsModule } from './person-relationships/person-relationships.module'
 import { ExecTeamModule } from './exec-team/exec-team.module'
@@ -32,6 +33,7 @@ import { AppConfig } from './config/configuration'
     RushEventsModule, // Rush timeline events API
     RushPageWidgetsModule, // Why Rush cards on /rush
     HeroImagesModule, // Hero images API
+    RushPhotosModule, // Rush page photos API
     PeopleModule, // Chapter directory (members/parents)
     PersonRelationshipsModule, // Legacy / family links between people
     ExecTeamModule, // Executive team terms and roster

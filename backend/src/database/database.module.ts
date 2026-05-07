@@ -16,6 +16,7 @@ import { ExecAssignment } from './entities/exec-assignment.entity'
 import { HouseMom } from './entities/house-mom.entity'
 import { RushEvent } from './entities/rush-event.entity'
 import { RushPageWidget } from './entities/rush-page-widget.entity'
+import { RushPhoto } from './entities/rush-photo.entity'
 
 @Module({
   imports: [
@@ -82,6 +83,7 @@ import { RushPageWidget } from './entities/rush-page-widget.entity'
           CalendarEvent,
           RushEvent,
           RushPageWidget,
+          RushPhoto,
           HeroImage,
           Person,
           PersonRelationship,
@@ -102,6 +104,7 @@ import { RushPageWidget } from './entities/rush-page-widget.entity'
       CalendarEvent,
       RushEvent,
       RushPageWidget,
+      RushPhoto,
       HeroImage,
       Person,
       PersonRelationship,

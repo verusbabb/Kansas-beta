@@ -162,7 +162,7 @@
       </Card>
     </div>
 
-    <Card class="mb-6">
+    <Card class="mb-6 min-w-0">
       <template #title>
         <div class="flex items-center gap-2">
           <i class="pi pi-list text-[#6F8FAF]"></i>
@@ -182,15 +182,15 @@
           </p>
         </div>
 
-        <div v-else class="flex flex-col gap-4">
+        <div v-else class="admin-rush-event-cards flex flex-col gap-4 min-w-0">
           <Card
             v-for="ev in sortedEvents"
             :key="ev.id"
-            class="cursor-pointer hover:shadow-lg transition-shadow"
+            class="min-w-0 max-w-full cursor-pointer hover:shadow-lg transition-shadow"
             @click="editEvent(ev)"
           >
             <template #content>
-              <div class="flex flex-col md:flex-row gap-4">
+              <div class="flex flex-col md:flex-row gap-4 min-w-0">
                 <div class="flex-shrink-0">
                   <div
                     class="w-16 h-16 bg-gradient-to-br from-[#5A7A9F] to-[#6F8FAF] rounded-lg flex items-center justify-center text-white"
@@ -199,15 +199,17 @@
                   </div>
                 </div>
                 <div class="flex-1 min-w-0">
-                  <div class="flex flex-col md:flex-row md:items-start md:justify-between gap-2 mb-2">
-                    <div>
-                      <h3 class="text-xl font-bold text-surface-900">{{ ev.title }}</h3>
-                      <p class="text-surface-600 text-sm mt-1">
+                  <div
+                    class="flex flex-col md:flex-row md:items-start md:justify-between gap-2 mb-2 min-w-0"
+                  >
+                    <div class="min-w-0 flex-1 md:pr-2">
+                      <h3 class="text-xl font-bold text-surface-900 break-words">{{ ev.title }}</h3>
+                      <p class="text-surface-600 text-sm mt-1 break-words">
                         {{ ev.displayDate }}
-                        <span v-if="ev.location" class="ml-2">
+                        <span v-if="ev.location" class="ml-2 inline-block">
                           <i class="pi pi-map-marker mr-1"></i>{{ ev.location }}
                         </span>
-                        <span v-if="ev.timeLabel" class="ml-2">
+                        <span v-if="ev.timeLabel" class="ml-2 inline-block">
                           <i class="pi pi-clock mr-1"></i>{{ ev.timeLabel }}
                         </span>
                       </p>
@@ -234,7 +236,7 @@
                   </div>
                   <div
                     v-if="ev.description"
-                    class="text-surface-600 line-clamp-2"
+                    class="rush-event-desc-preview text-surface-600 line-clamp-2"
                     v-html="ev.description"
                   ></div>
                 </div>
@@ -471,6 +473,27 @@ onMounted(async () => {
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+}
+
+.rush-event-desc-preview {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  max-width: 100%;
+}
+
+.rush-event-desc-preview :deep(img) {
+  max-width: 100%;
+  height: auto;
+}
+
+.admin-rush-event-cards :deep(.p-card .p-card-body) {
+  min-width: 0;
+}
+
+.rush-event-desc-preview :deep(p),
+.rush-event-desc-preview :deep(li) {
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 :deep(.p-editor-toolbar > span.ql-formats) {

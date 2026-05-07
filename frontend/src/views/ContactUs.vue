@@ -48,15 +48,25 @@
 
               <div class="flex flex-col gap-2">
                 <label for="subject" class="font-semibold">Subject *</label>
-                <Select 
+                <Select
                   id="subject"
-                  v-model="form.subject" 
+                  v-model="form.subject"
                   :options="subjectOptions"
+                  optionLabel="label"
+                  optionValue="value"
                   placeholder="Select a subject"
                   :class="{ 'p-invalid': errors.subject }"
-                  required
                 />
                 <small v-if="errors.subject" class="p-error">{{ errors.subject }}</small>
+              </div>
+
+              <div v-if="recipientEmail" class="flex flex-col gap-2">
+                <label class="font-semibold text-surface-600">To</label>
+                <div class="flex items-center gap-2 px-3 py-2 bg-surface-100 border border-surface-200 rounded-md text-surface-700 text-sm">
+                  <i class="pi pi-envelope text-[#6F8FAF]"></i>
+                  <span>{{ recipientEmail }}</span>
+                </div>
+                <small class="text-surface-500 text-xs">Your message will be addressed to this chapter mailbox.</small>
               </div>
 
               <div class="flex flex-col gap-2">
@@ -72,14 +82,15 @@
                 <small v-if="errors.message" class="p-error">{{ errors.message }}</small>
               </div>
 
-              <Button 
+              <Button
                 type="submit"
-                label="Send Message" 
+                label="Open in Email App"
                 icon="pi pi-send"
-                :loading="isSubmitting"
-                :disabled="isSubmitting"
                 class="bg-gray-500 hover:bg-gray-600"
               />
+              <small class="text-surface-500 text-xs -mt-2">
+                Clicking "Open in Email App" will open your default mail app with the message pre-filled.
+              </small>
             </form>
           </template>
         </Card>
@@ -98,28 +109,34 @@
                     <h3 class="font-bold mb-1">Address</h3>
                     <p class="text-surface-700">
                       Beta Theta Pi - Alpha Nu Chapter<br>
-                      University of Kansas<br>
-                      Lawrence, KS 66045
+                      1425 Tennessee Street<br>
+                      Lawrence, KS 66044
                     </p>
                   </div>
                 </div>
 
-                <div class="flex items-start gap-3">
-                  <i class="pi pi-envelope text-2xl text-[#6F8FAF] mt-1"></i>
-                  <div>
-                    <h3 class="font-bold mb-1">Email</h3>
-                    <a href="mailto:contact@betathetapi-ku.org" class="text-[#6F8FAF] hover:underline">
-                      contact@betathetapi-ku.org
-                    </a>
-                  </div>
-                </div>
-
-                <div class="flex items-start gap-3">
-                  <i class="pi pi-phone text-2xl text-[#6F8FAF] mt-1"></i>
-                  <div>
-                    <h3 class="font-bold mb-1">Phone</h3>
-                    <p class="text-surface-700">(785) XXX-XXXX</p>
-                  </div>
+                <div class="flex items-center gap-3">
+                  <i class="pi pi-instagram text-2xl text-[#6F8FAF]"></i>
+                  <Button
+                    label="Instagram"
+                    text
+                    class="!p-0 text-[#6F8FAF] hover:underline"
+                    @click="openSocial('instagram')"
+                  />
+                  <i class="pi pi-facebook text-2xl text-[#6F8FAF] ml-4"></i>
+                  <Button
+                    label="Facebook"
+                    text
+                    class="!p-0 text-[#6F8FAF] hover:underline"
+                    @click="openSocial('facebook')"
+                  />
+                  <i class="pi pi-twitter text-2xl text-[#6F8FAF] ml-4"></i>
+                  <Button
+                    label="X"
+                    text
+                    class="!p-0 text-[#6F8FAF] hover:underline"
+                    @click="openSocial('twitter')"
+                  />
                 </div>
               </div>
             </template>
@@ -135,43 +152,11 @@
                   <i :class="leader.icon" class="text-xl text-[#6F8FAF] mt-1"></i>
                   <div>
                     <h3 class="font-bold">{{ leader.role }}</h3>
-                    <p class="text-surface-700">{{ leader.name }}</p>
-                    <a v-if="leader.email" :href="`mailto:${leader.email}`" class="text-[#6F8FAF] hover:underline text-sm">
+                    <a :href="`mailto:${leader.email}`" class="text-[#6F8FAF] hover:underline text-sm">
                       {{ leader.email }}
                     </a>
                   </div>
                 </div>
-              </div>
-            </template>
-          </Card>
-
-          <Card>
-            <template #title>
-              Social Media
-            </template>
-            <template #content>
-              <div class="flex gap-4">
-                <Button 
-                  icon="pi pi-instagram" 
-                  rounded
-                  outlined
-                  aria-label="Instagram"
-                  @click="openSocial('instagram')"
-                />
-                <Button 
-                  icon="pi pi-facebook" 
-                  rounded
-                  outlined
-                  aria-label="Facebook"
-                  @click="openSocial('facebook')"
-                />
-                <Button 
-                  icon="pi pi-twitter" 
-                  rounded
-                  outlined
-                  aria-label="Twitter"
-                  @click="openSocial('twitter')"
-                />
               </div>
             </template>
           </Card>
@@ -182,17 +167,12 @@
 </template>
 
 <script setup>
-  import { ref } from 'vue'
+  import { ref, computed } from 'vue'
   import Card from 'primevue/card'
   import InputText from 'primevue/inputtext'
   import Select from 'primevue/select'
   import Textarea from 'primevue/textarea'
   import Button from 'primevue/button'
-  import { useToastStore } from '@/stores/toast'
-  import { useContactStore } from '@/stores/contact'
-
-  const contactStore = useContactStore()
-  const toastStore = useToastStore()
 
   const form = ref({
     name: '',
@@ -202,33 +182,46 @@
   })
 
   const errors = ref({})
-  const isSubmitting = ref(false)
 
   const subjectOptions = [
     { label: 'General Inquiry', value: 'general' },
     { label: 'Rush Information', value: 'rush' },
-    { label: 'Alumni Relations', value: 'alumni' },
+    { label: 'External / Alumni Relations', value: 'alumni' },
     { label: 'Event Information', value: 'events' },
     { label: 'Other', value: 'other' }
   ]
 
+  /** Maps subject value → chapter role mailbox */
+  const SUBJECT_EMAIL_MAP = {
+    general: 'president@kansasbeta.org',
+    rush:    'recruitment@kansasbeta.org',
+    alumni:  'vp-external@kansasbeta.org',
+    events:  'vp-external@kansasbeta.org',
+    other:   'president@kansasbeta.org',
+  }
+
+  const recipientEmail = computed(() =>
+    form.value.subject ? (SUBJECT_EMAIL_MAP[form.value.subject] ?? 'president@kansasbeta.org') : ''
+  )
+
+  const subjectLabel = computed(() =>
+    subjectOptions.find((o) => o.value === form.value.subject)?.label ?? ''
+  )
+
   const leadershipContacts = ref([
     {
       role: 'Chapter President',
-      name: 'TBD',
-      email: 'president@betathetapi-ku.org',
+      email: 'president@kansasbeta.org',
       icon: 'pi pi-user'
     },
     {
       role: 'Rush Chair',
-      name: 'TBD',
-      email: 'rush@betathetapi-ku.org',
+      email: 'recruitment@kansasbeta.org',
       icon: 'pi pi-users'
     },
     {
-      role: 'Alumni Relations',
-      name: 'TBD',
-      email: 'alumni@betathetapi-ku.org',
+      role: 'VP External / Alumni Relations',
+      email: 'vp-external@kansasbeta.org',
       icon: 'pi pi-id-card'
     }
   ])
@@ -247,7 +240,7 @@
     }
 
     if (!form.value.subject) {
-      errors.value.subject = 'Subject is required'
+      errors.value.subject = 'Please select a subject'
     }
 
     if (!form.value.message.trim()) {
@@ -257,39 +250,20 @@
     return Object.keys(errors.value).length === 0
   }
 
-  const handleSubmit = async () => {
-    if (!validateForm()) {
-      return
-    }
+  const handleSubmit = () => {
+    if (!validateForm()) return
 
-    isSubmitting.value = true
-    try {
-      await contactStore.submitContactForm(form.value)
-      toastStore.showSuccess('Message sent successfully! We\'ll get back to you soon.', 'Contact Form')
-      
-      // Reset form
-      form.value = {
-        name: '',
-        email: '',
-        subject: '',
-        message: ''
-      }
-    } catch (error) {
-      toastStore.showError('Failed to send message. Please try again.', 'Contact Form')
-      console.error('Contact form error:', error)
-    } finally {
-      isSubmitting.value = false
-    }
+    const to      = encodeURIComponent(recipientEmail.value)
+    const subject = encodeURIComponent(`[Alpha Nu] ${subjectLabel.value} — from ${form.value.name}`)
+    const body    = encodeURIComponent(
+      `Name: ${form.value.name}\nEmail: ${form.value.email}\n\n${form.value.message}`
+    )
+
+    window.location.href = `mailto:${to}?subject=${subject}&body=${body}`
   }
 
-  const openSocial = (platform) => {
-    // Placeholder - will be updated with actual social media links
-    const links = {
-      instagram: 'https://instagram.com/betathetapi_ku',
-      facebook: 'https://facebook.com/betathetapi.ku',
-      twitter: 'https://twitter.com/betathetapi_ku'
-    }
-    window.open(links[platform], '_blank')
+  const openSocial = (_platform) => {
+    // Social media links not yet configured
   }
 </script>
 

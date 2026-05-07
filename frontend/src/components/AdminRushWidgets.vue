@@ -30,7 +30,7 @@
               <div
                 v-if="w.bodyHtml"
                 class="widget-preview text-surface-700 text-sm line-clamp-4 mb-4"
-                v-html="w.bodyHtml"
+                v-html="sanitizeHtml(w.bodyHtml)"
               />
               <p v-else class="text-surface-400 text-sm mb-4 italic">No body content yet.</p>
               <Button
@@ -97,6 +97,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import { sanitizeHtml } from '@/utils/sanitizeHtml'
 import Card from 'primevue/card'
 import Button from 'primevue/button'
 import InputText from 'primevue/inputtext'

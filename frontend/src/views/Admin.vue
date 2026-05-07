@@ -129,6 +129,9 @@
           <!-- Rush timeline events (public /rush timeline) -->
           <AdminRushEvents v-if="activeSection === 'rush'" />
 
+          <!-- Rush photos gallery -->
+          <AdminRushPhotos v-if="activeSection === 'rush-photos'" />
+
           <!-- Health Check Section -->
           <AdminHealthCheck v-if="activeSection === 'health'" />
 
@@ -159,6 +162,7 @@ import AdminCalendarEvents from '@/components/AdminCalendarEvents.vue'
 import AdminUsers from '@/components/AdminUsers.vue'
 import AdminRushEvents from '@/components/AdminRushEvents.vue'
 import AdminRushWidgets from '@/components/AdminRushWidgets.vue'
+import AdminRushPhotos from '@/components/AdminRushPhotos.vue'
 import AdminHealthCheck from '@/components/AdminHealthCheck.vue'
 import AdminOverview from '@/components/AdminOverview.vue'
 import AdminExecTeam from '@/components/AdminExecTeam.vue'
@@ -184,6 +188,7 @@ const validSectionIds = [
   'alumni',
   'rush-widgets',
   'rush',
+  'rush-photos',
   'health',
   'settings-home-images',
 ] as const
@@ -192,7 +197,7 @@ const validSectionIds = [
 const siteContentSectionIds = ['settings-home-images', 'alumni', 'newsletter'] as const
 
 /** Rush page tooling — collapsible nav group. */
-const rushPageSectionIds = ['rush-widgets', 'rush'] as const
+const rushPageSectionIds = ['rush-widgets', 'rush', 'rush-photos'] as const
 
 type SiteContentSectionId = (typeof siteContentSectionIds)[number]
 type RushPageSectionId = (typeof rushPageSectionIds)[number]
@@ -384,6 +389,11 @@ const manageRushPageNav = {
       id: 'rush',
       label: 'Rush Events',
       icon: 'pi pi-star',
+    },
+    {
+      id: 'rush-photos',
+      label: 'Rush Photos',
+      icon: 'pi pi-images',
     },
   ],
 } as const
