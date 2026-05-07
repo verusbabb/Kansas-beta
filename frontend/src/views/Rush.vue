@@ -16,58 +16,28 @@
       <!-- Why Rush Section -->
       <div class="mb-16">
         <h2 class="text-3xl font-bold text-surface-900 mb-8 text-center">Why Rush Beta Theta Pi?</h2>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-          <Card>
+        <div v-if="widgetStore.loading && whyWidgets.length === 0" class="text-center py-12 text-surface-600">
+          <i class="pi pi-spin pi-spinner text-4xl text-[#6F8FAF] mb-4 block"></i>
+          Loading…
+        </div>
+        <div
+          v-else-if="whyWidgets.length === 0"
+          class="text-center py-8 text-surface-500 max-w-xl mx-auto"
+        >
+          <p>Content for this section is not available yet.</p>
+        </div>
+        <div v-else class="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <Card v-for="w in whyWidgets" :key="w.id">
             <template #content>
               <div class="flex items-start gap-4">
-                <i class="pi pi-check-circle text-3xl text-gray-500"></i>
-                <div>
-                  <h3 class="text-xl font-bold mb-2">Lifelong Brotherhood</h3>
-                  <p class="text-surface-700">
-                    Build lasting friendships and connections that extend far beyond your college years.
-                  </p>
-                </div>
-              </div>
-            </template>
-          </Card>
-
-          <Card>
-            <template #content>
-              <div class="flex items-start gap-4">
-                <i class="pi pi-check-circle text-3xl text-gray-500"></i>
-                <div>
-                  <h3 class="text-xl font-bold mb-2">Academic Excellence</h3>
-                  <p class="text-surface-700">
-                    Join a community that values scholarship and supports your academic success.
-                  </p>
-                </div>
-              </div>
-            </template>
-          </Card>
-
-          <Card>
-            <template #content>
-              <div class="flex items-start gap-4">
-                <i class="pi pi-check-circle text-3xl text-gray-500"></i>
-                <div>
-                  <h3 class="text-xl font-bold mb-2">Leadership Development</h3>
-                  <p class="text-surface-700">
-                    Develop leadership skills through chapter positions and campus involvement.
-                  </p>
-                </div>
-              </div>
-            </template>
-          </Card>
-
-          <Card>
-            <template #content>
-              <div class="flex items-start gap-4">
-                <i class="pi pi-check-circle text-3xl text-gray-500"></i>
-                <div>
-                  <h3 class="text-xl font-bold mb-2">Professional Network</h3>
-                  <p class="text-surface-700">
-                    Connect with alumni and brothers who can help launch your career.
-                  </p>
+                <i class="pi pi-check-circle text-3xl text-gray-500 shrink-0"></i>
+                <div class="min-w-0 flex-1">
+                  <h3 class="text-xl font-bold mb-2">{{ w.title }}</h3>
+                  <div
+                    v-if="w.bodyHtml"
+                    class="rush-widget-body text-surface-700"
+                    v-html="w.bodyHtml"
+                  ></div>
                 </div>
               </div>
             </template>
@@ -78,9 +48,21 @@
       <!-- Rush Events Timeline -->
       <div class="mb-16">
         <h2 class="text-3xl font-bold text-surface-900 mb-8 text-center">Rush Events</h2>
-        <Timeline :value="rushEvents" align="alternate" class="w-full">
+        <div v-if="rushStore.loading" class="text-center py-12 text-surface-600">
+          <i class="pi pi-spin pi-spinner text-4xl text-[#6F8FAF] mb-4 block"></i>
+          Loading events…
+        </div>
+        <div
+          v-else-if="rushEvents.length === 0"
+          class="text-center py-12 text-surface-600 max-w-xl mx-auto"
+        >
+          <p>Schedule coming soon. Check back for rush week events, or contact the rush chair below.</p>
+        </div>
+        <Timeline v-else :value="rushEvents" align="alternate" class="w-full">
           <template #marker="slotProps">
-            <span class="flex w-2rem h-2rem align-items-center justify-content-center text-white border-circle bg-gray-500 z-1">
+            <span
+              class="flex w-2rem h-2rem align-items-center justify-content-center text-white border-circle bg-gray-500 z-1"
+            >
               <i :class="slotProps.item.icon"></i>
             </span>
           </template>
@@ -90,16 +72,20 @@
                 {{ slotProps.item.title }}
               </template>
               <template #subtitle>
-                {{ slotProps.item.date }}
+                {{ slotProps.item.displayDate }}
                 <span v-if="slotProps.item.location" class="ml-2 text-surface-500">
                   <i class="pi pi-map-marker mr-1"></i>{{ slotProps.item.location }}
                 </span>
-                <span v-if="slotProps.item.time" class="ml-2 text-surface-500">
-                  <i class="pi pi-clock mr-1"></i>{{ slotProps.item.time }}
+                <span v-if="slotProps.item.timeLabel" class="ml-2 text-surface-500">
+                  <i class="pi pi-clock mr-1"></i>{{ slotProps.item.timeLabel }}
                 </span>
               </template>
               <template #content>
-                <p>{{ slotProps.item.description }}</p>
+                <div
+                  v-if="slotProps.item.description"
+                  class="rush-event-body text-surface-700"
+                  v-html="slotProps.item.description"
+                ></div>
               </template>
             </Card>
           </template>
@@ -124,26 +110,73 @@
   </div>
 </template>
 
-<script setup>
-  import { ref, onMounted } from 'vue'
-  import Card from 'primevue/card'
-  import Timeline from 'primevue/timeline'
-  import Button from 'primevue/button'
-  import { useRushStore } from '@/stores/rush'
+<script setup lang="ts">
+import { computed, onMounted } from 'vue'
+import Card from 'primevue/card'
+import Timeline from 'primevue/timeline'
+import Button from 'primevue/button'
+import { useRushStore } from '@/stores/rush'
+import { useRushPageWidgetStore } from '@/stores/rushPageWidget'
 
-  const rushStore = useRushStore()
-  const rushEvents = ref([])
+const rushStore = useRushStore()
+const widgetStore = useRushPageWidgetStore()
 
-  onMounted(async () => {
-    await rushStore.fetchRushEvents()
-    rushEvents.value = rushStore.events
-  })
+const whyWidgets = computed(() =>
+  [...widgetStore.widgets].sort((a, b) => a.slotIndex - b.slotIndex),
+)
+
+const rushEvents = computed(() =>
+  [...rushStore.events].sort((a, b) => {
+    if (a.sortOrder !== b.sortOrder) return a.sortOrder - b.sortOrder
+    return a.title.localeCompare(b.title)
+  }),
+)
+
+onMounted(async () => {
+  await Promise.all([rushStore.fetchRushEvents(), widgetStore.fetchPublic()])
+})
 </script>
 
 <style scoped>
-  :deep(.p-timeline-event-marker) {
-    background-color: #9ca3af;
-    border-color: #9ca3af;
-  }
+:deep(.p-timeline-event-marker) {
+  background-color: #9ca3af;
+  border-color: #9ca3af;
+}
+
+.rush-event-body :deep(ul),
+.rush-event-body :deep(ol) {
+  margin-left: 1.25rem;
+  margin-top: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.rush-event-body :deep(p) {
+  margin-top: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.rush-event-body :deep(p:first-child) {
+  margin-top: 0;
+}
+
+.rush-widget-body :deep(ul),
+.rush-widget-body :deep(ol) {
+  margin-left: 1.25rem;
+  margin-top: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.rush-widget-body :deep(p) {
+  margin-top: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.rush-widget-body :deep(p:first-child) {
+  margin-top: 0;
+}
+
+.rush-widget-body :deep(p:last-child) {
+  margin-bottom: 0;
+}
 </style>
 

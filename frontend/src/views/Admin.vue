@@ -9,7 +9,7 @@
           {{
             authStore.isAdmin
               ? 'Manage site content and configuration'
-              : 'Manage site content (home page, calendar, newsletters, rush)'
+              : 'Manage site content, Rush page, and related sections'
           }}
         </div>
         <div class="w-32 h-1 bg-gray-400 mx-auto"></div>
@@ -44,18 +44,18 @@
                     </div>
                   </Button>
 
-                  <!-- Manage Site Content dropdown -->
+                  <!-- Nav group with sub-items -->
                   <div v-else class="flex flex-col">
                     <Button
-                      @click="toggleSiteContentMenu"
+                      @click="toggleNavGroup(item.id)"
                       :class="[
                         'w-full justify-start !p-3',
-                        isSiteContentActive
+                        navGroupIsHighlighted(item)
                           ? 'bg-gray-200 text-[#6F8FAF] font-semibold'
                           : 'hover:bg-gray-100 text-surface-700'
                       ]"
                       text
-                      :severity="isSiteContentActive ? 'secondary' : undefined"
+                      :severity="navGroupIsHighlighted(item) ? 'secondary' : undefined"
                     >
                       <div class="flex items-center gap-3 w-full">
                         <i :class="[item.icon, 'text-lg flex-shrink-0']"></i>
@@ -63,14 +63,14 @@
                         <i 
                           :class="[
                             'pi text-sm flex-shrink-0 transition-transform duration-200',
-                            siteContentMenuOpen ? 'pi-angle-up' : 'pi-angle-down'
+                            navGroupIsOpen(item.id) ? 'pi-angle-up' : 'pi-angle-down'
                           ]"
                         ></i>
                       </div>
                     </Button>
                     <!-- Submenu items -->
                     <div
-                      v-show="siteContentMenuOpen"
+                      v-show="navGroupIsOpen(item.id)"
                       class="flex flex-col gap-1 pl-4 mt-1 overflow-hidden transition-all duration-200"
                     >
                       <Button
@@ -123,30 +123,16 @@
             <AdminCalendarEvents />
           </div>
 
-          <!-- Rush Events Section -->
-          <Card v-if="activeSection === 'rush'" class="mb-6">
-            <template #title>
-              <div class="flex items-center gap-2">
-                <i class="pi pi-calendar text-[#6F8FAF]"></i>
-                <span>Rush Events</span>
-              </div>
-            </template>
-            <template #content>
-              <div class="flex flex-col gap-4">
-                <div class="text-surface-600">
-                  Add, edit, or remove rush events from the rush page.
-                </div>
-                <div class="text-center py-8 text-surface-500">
-                  Rush events management coming soon...
-                </div>
-              </div>
-            </template>
-          </Card>
+          <!-- Rush page widgets ("Why Rush?") -->
+          <AdminRushWidgets v-if="activeSection === 'rush-widgets'" />
+
+          <!-- Rush timeline events (public /rush timeline) -->
+          <AdminRushEvents v-if="activeSection === 'rush'" />
 
           <!-- Health Check Section -->
           <AdminHealthCheck v-if="activeSection === 'health'" />
 
-          <!-- Manage Site Content: Home Page Images -->
+          <!-- Manage Home Page: Home Page Images -->
           <AdminHomePageImages v-if="activeSection === 'settings-home-images'" />
 
           <!-- Overview Section -->
@@ -169,8 +155,10 @@ import {
   adminHasUnsavedChanges,
 } from '@/utils/adminUnsavedRegistry'
 import AdminNewsletters from '@/components/AdminNewsletters.vue'
-import AdminUsers from '@/components/AdminUsers.vue'
 import AdminCalendarEvents from '@/components/AdminCalendarEvents.vue'
+import AdminUsers from '@/components/AdminUsers.vue'
+import AdminRushEvents from '@/components/AdminRushEvents.vue'
+import AdminRushWidgets from '@/components/AdminRushWidgets.vue'
 import AdminHealthCheck from '@/components/AdminHealthCheck.vue'
 import AdminOverview from '@/components/AdminOverview.vue'
 import AdminExecTeam from '@/components/AdminExecTeam.vue'
@@ -194,27 +182,33 @@ const validSectionIds = [
   'exec-team',
   'house-mom',
   'alumni',
+  'rush-widgets',
   'rush',
   'health',
   'settings-home-images',
 ] as const
 
-/** Sub-sections under Manage Site Content (editors + admins). */
-const siteContentSectionIds = [
-  'settings-home-images',
-  'alumni',
-  'newsletter',
-  'rush',
-] as const
+/** Editor-accessible content sections (home images, calendar, newsletters). */
+const siteContentSectionIds = ['settings-home-images', 'alumni', 'newsletter'] as const
+
+/** Rush page tooling — collapsible nav group. */
+const rushPageSectionIds = ['rush-widgets', 'rush'] as const
 
 type SiteContentSectionId = (typeof siteContentSectionIds)[number]
+type RushPageSectionId = (typeof rushPageSectionIds)[number]
 
 function isSiteContentSection(section: string): section is SiteContentSectionId {
   return siteContentSectionIds.includes(section as SiteContentSectionId)
 }
 
-/** Sections editors may open in /admin (Manage Site Content only). */
-const editorPanelSectionIds = siteContentSectionIds
+function isRushPageSection(section: string): section is RushPageSectionId {
+  return rushPageSectionIds.includes(section as RushPageSectionId)
+}
+
+/** Sections editors may open in /admin (home page, calendar, newsletters, rush). */
+function isEditorAllowedSection(section: string): boolean {
+  return isSiteContentSection(section) || isRushPageSection(section)
+}
 
 function normalizedQuerySection(): string | undefined {
   const raw = route.query.section
@@ -226,7 +220,7 @@ function clampSectionForRole(section: string): string {
   if (authStore.isAdmin) {
     return validSectionIds.includes(section as (typeof validSectionIds)[number]) ? section : 'overview'
   }
-  return isSiteContentSection(section) ? section : 'settings-home-images'
+  return isEditorAllowedSection(section) ? section : 'settings-home-images'
 }
 
 const activeSection = ref(
@@ -265,23 +259,38 @@ watch(
   { immediate: true },
 )
 
-const siteContentMenuOpen = ref(false)
+/** Expanded/collapsed state per nav group id (`home-page`, `rush-page`, …). */
+const navGroupExpanded = ref<Record<string, boolean>>({})
 
-const isSiteContentActive = computed(() => isSiteContentSection(activeSection.value))
+function navGroupIsOpen(groupId: string): boolean {
+  return navGroupExpanded.value[groupId] ?? false
+}
+
+function toggleNavGroup(groupId: string) {
+  navGroupExpanded.value = {
+    ...navGroupExpanded.value,
+    [groupId]: !navGroupIsOpen(groupId),
+  }
+}
+
+function navGroupIsHighlighted(item: { items: readonly { id: string }[] }): boolean {
+  return item.items.some((sub) => sub.id === activeSection.value)
+}
+
+function expandNavGroupsForSection(section: string) {
+  const next = { ...navGroupExpanded.value }
+  if (section === 'settings-home-images') next['home-page'] = true
+  if (isRushPageSection(section)) next['rush-page'] = true
+  navGroupExpanded.value = next
+}
 
 watch(
   activeSection,
   (newSection) => {
-    if (isSiteContentSection(newSection)) {
-      siteContentMenuOpen.value = true
-    }
+    expandNavGroupsForSection(newSection)
   },
   { immediate: true },
 )
-
-function toggleSiteContentMenu() {
-  siteContentMenuOpen.value = !siteContentMenuOpen.value
-}
 
 function confirmLeaveUnsavedEdits(): Promise<boolean> {
   if (!adminHasUnsavedChanges()) return Promise.resolve(true)
@@ -320,9 +329,7 @@ const setActiveSection = (section: string) => {
     activeSection.value = section
     router.push({ query: { ...route.query, section } })
 
-    if (isSiteContentSection(section)) {
-      siteContentMenuOpen.value = true
-    }
+    expandNavGroupsForSection(section)
   })()
 }
 
@@ -338,25 +345,40 @@ onUnmounted(() => {
   window.removeEventListener('beforeunload', warnBeforeUnload)
 })
 
-const manageSiteContentNav = {
-  id: 'site-content',
-  label: 'Manage Site Content',
-  icon: 'pi pi-th-large',
+const manageHomePageNav = {
+  id: 'home-page',
+  label: 'Manage Home Page',
+  icon: 'pi pi-home',
   items: [
     {
       id: 'settings-home-images',
       label: 'Home Page Images',
       icon: 'pi pi-image',
     },
+  ],
+} as const
+
+const manageCalendarEventsNavItem = {
+  id: 'alumni',
+  label: 'Manage Calendar Events',
+  icon: 'pi pi-calendar',
+} as const
+
+const manageNewslettersNavItem = {
+  id: 'newsletter',
+  label: 'Manage NewsLetters',
+  icon: 'pi pi-book',
+} as const
+
+const manageRushPageNav = {
+  id: 'rush-page',
+  label: 'Manage Rush Page',
+  icon: 'pi pi-flag',
+  items: [
     {
-      id: 'alumni',
-      label: 'Calendar Events',
-      icon: 'pi pi-calendar',
-    },
-    {
-      id: 'newsletter',
-      label: 'Newsletters',
-      icon: 'pi pi-book',
+      id: 'rush-widgets',
+      label: 'Rush Widget Content',
+      icon: 'pi pi-th-large',
     },
     {
       id: 'rush',
@@ -366,21 +388,26 @@ const manageSiteContentNav = {
   ],
 } as const
 
+/** Order mirrors public Header nav (Home → Rush → NewsLetters → Calendar → People), then admin-only tools, health last. */
 const fullNavItems = [
   {
     id: 'overview',
     label: 'Overview',
-    icon: 'pi pi-home',
+    icon: 'pi pi-chart-bar',
+  },
+  { ...manageHomePageNav },
+  { ...manageRushPageNav },
+  { ...manageNewslettersNavItem },
+  { ...manageCalendarEventsNavItem },
+  {
+    id: 'member',
+    label: 'Add/Manage Members and Parents',
+    icon: 'pi pi-user-plus',
   },
   {
     id: 'users',
     label: 'Add/Manage User Roles',
     icon: 'pi pi-users',
-  },
-  {
-    id: 'member',
-    label: 'Add/Manage Members and Parents',
-    icon: 'pi pi-user-plus',
   },
   {
     id: 'exec-team',
@@ -397,10 +424,14 @@ const fullNavItems = [
     label: 'Check Database Connection',
     icon: 'pi pi-database',
   },
-  { ...manageSiteContentNav },
 ]
 
-const editorNavItems = [{ ...manageSiteContentNav }]
+const editorNavItems = [
+  { ...manageHomePageNav },
+  { ...manageRushPageNav },
+  { ...manageNewslettersNavItem },
+  { ...manageCalendarEventsNavItem },
+]
 
 const navItems = computed(() => (authStore.isAdmin ? fullNavItems : editorNavItems))
 </script>

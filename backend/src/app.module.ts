@@ -10,6 +10,8 @@ import { NewslettersModule } from './newsletters/newsletters.module'
 import { AuthModule } from './auth/auth.module'
 import { UsersModule } from './users/users.module'
 import { CalendarEventsModule } from './calendar-events/calendar-events.module'
+import { RushEventsModule } from './rush-events/rush-events.module'
+import { RushPageWidgetsModule } from './rush-page-widgets/rush-page-widgets.module'
 import { HeroImagesModule } from './hero-images/hero-images.module'
 import { PeopleModule } from './people/people.module'
 import { PersonRelationshipsModule } from './person-relationships/person-relationships.module'
@@ -27,6 +29,8 @@ import { AppConfig } from './config/configuration'
     NewslettersModule, // Newsletters API
     UsersModule, // Users management API
     CalendarEventsModule, // Calendar events API
+    RushEventsModule, // Rush timeline events API
+    RushPageWidgetsModule, // Why Rush cards on /rush
     HeroImagesModule, // Hero images API
     PeopleModule, // Chapter directory (members/parents)
     PersonRelationshipsModule, // Legacy / family links between people

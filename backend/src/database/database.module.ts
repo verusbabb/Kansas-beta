@@ -14,6 +14,8 @@ import { ExecPosition } from './entities/exec-position.entity'
 import { ExecTerm } from './entities/exec-term.entity'
 import { ExecAssignment } from './entities/exec-assignment.entity'
 import { HouseMom } from './entities/house-mom.entity'
+import { RushEvent } from './entities/rush-event.entity'
+import { RushPageWidget } from './entities/rush-page-widget.entity'
 
 @Module({
   imports: [
@@ -78,6 +80,8 @@ import { HouseMom } from './entities/house-mom.entity'
           Newsletter,
           User,
           CalendarEvent,
+          RushEvent,
+          RushPageWidget,
           HeroImage,
           Person,
           PersonRelationship,
@@ -96,6 +100,8 @@ import { HouseMom } from './entities/house-mom.entity'
       Newsletter,
       User,
       CalendarEvent,
+      RushEvent,
+      RushPageWidget,
       HeroImage,
       Person,
       PersonRelationship,

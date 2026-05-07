@@ -43,7 +43,7 @@ export const useAuthStore = defineStore('auth', () => {
     return userRole.value === 'editor'
   })
 
-  /** Admin panel: full nav for admins; Manage Site Content for editors. */
+  /** Admin panel: full nav for admins; site content + Rush page nav for editors. */
   const canAccessAdminPanel = computed(() => {
     return userRole.value === 'admin' || userRole.value === 'editor'
   })
