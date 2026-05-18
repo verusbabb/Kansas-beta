@@ -2,6 +2,7 @@ import { createApp } from 'vue'
 import { createPinia } from 'pinia'
 import PrimeVue from 'primevue/config'
 import Material from '@primevue/themes/material'
+import { definePreset } from '@primevue/themes'
 import Ripple from 'primevue/ripple'
 import Tooltip from 'primevue/tooltip'
 import ToastService from 'primevue/toastservice'
@@ -9,6 +10,28 @@ import ConfirmationService from 'primevue/confirmationservice'
 import 'primeicons/primeicons.css'
 import { createAuth0 } from '@auth0/auth0-vue'
 import { env } from './config/env'
+
+/**
+ * Custom theme preset — replaces PrimeVue Material's default Emerald (green)
+ * primary with a steel-blue palette built around the site's #6F8FAF brand color.
+ */
+const SteelBluePreset = definePreset(Material, {
+  semantic: {
+    primary: {
+      50:  '#f0f4f8',
+      100: '#d8e4ed',
+      200: '#b4cade',
+      300: '#8aafce',
+      400: '#7fa3bf',
+      500: '#6F8FAF',
+      600: '#5a7a9a',
+      700: '#466383',
+      800: '#334c64',
+      900: '#1e3045',
+      950: '#0f1826',
+    },
+  },
+})
 
 import App from './App.vue'
 import router from './router'
@@ -59,7 +82,7 @@ app.use(pinia)
 app.use(router)
 app.use(PrimeVue, {
   theme: {
-    preset: Material,
+    preset: SteelBluePreset,
     options: {
       darkModeSelector: 'false',
     },

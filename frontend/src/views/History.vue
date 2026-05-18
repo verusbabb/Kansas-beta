@@ -53,8 +53,51 @@
       </div>
     </section>
 
-    <!-- Usher Mansion -->
+    <!-- Photo Gallery -->
     <section class="content-section bg-slate-50">
+      <div class="section-inner">
+        <p class="eyebrow text-center">Through the Years</p>
+        <h2 class="section-title text-center">A Glimpse of History</h2>
+        <p class="body-text text-center max-w-2xl mx-auto mb-10">
+          Images from the archive — the mansion, the brothers, the moments that became memory.
+        </p>
+
+        <div v-if="imageStore.loading" class="flex justify-center py-16">
+          <ProgressSpinner />
+        </div>
+
+        <div v-else-if="imageStore.images.length === 0" class="empty-gallery">
+          <i class="pi pi-images empty-gallery-icon"></i>
+          <p>Historical photos coming soon.</p>
+        </div>
+
+        <div v-else class="gallery-grid">
+          <div
+            v-for="img in imageStore.images"
+            :key="img.id"
+            class="gallery-item"
+            @click="openLightbox(img)"
+          >
+            <img
+              v-if="signedUrls[img.id]"
+              :src="signedUrls[img.id]"
+              :alt="img.altText || img.caption || 'Chapter history photo'"
+              class="gallery-img"
+              loading="lazy"
+            />
+            <div v-else class="gallery-img-loading">
+              <i class="pi pi-image gallery-img-placeholder-icon"></i>
+            </div>
+            <div v-if="img.caption" class="gallery-caption-overlay">
+              <span>{{ img.caption }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Usher Mansion -->
+    <section class="content-section bg-white">
       <div class="section-inner">
         <p class="eyebrow text-center">The Chapter House</p>
         <h2 class="section-title text-center">The Usher Mansion</h2>
@@ -116,7 +159,7 @@
     </section>
 
     <!-- Timeline / Milestones -->
-    <section class="content-section bg-white">
+    <section class="content-section bg-slate-50">
       <div class="section-inner">
         <p class="eyebrow text-center">A Century and a Half</p>
         <h2 class="section-title text-center">Chapter Milestones</h2>
@@ -192,49 +235,6 @@
             </div>
             <h3 class="tradition-name">{{ tradition.name }}</h3>
             <p class="tradition-body">{{ tradition.body }}</p>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- Photo Gallery -->
-    <section class="content-section bg-white">
-      <div class="section-inner">
-        <p class="eyebrow text-center">Through the Years</p>
-        <h2 class="section-title text-center">A Glimpse of History</h2>
-        <p class="body-text text-center max-w-2xl mx-auto mb-10">
-          Images from the archive — the mansion, the brothers, the moments that became memory.
-        </p>
-
-        <div v-if="imageStore.loading" class="flex justify-center py-16">
-          <ProgressSpinner />
-        </div>
-
-        <div v-else-if="imageStore.images.length === 0" class="empty-gallery">
-          <i class="pi pi-images empty-gallery-icon"></i>
-          <p>Historical photos coming soon.</p>
-        </div>
-
-        <div v-else class="gallery-grid">
-          <div
-            v-for="img in imageStore.images"
-            :key="img.id"
-            class="gallery-item"
-            @click="openLightbox(img)"
-          >
-            <img
-              v-if="signedUrls[img.id]"
-              :src="signedUrls[img.id]"
-              :alt="img.altText || img.caption || 'Chapter history photo'"
-              class="gallery-img"
-              loading="lazy"
-            />
-            <div v-else class="gallery-img-loading">
-              <i class="pi pi-image gallery-img-placeholder-icon"></i>
-            </div>
-            <div v-if="img.caption" class="gallery-caption-overlay">
-              <span>{{ img.caption }}</span>
-            </div>
           </div>
         </div>
       </div>
