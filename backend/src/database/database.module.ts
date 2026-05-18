@@ -17,6 +17,7 @@ import { HouseMom } from './entities/house-mom.entity'
 import { RushEvent } from './entities/rush-event.entity'
 import { RushPageWidget } from './entities/rush-page-widget.entity'
 import { RushPhoto } from './entities/rush-photo.entity'
+import { HistoryImage } from './entities/history-image.entity'
 
 @Module({
   imports: [
@@ -84,6 +85,7 @@ import { RushPhoto } from './entities/rush-photo.entity'
           RushEvent,
           RushPageWidget,
           RushPhoto,
+          HistoryImage,
           HeroImage,
           Person,
           PersonRelationship,
@@ -105,6 +107,7 @@ import { RushPhoto } from './entities/rush-photo.entity'
       RushEvent,
       RushPageWidget,
       RushPhoto,
+      HistoryImage,
       HeroImage,
       Person,
       PersonRelationship,

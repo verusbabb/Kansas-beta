@@ -10,14 +10,12 @@ const DEFAULT_WIDGETS = [
   {
     slotIndex: 1,
     title: 'Academic Excellence',
-    bodyHtml:
-      '<p>Join a community that values scholarship and supports your academic success.</p>',
+    bodyHtml: '<p>Join a community that values scholarship and supports your academic success.</p>',
   },
   {
     slotIndex: 2,
     title: 'Leadership Development',
-    bodyHtml:
-      '<p>Develop leadership skills through chapter positions and campus involvement.</p>',
+    bodyHtml: '<p>Develop leadership skills through chapter positions and campus involvement.</p>',
   },
   {
     slotIndex: 3,

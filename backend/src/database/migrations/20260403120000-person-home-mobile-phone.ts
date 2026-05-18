@@ -6,12 +6,8 @@ import { QueryInterface } from 'sequelize'
 export async function up(queryInterface: QueryInterface): Promise<void> {
   const sequelize = queryInterface.sequelize
 
-  await sequelize.query(
-    `ALTER TABLE people ADD COLUMN IF NOT EXISTS "homePhone" VARCHAR(255);`,
-  )
-  await sequelize.query(
-    `ALTER TABLE people ADD COLUMN IF NOT EXISTS "mobilePhone" VARCHAR(255);`,
-  )
+  await sequelize.query(`ALTER TABLE people ADD COLUMN IF NOT EXISTS "homePhone" VARCHAR(255);`)
+  await sequelize.query(`ALTER TABLE people ADD COLUMN IF NOT EXISTS "mobilePhone" VARCHAR(255);`)
 
   // Legacy column may already be gone (manual schema / partial run); only migrate when present.
   await sequelize.query(`

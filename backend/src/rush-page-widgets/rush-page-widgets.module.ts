@@ -8,10 +8,7 @@ import { Person } from '../database/entities/person.entity'
 import { AuthModule } from '../auth/auth.module'
 
 @Module({
-  imports: [
-    SequelizeModule.forFeature([RushPageWidget, User, Person]),
-    AuthModule,
-  ],
+  imports: [SequelizeModule.forFeature([RushPageWidget, User, Person]), AuthModule],
   controllers: [RushPageWidgetsController],
   providers: [RushPageWidgetsService],
   exports: [RushPageWidgetsService],

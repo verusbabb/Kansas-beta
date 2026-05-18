@@ -42,6 +42,6 @@ export async function up(queryInterface: QueryInterface): Promise<void> {
   `)
 }
 
-export async function down(_queryInterface: QueryInterface): Promise<void> {
+export async function down(): Promise<void> {
   /* Irreversible normalization. */
 }

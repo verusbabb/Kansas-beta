@@ -113,7 +113,10 @@ export class PeopleController {
       'Current photo for the person profile and directory. Members and parents. Stored under `people-profile-headshots/` in GCS.',
   })
   @ApiResponse({ status: HttpStatus.OK, type: PersonResponseDto })
-  @ApiResponse({ status: HttpStatus.FORBIDDEN, description: 'Not your linked profile and not admin' })
+  @ApiResponse({
+    status: HttpStatus.FORBIDDEN,
+    description: 'Not your linked profile and not admin',
+  })
   async uploadProfileHeadshot(
     @Req() req: { user: User },
     @Param('id', ParseUUIDPipe) id: string,
@@ -140,7 +143,10 @@ export class PeopleController {
   @ApiParam({ name: 'id', description: 'Person UUID' })
   @ApiOperation({ summary: 'Remove directory/profile headshot (admin or linked self)' })
   @ApiResponse({ status: HttpStatus.OK, type: PersonResponseDto })
-  @ApiResponse({ status: HttpStatus.FORBIDDEN, description: 'Not your linked profile and not admin' })
+  @ApiResponse({
+    status: HttpStatus.FORBIDDEN,
+    description: 'Not your linked profile and not admin',
+  })
   async clearProfileHeadshot(
     @Req() req: { user: User },
     @Param('id', ParseUUIDPipe) id: string,
@@ -160,7 +166,10 @@ export class PeopleController {
       'Era photo for the exec team roster. Chapter members only. Stored under `people-exec-headshots/` in GCS.',
   })
   @ApiResponse({ status: HttpStatus.OK, type: PersonResponseDto })
-  @ApiResponse({ status: HttpStatus.FORBIDDEN, description: 'Not your linked profile and not admin' })
+  @ApiResponse({
+    status: HttpStatus.FORBIDDEN,
+    description: 'Not your linked profile and not admin',
+  })
   async uploadExecRosterHeadshot(
     @Req() req: { user: User },
     @Param('id', ParseUUIDPipe) id: string,
@@ -187,7 +196,10 @@ export class PeopleController {
   @ApiParam({ name: 'id', description: 'Person UUID' })
   @ApiOperation({ summary: 'Remove executive roster headshot (admin or linked member self)' })
   @ApiResponse({ status: HttpStatus.OK, type: PersonResponseDto })
-  @ApiResponse({ status: HttpStatus.FORBIDDEN, description: 'Not your linked profile and not admin' })
+  @ApiResponse({
+    status: HttpStatus.FORBIDDEN,
+    description: 'Not your linked profile and not admin',
+  })
   async clearExecRosterHeadshot(
     @Req() req: { user: User },
     @Param('id', ParseUUIDPipe) id: string,

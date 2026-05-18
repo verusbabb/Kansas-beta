@@ -10,13 +10,7 @@ import {
   HttpStatus,
   UseGuards,
 } from '@nestjs/common'
-import {
-  ApiTags,
-  ApiOperation,
-  ApiResponse,
-  ApiParam,
-  ApiBearerAuth,
-} from '@nestjs/swagger'
+import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiBearerAuth } from '@nestjs/swagger'
 import { PinoLogger } from 'nestjs-pino'
 import { RushEventsService } from './rush-events.service'
 import { CreateRushEventDto } from './dto/create-rush-event.dto'

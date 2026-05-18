@@ -24,7 +24,8 @@ export class PersonResponseDto {
 
   @ApiPropertyOptional({
     nullable: true,
-    description: 'Null for guests or when the member has opted out of sharing email with signed-in members.',
+    description:
+      'Null for guests or when the member has opted out of sharing email with signed-in members.',
   })
   email?: string | null
 
@@ -34,7 +35,8 @@ export class PersonResponseDto {
   hasEmailOnFile?: boolean
 
   @ApiPropertyOptional({
-    description: 'External CRM contact id when linked (e.g. Salesforce); null if added only in this app or when redacted.',
+    description:
+      'External CRM contact id when linked (e.g. Salesforce); null if added only in this app or when redacted.',
     nullable: true,
   })
   externalContactId?: string | null
@@ -52,7 +54,8 @@ export class PersonResponseDto {
   hasMobilePhone!: boolean
 
   @ApiProperty({
-    description: 'True when a home number is stored; present even when `homePhone` is omitted for privacy.',
+    description:
+      'True when a home number is stored; present even when `homePhone` is omitted for privacy.',
   })
   hasHomePhone!: boolean
 
@@ -66,12 +69,14 @@ export class PersonResponseDto {
   linkedinProfileUrl?: string | null
 
   @ApiPropertyOptional({
-    description: 'True when a LinkedIn URL is stored; use when `linkedinProfileUrl` is null for redacted display.',
+    description:
+      'True when a LinkedIn URL is stored; use when `linkedinProfileUrl` is null for redacted display.',
   })
   hasLinkedInOnFile?: boolean
 
   @ApiPropertyOptional({
-    description: 'True when any mailing-address field is stored; use when address fields are null for redacted display.',
+    description:
+      'True when any mailing-address field is stored; use when address fields are null for redacted display.',
   })
   hasAddressOnFile?: boolean
 

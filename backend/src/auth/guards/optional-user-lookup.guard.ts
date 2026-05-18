@@ -24,7 +24,12 @@ export class OptionalUserLookupGuard implements CanActivate {
     const request = context.switchToHttp().getRequest<{ user?: JwtPayload | User }>()
     const jwtPayload = request.user as JwtPayload | undefined
 
-    if (!jwtPayload || typeof jwtPayload !== 'object' || !('sub' in jwtPayload) || !jwtPayload.sub) {
+    if (
+      !jwtPayload ||
+      typeof jwtPayload !== 'object' ||
+      !('sub' in jwtPayload) ||
+      !jwtPayload.sub
+    ) {
       request.user = undefined
       return true
     }

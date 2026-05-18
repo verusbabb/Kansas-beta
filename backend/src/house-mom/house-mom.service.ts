@@ -97,7 +97,8 @@ export class HouseMomService {
     row.lastName = dto.lastName.trim()
     row.email = email
     row.phone = normalizeUsPhoneForStorage(dto.phone ?? null)
-    row.bioHtml = dto.bioHtml === undefined || dto.bioHtml === null ? null : dto.bioHtml.trim() || null
+    row.bioHtml =
+      dto.bioHtml === undefined || dto.bioHtml === null ? null : dto.bioHtml.trim() || null
     await row.save()
 
     const photoUrl = await this.signedPhotoUrl(row.photoFilePath)

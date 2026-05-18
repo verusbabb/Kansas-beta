@@ -12,7 +12,8 @@ export class PersonRelationshipCounterpartDto {
 
   @ApiPropertyOptional({
     nullable: true,
-    description: 'Null for guests or when the counterpart opted out of sharing email (same rules as directory).',
+    description:
+      'Null for guests or when the counterpart opted out of sharing email (same rules as directory).',
   })
   email?: string | null
 

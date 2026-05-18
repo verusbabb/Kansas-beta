@@ -2,10 +2,8 @@ import { Injectable, NotFoundException, BadRequestException } from '@nestjs/comm
 import { InjectModel } from '@nestjs/sequelize'
 import { PinoLogger } from 'nestjs-pino'
 import { HeroImage } from '../database/entities/hero-image.entity'
-import { UploadHeroImageDto } from './dto/upload-hero-image.dto'
 import { UpdateHeroImageDto } from './dto/update-hero-image.dto'
 import { HeroImageResponseDto } from './dto/hero-image-response.dto'
-import { BulkUpdateCarouselDto } from './dto/bulk-update-carousel.dto'
 import { StorageService } from '../storage/storage.service'
 
 // Type for uploaded file from multer
@@ -54,7 +52,6 @@ export class HeroImagesService {
     const year = now.getFullYear()
     const month = String(now.getMonth() + 1).padStart(2, '0')
     const timestamp = now.getTime()
-    const fileExtension = file.originalname.split('.').pop() || 'jpg'
     const fileName = `${timestamp}-${file.originalname.replace(/[^a-zA-Z0-9.-]/g, '_')}`
     const filePath = `hero-images/${year}/${month}/${fileName}`
 

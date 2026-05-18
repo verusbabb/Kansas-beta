@@ -68,7 +68,10 @@ export class UsersController {
     type: UserResponseDto,
   })
   @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'Directory person not found' })
-  @ApiResponse({ status: HttpStatus.CONFLICT, description: 'Email already linked to another person' })
+  @ApiResponse({
+    status: HttpStatus.CONFLICT,
+    description: 'Email already linked to another person',
+  })
   async assignDirectoryPersonRole(
     @Param('personId', ParseUUIDPipe) personId: string,
     @Body() dto: AssignDirectoryUserRoleDto,

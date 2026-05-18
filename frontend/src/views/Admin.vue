@@ -132,6 +132,9 @@
           <!-- Rush photos gallery -->
           <AdminRushPhotos v-if="activeSection === 'rush-photos'" />
 
+          <!-- History page images -->
+          <AdminHistoryImages v-if="activeSection === 'history-images'" />
+
           <!-- Health Check Section -->
           <AdminHealthCheck v-if="activeSection === 'health'" />
 
@@ -168,6 +171,7 @@ import AdminOverview from '@/components/AdminOverview.vue'
 import AdminExecTeam from '@/components/AdminExecTeam.vue'
 import AdminHouseMom from '@/components/AdminHouseMom.vue'
 import AdminHomePageImages from '@/components/AdminHomePageImages.vue'
+import AdminHistoryImages from '@/components/AdminHistoryImages.vue'
 import AdminAddPerson from '@/components/AdminAddPerson.vue'
 import AdminBulkImportPeople from '@/components/AdminBulkImportPeople.vue'
 import MemberSearch from '@/components/MemberSearch.vue'
@@ -191,6 +195,7 @@ const validSectionIds = [
   'rush-photos',
   'health',
   'settings-home-images',
+  'history-images',
 ] as const
 
 /** Editor-accessible content sections (home images, calendar, newsletters). */
@@ -199,8 +204,12 @@ const siteContentSectionIds = ['settings-home-images', 'alumni', 'newsletter'] a
 /** Rush page tooling — collapsible nav group. */
 const rushPageSectionIds = ['rush-widgets', 'rush', 'rush-photos'] as const
 
+/** History page tooling — collapsible nav group. */
+const historyPageSectionIds = ['history-images'] as const
+
 type SiteContentSectionId = (typeof siteContentSectionIds)[number]
 type RushPageSectionId = (typeof rushPageSectionIds)[number]
+type HistoryPageSectionId = (typeof historyPageSectionIds)[number]
 
 function isSiteContentSection(section: string): section is SiteContentSectionId {
   return siteContentSectionIds.includes(section as SiteContentSectionId)
@@ -210,9 +219,13 @@ function isRushPageSection(section: string): section is RushPageSectionId {
   return rushPageSectionIds.includes(section as RushPageSectionId)
 }
 
-/** Sections editors may open in /admin (home page, calendar, newsletters, rush). */
+function isHistoryPageSection(section: string): section is HistoryPageSectionId {
+  return historyPageSectionIds.includes(section as HistoryPageSectionId)
+}
+
+/** Sections editors may open in /admin (home page, calendar, newsletters, rush, history). */
 function isEditorAllowedSection(section: string): boolean {
-  return isSiteContentSection(section) || isRushPageSection(section)
+  return isSiteContentSection(section) || isRushPageSection(section) || isHistoryPageSection(section)
 }
 
 function normalizedQuerySection(): string | undefined {
@@ -286,6 +299,7 @@ function expandNavGroupsForSection(section: string) {
   const next = { ...navGroupExpanded.value }
   if (section === 'settings-home-images') next['home-page'] = true
   if (isRushPageSection(section)) next['rush-page'] = true
+  if (isHistoryPageSection(section)) next['history-page'] = true
   navGroupExpanded.value = next
 }
 
@@ -363,6 +377,19 @@ const manageHomePageNav = {
   ],
 } as const
 
+const manageHistoryPageNav = {
+  id: 'history-page',
+  label: 'Manage History Page',
+  icon: 'pi pi-building',
+  items: [
+    {
+      id: 'history-images',
+      label: 'History Images',
+      icon: 'pi pi-images',
+    },
+  ],
+} as const
+
 const manageCalendarEventsNavItem = {
   id: 'alumni',
   label: 'Manage Calendar Events',
@@ -409,6 +436,7 @@ const fullNavItems = [
   { ...manageRushPageNav },
   { ...manageNewslettersNavItem },
   { ...manageCalendarEventsNavItem },
+  { ...manageHistoryPageNav },
   {
     id: 'member',
     label: 'Add/Manage Members and Parents',
@@ -441,6 +469,7 @@ const editorNavItems = [
   { ...manageRushPageNav },
   { ...manageNewslettersNavItem },
   { ...manageCalendarEventsNavItem },
+  { ...manageHistoryPageNav },
 ]
 
 const navItems = computed(() => (authStore.isAdmin ? fullNavItems : editorNavItems))

@@ -136,7 +136,8 @@ export class UpdatePersonDto {
   shareEmailWithLoggedInMembers?: boolean
 
   @ApiPropertyOptional({
-    description: 'When false, phone values are omitted for other signed-in members (not editor/admin directory list).',
+    description:
+      'When false, phone values are omitted for other signed-in members (not editor/admin directory list).',
   })
   @IsOptional()
   @IsBoolean()

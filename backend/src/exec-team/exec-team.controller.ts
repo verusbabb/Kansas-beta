@@ -148,7 +148,10 @@ export class ExecTeamController {
       'Updates only this position for that term. Fails with 409 if another member already holds the office.',
   })
   @ApiResponse({ status: HttpStatus.OK, type: PersonExecHistoryEntryDto })
-  @ApiResponse({ status: HttpStatus.CONFLICT, description: 'Office already assigned to someone else' })
+  @ApiResponse({
+    status: HttpStatus.CONFLICT,
+    description: 'Office already assigned to someone else',
+  })
   @ApiResponse({ status: HttpStatus.FORBIDDEN, description: 'Not linked or not a member' })
   async claimMyExecAssignment(
     @Req() req: { user: User },
@@ -172,7 +175,10 @@ export class ExecTeamController {
     description: 'Clears only your assignment for that position and term.',
   })
   @ApiResponse({ status: HttpStatus.NO_CONTENT, description: 'Removed' })
-  @ApiResponse({ status: HttpStatus.FORBIDDEN, description: 'Not linked, not a member, or slot held by someone else' })
+  @ApiResponse({
+    status: HttpStatus.FORBIDDEN,
+    description: 'Not linked, not a member, or slot held by someone else',
+  })
   @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'Term or assignment not found' })
   async releaseMyExecAssignment(
     @Req() req: { user: User },

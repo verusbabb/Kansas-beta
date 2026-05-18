@@ -228,7 +228,6 @@
     { number: 7, title: 'Soundness of Body and Mind', newsletter: { season: 'spring', year: 2025 } },
   ] as const;
   import Button from "primevue/button";
-  import Card from "primevue/card";
   import { useHeroImageStore } from '@/stores/heroImage';
   import { useNewsletterStore } from '@/stores/newsletter';
 

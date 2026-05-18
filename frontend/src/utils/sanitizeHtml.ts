@@ -8,7 +8,7 @@ export function sanitizeHtml(html: string | undefined | null): string {
   if (!html) return ''
   return html
     .replace(/<span[^>]*class="ql-cursor"[^>]*>[\s\S]*?<\/span>/gi, '')
-    .replace(/[\u200B\u200C\u200D\u00AD\uFEFF]/g, '')
+    .replace(/\u200B|\u200C|\u200D|\u00AD|\uFEFF/gu, '')
     .replace(/<wbr\s*\/?>/gi, '')
     .replace(/<br\s*\/?>/gi, ' ')
     .replace(/&nbsp;/gi, ' ')

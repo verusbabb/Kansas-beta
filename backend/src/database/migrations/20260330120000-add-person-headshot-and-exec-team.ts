@@ -19,75 +19,75 @@ export async function up(queryInterface: QueryInterface): Promise<void> {
 
   if (!hasTable('exec_positions')) {
     await queryInterface.createTable('exec_positions', {
-    id: {
-      type: DataTypes.UUID,
-      primaryKey: true,
-      defaultValue: Sequelize.literal('uuid_generate_v4()'),
-      allowNull: false,
-    },
-    code: {
-      type: DataTypes.STRING(64),
-      allowNull: false,
-      unique: true,
-    },
-    displayName: {
-      type: DataTypes.STRING(128),
-      allowNull: false,
-    },
-    sortOrder: {
-      type: DataTypes.INTEGER,
-      allowNull: false,
-      defaultValue: 0,
-    },
-    createdAt: {
-      type: DataTypes.DATE,
-      allowNull: false,
-      defaultValue: DataTypes.NOW,
-    },
-    updatedAt: {
-      type: DataTypes.DATE,
-      allowNull: false,
-      defaultValue: DataTypes.NOW,
-    },
-  })
+      id: {
+        type: DataTypes.UUID,
+        primaryKey: true,
+        defaultValue: Sequelize.literal('uuid_generate_v4()'),
+        allowNull: false,
+      },
+      code: {
+        type: DataTypes.STRING(64),
+        allowNull: false,
+        unique: true,
+      },
+      displayName: {
+        type: DataTypes.STRING(128),
+        allowNull: false,
+      },
+      sortOrder: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        defaultValue: 0,
+      },
+      createdAt: {
+        type: DataTypes.DATE,
+        allowNull: false,
+        defaultValue: DataTypes.NOW,
+      },
+      updatedAt: {
+        type: DataTypes.DATE,
+        allowNull: false,
+        defaultValue: DataTypes.NOW,
+      },
+    })
   }
 
   if (!hasTable('exec_terms')) {
     await queryInterface.createTable('exec_terms', {
-    id: {
-      type: DataTypes.UUID,
-      primaryKey: true,
-      defaultValue: Sequelize.literal('uuid_generate_v4()'),
-      allowNull: false,
-    },
-    year: {
-      type: DataTypes.INTEGER,
-      allowNull: false,
-    },
-    season: {
-      type: DataTypes.STRING(16),
-      allowNull: false,
-    },
-    label: {
-      type: DataTypes.STRING(128),
-      allowNull: true,
-    },
-    isCurrent: {
-      type: DataTypes.BOOLEAN,
-      allowNull: false,
-      defaultValue: false,
-    },
-    createdAt: {
-      type: DataTypes.DATE,
-      allowNull: false,
-      defaultValue: DataTypes.NOW,
-    },
-    updatedAt: {
-      type: DataTypes.DATE,
-      allowNull: false,
-      defaultValue: DataTypes.NOW,
-    },
-  })
+      id: {
+        type: DataTypes.UUID,
+        primaryKey: true,
+        defaultValue: Sequelize.literal('uuid_generate_v4()'),
+        allowNull: false,
+      },
+      year: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+      },
+      season: {
+        type: DataTypes.STRING(16),
+        allowNull: false,
+      },
+      label: {
+        type: DataTypes.STRING(128),
+        allowNull: true,
+      },
+      isCurrent: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+      },
+      createdAt: {
+        type: DataTypes.DATE,
+        allowNull: false,
+        defaultValue: DataTypes.NOW,
+      },
+      updatedAt: {
+        type: DataTypes.DATE,
+        allowNull: false,
+        defaultValue: DataTypes.NOW,
+      },
+    })
   }
 
   await sequelize.query(`
@@ -108,44 +108,44 @@ export async function up(queryInterface: QueryInterface): Promise<void> {
 
   if (!hasTable('exec_assignments')) {
     await queryInterface.createTable('exec_assignments', {
-    id: {
-      type: DataTypes.UUID,
-      primaryKey: true,
-      defaultValue: Sequelize.literal('uuid_generate_v4()'),
-      allowNull: false,
-    },
-    execTermId: {
-      type: DataTypes.UUID,
-      allowNull: false,
-      references: { model: 'exec_terms', key: 'id' },
-      onUpdate: 'CASCADE',
-      onDelete: 'CASCADE',
-    },
-    execPositionId: {
-      type: DataTypes.UUID,
-      allowNull: false,
-      references: { model: 'exec_positions', key: 'id' },
-      onUpdate: 'CASCADE',
-      onDelete: 'CASCADE',
-    },
-    personId: {
-      type: DataTypes.UUID,
-      allowNull: true,
-      references: { model: 'people', key: 'id' },
-      onUpdate: 'CASCADE',
-      onDelete: 'SET NULL',
-    },
-    createdAt: {
-      type: DataTypes.DATE,
-      allowNull: false,
-      defaultValue: DataTypes.NOW,
-    },
-    updatedAt: {
-      type: DataTypes.DATE,
-      allowNull: false,
-      defaultValue: DataTypes.NOW,
-    },
-  })
+      id: {
+        type: DataTypes.UUID,
+        primaryKey: true,
+        defaultValue: Sequelize.literal('uuid_generate_v4()'),
+        allowNull: false,
+      },
+      execTermId: {
+        type: DataTypes.UUID,
+        allowNull: false,
+        references: { model: 'exec_terms', key: 'id' },
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE',
+      },
+      execPositionId: {
+        type: DataTypes.UUID,
+        allowNull: false,
+        references: { model: 'exec_positions', key: 'id' },
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE',
+      },
+      personId: {
+        type: DataTypes.UUID,
+        allowNull: true,
+        references: { model: 'people', key: 'id' },
+        onUpdate: 'CASCADE',
+        onDelete: 'SET NULL',
+      },
+      createdAt: {
+        type: DataTypes.DATE,
+        allowNull: false,
+        defaultValue: DataTypes.NOW,
+      },
+      updatedAt: {
+        type: DataTypes.DATE,
+        allowNull: false,
+        defaultValue: DataTypes.NOW,
+      },
+    })
   }
 
   await sequelize.query(`
@@ -185,10 +185,7 @@ export async function up(queryInterface: QueryInterface): Promise<void> {
     { code: 'director_of_cleaning', displayName: 'Director of Cleaning', sortOrder: 180 },
   ]
 
-  const [countRows] = await sequelize.query(
-    `SELECT COUNT(*)::text AS cnt FROM exec_positions`,
-    {},
-  )
+  const [countRows] = await sequelize.query(`SELECT COUNT(*)::text AS cnt FROM exec_positions`, {})
   const positionCount = Number((countRows as { cnt: string }[])[0]?.cnt ?? 0)
   if (positionCount === 0) {
     const now = new Date()

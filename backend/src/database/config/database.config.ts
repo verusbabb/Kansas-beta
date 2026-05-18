@@ -7,6 +7,7 @@
  * Note: This file uses CommonJS syntax for sequelize-cli compatibility
  */
 
+// eslint-disable-next-line @typescript-eslint/no-var-requires
 const { config: dotenvConfig } = require('dotenv')
 
 // Load environment variables

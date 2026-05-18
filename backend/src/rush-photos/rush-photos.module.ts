@@ -9,11 +9,7 @@ import { AuthModule } from '../auth/auth.module'
 import { StorageModule } from '../storage/storage.module'
 
 @Module({
-  imports: [
-    SequelizeModule.forFeature([RushPhoto, User, Person]),
-    AuthModule,
-    StorageModule,
-  ],
+  imports: [SequelizeModule.forFeature([RushPhoto, User, Person]), AuthModule, StorageModule],
   controllers: [RushPhotosController],
   providers: [RushPhotosService],
   exports: [RushPhotosService],

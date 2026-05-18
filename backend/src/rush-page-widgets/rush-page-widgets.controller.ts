@@ -1,18 +1,5 @@
-import {
-  Controller,
-  Get,
-  Patch,
-  Param,
-  Body,
-  UseGuards,
-} from '@nestjs/common'
-import {
-  ApiTags,
-  ApiOperation,
-  ApiResponse,
-  ApiParam,
-  ApiBearerAuth,
-} from '@nestjs/swagger'
+import { Controller, Get, Patch, Param, Body, UseGuards } from '@nestjs/common'
+import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiBearerAuth } from '@nestjs/swagger'
 import { PinoLogger } from 'nestjs-pino'
 import { RushPageWidgetsService } from './rush-page-widgets.service'
 import { UpdateRushPageWidgetDto } from './dto/update-rush-page-widget.dto'

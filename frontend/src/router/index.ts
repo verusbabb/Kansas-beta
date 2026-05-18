@@ -11,6 +11,7 @@ import ContactUs from '../views/ContactUs.vue'
 import AccessPending from '../views/AccessPending.vue'
 import PersonProfile from '../views/PersonProfile.vue'
 import Admin from '../views/Admin.vue'
+import History from '../views/History.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -32,6 +33,7 @@ const router = createRouter({
       name: 'person-profile',
       component: PersonProfile,
     },
+    { path: '/history', component: History },
     { path: '/donate', component: Donate },
     { path: '/contact', component: ContactUs },
     { path: '/access-pending', component: AccessPending },

@@ -366,11 +366,7 @@ export class ExecTeamService {
     }
 
     return this.execTermModel.sequelize!.transaction(async (transaction) => {
-      const term = await this.findOrCreateTermForSelfAssignment(
-        dto.year,
-        dto.season,
-        transaction,
-      )
+      const term = await this.findOrCreateTermForSelfAssignment(dto.year, dto.season, transaction)
 
       let assignment = await this.execAssignmentModel.findOne({
         where: { execTermId: term.id, execPositionId: dto.positionId },
@@ -416,10 +412,7 @@ export class ExecTeamService {
   /**
    * Linked member clears one roster slot they hold (sparse row removed).
    */
-  async releaseMyExecAssignment(
-    personId: string,
-    dto: ReleaseMyExecAssignmentDto,
-  ): Promise<void> {
+  async releaseMyExecAssignment(personId: string, dto: ReleaseMyExecAssignmentDto): Promise<void> {
     const person = await this.personModel.findByPk(personId)
     if (!person) {
       throw new NotFoundException('Person not found')

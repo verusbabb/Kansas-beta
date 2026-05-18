@@ -277,10 +277,7 @@ export function parsePeopleImportBuffer(buf: Buffer): PeopleImportParseResult {
 }
 
 /** Build CSV/TSV text for skipped rows (original columns + source_row + skip_reason). */
-export function formatSkippedImportRows(
-  skips: PeopleImportSkip[],
-  delimiter: string,
-): string {
+export function formatSkippedImportRows(skips: PeopleImportSkip[], delimiter: string): string {
   if (skips.length === 0) return ''
 
   const keySet = new Set<string>()

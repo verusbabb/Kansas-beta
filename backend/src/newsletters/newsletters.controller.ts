@@ -28,7 +28,6 @@ import {
 } from '@nestjs/swagger'
 import { PinoLogger } from 'nestjs-pino'
 import { NewslettersService } from './newsletters.service'
-import { CreateNewsletterDto } from './dto/create-newsletter.dto'
 import { UploadNewsletterDto } from './dto/upload-newsletter.dto'
 import { NewsletterResponseDto } from './dto/newsletter-response.dto'
 import { SignedUrlResponseDto } from './dto/signed-url-response.dto'

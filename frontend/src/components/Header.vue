@@ -102,6 +102,11 @@
         route: "/members",
       },
       {
+        label: "History",
+        icon: "pi pi-book",
+        route: "/history",
+      },
+      {
         label: "Donate",
         icon: "pi pi-heart",
         route: "/donate",

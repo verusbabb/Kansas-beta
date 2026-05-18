@@ -2,8 +2,7 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
 
 export class BulkImportResponseDto {
   @ApiProperty({
-    description:
-      'Rows applied (new inserts plus updates / adopts by Contact ID or email).',
+    description: 'Rows applied (new inserts plus updates / adopts by Contact ID or email).',
   })
   importedCount!: number
 

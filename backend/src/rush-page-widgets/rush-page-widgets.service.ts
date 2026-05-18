@@ -34,7 +34,7 @@ export class RushPageWidgetsService {
 
     await row.update({
       title: dto.title !== undefined ? dto.title.trim() : row.title,
-        bodyHtml:
+      bodyHtml:
         dto.bodyHtml !== undefined
           ? dto.bodyHtml.trim() === ''
             ? null

@@ -262,7 +262,7 @@
     window.location.href = `mailto:${to}?subject=${subject}&body=${body}`
   }
 
-  const openSocial = (_platform) => {
+  const openSocial = () => {
     // Social media links not yet configured
   }
 </script>

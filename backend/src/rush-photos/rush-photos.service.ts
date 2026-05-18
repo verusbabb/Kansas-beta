@@ -81,14 +81,20 @@ export class RushPhotosService {
 
   async findPublic(): Promise<RushPhotoResponseDto[]> {
     const rows = await this.rushPhotoModel.findAll({
-      order: [['sortOrder', 'ASC'], ['createdAt', 'ASC']],
+      order: [
+        ['sortOrder', 'ASC'],
+        ['createdAt', 'ASC'],
+      ],
     })
     return rows.map((r) => this.toDto(r))
   }
 
   async findAll(): Promise<RushPhotoResponseDto[]> {
     const rows = await this.rushPhotoModel.findAll({
-      order: [['sortOrder', 'ASC'], ['createdAt', 'ASC']],
+      order: [
+        ['sortOrder', 'ASC'],
+        ['createdAt', 'ASC'],
+      ],
     })
     return rows.map((r) => this.toDto(r))
   }

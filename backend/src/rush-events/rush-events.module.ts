@@ -8,10 +8,7 @@ import { Person } from '../database/entities/person.entity'
 import { AuthModule } from '../auth/auth.module'
 
 @Module({
-  imports: [
-    SequelizeModule.forFeature([RushEvent, User, Person]),
-    AuthModule,
-  ],
+  imports: [SequelizeModule.forFeature([RushEvent, User, Person]), AuthModule],
   controllers: [RushEventsController],
   providers: [RushEventsService],
   exports: [RushEventsService],

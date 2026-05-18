@@ -125,7 +125,10 @@ export class UsersService {
       byPerson.lastName = lastName
       byPerson.personId = personId
       await byPerson.save()
-      this.logger.info('Updated app user role for directory person', { personId, userId: byPerson.id })
+      this.logger.info('Updated app user role for directory person', {
+        personId,
+        userId: byPerson.id,
+      })
       return this.toResponseDto(byPerson)
     }
 

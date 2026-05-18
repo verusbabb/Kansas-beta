@@ -371,9 +371,7 @@ export class PeopleService {
         ['firstName', 'ASC'],
       ],
     })
-    return rows.map((p) =>
-      this.toResponseDto(p, legacyIds.has(p.id), { viewer, fullDetail }),
-    )
+    return rows.map((p) => this.toResponseDto(p, legacyIds.has(p.id), { viewer, fullDetail }))
   }
 
   /**
@@ -386,15 +384,14 @@ export class PeopleService {
     }
     const hasLegacy = await this.personHasLegacyMemberLink(person.id)
     const profileFullDetail = this.viewerIsAdmin(viewer)
-    const personDto = this.toResponseDto(person, hasLegacy, { viewer, fullDetail: profileFullDetail })
+    const personDto = this.toResponseDto(person, hasLegacy, {
+      viewer,
+      fullDetail: profileFullDetail,
+    })
     const [relationships, execHistory, headshotUrl, execRosterHeadshotUrl] = await Promise.all([
       this.personRelationshipsService.findAllForPerson(id, viewer),
       this.execTeamService.findExecHistoryForPerson(id),
-      this.signedUrlForHeadshotPath(
-        person.profileHeadshotFilePath,
-        person.id,
-        'Profile headshot',
-      ),
+      this.signedUrlForHeadshotPath(person.profileHeadshotFilePath, person.id, 'Profile headshot'),
       this.signedUrlForHeadshotPath(
         person.execRosterHeadshotFilePath,
         person.id,
@@ -420,8 +417,7 @@ export class PeopleService {
     }
 
     if (isSelf) {
-      const accountLinked =
-        currentUser.personId != null && currentUser.personId === person.id
+      const accountLinked = currentUser.personId != null && currentUser.personId === person.id
       await this.applySelfPersonPatch(person, dto, accountLinked)
       if (!person.isMember && !person.isParent) {
         throw new BadRequestException('Person must be a member, parent, or both')
@@ -706,13 +702,24 @@ export class PeopleService {
     await person.save()
   }
 
-  private async headshotMutationResponse(person: Person, currentUser: User): Promise<PersonResponseDto> {
+  private async headshotMutationResponse(
+    person: Person,
+    currentUser: User,
+  ): Promise<PersonResponseDto> {
     const hasLegacy = await this.personHasLegacyMemberLink(person.id)
     const viewerIsAdmin = currentUser.role === UserRole.ADMIN
-    return this.toResponseDto(person, hasLegacy, viewerIsAdmin ? { fullDetail: true } : { viewer: currentUser })
+    return this.toResponseDto(
+      person,
+      hasLegacy,
+      viewerIsAdmin ? { fullDetail: true } : { viewer: currentUser },
+    )
   }
 
-  async uploadProfileHeadshot(id: string, file: PersonHeadshotFile, currentUser: User): Promise<PersonResponseDto> {
+  async uploadProfileHeadshot(
+    id: string,
+    file: PersonHeadshotFile,
+    currentUser: User,
+  ): Promise<PersonResponseDto> {
     const person = await this.personModel.findByPk(id)
     if (!person) {
       throw new NotFoundException('Person not found')
@@ -721,7 +728,12 @@ export class PeopleService {
     if (!person.isMember && !person.isParent) {
       throw new BadRequestException('Profile photos are only for directory members and parents')
     }
-    await this.replacePersonHeadshotAt(person, file, 'profileHeadshotFilePath', 'people-profile-headshots')
+    await this.replacePersonHeadshotAt(
+      person,
+      file,
+      'profileHeadshotFilePath',
+      'people-profile-headshots',
+    )
     this.logger.info('Uploaded profile headshot', { id })
     return this.headshotMutationResponse(person, currentUser)
   }
@@ -749,7 +761,12 @@ export class PeopleService {
     if (!person.isMember) {
       throw new BadRequestException('Executive roster photos are only for chapter members')
     }
-    await this.replacePersonHeadshotAt(person, file, 'execRosterHeadshotFilePath', 'people-exec-headshots')
+    await this.replacePersonHeadshotAt(
+      person,
+      file,
+      'execRosterHeadshotFilePath',
+      'people-exec-headshots',
+    )
     this.logger.info('Uploaded exec roster headshot', { id })
     return this.headshotMutationResponse(person, currentUser)
   }
@@ -819,7 +836,7 @@ export class PeopleService {
 
     await sequelize.transaction(async (transaction) => {
       for (const c of creates) {
-        let person = contactToPerson.get(c.externalContactId)
+        const person = contactToPerson.get(c.externalContactId)
 
         if (person) {
           const emailOwner = emailToPerson.get(c.email)

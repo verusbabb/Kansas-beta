@@ -82,12 +82,10 @@ export class RushEventsService {
     await row.update({
       title: dto.title !== undefined ? dto.title.trim() : row.title,
       displayDate: dto.displayDate !== undefined ? dto.displayDate.trim() : row.displayDate,
-      description:
-        dto.description !== undefined ? dto.description ?? null : row.description,
+      description: dto.description !== undefined ? (dto.description ?? null) : row.description,
       icon: dto.icon !== undefined ? dto.icon.trim() || 'pi pi-calendar' : row.icon,
       location: dto.location !== undefined ? dto.location?.trim() || null : row.location,
-      timeLabel:
-        dto.timeLabel !== undefined ? dto.timeLabel?.trim() || null : row.timeLabel,
+      timeLabel: dto.timeLabel !== undefined ? dto.timeLabel?.trim() || null : row.timeLabel,
       sortOrder: dto.sortOrder !== undefined ? dto.sortOrder : row.sortOrder,
     })
 

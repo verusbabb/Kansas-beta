@@ -1,4 +1,4 @@
-import { QueryInterface, DataTypes } from 'sequelize'
+import { QueryInterface } from 'sequelize'
 
 /**
  * Migration: Change newsletters.link column to newsletters.filePath
