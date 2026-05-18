@@ -136,7 +136,7 @@
               </p>
               <p v-else-if="ev.allDay" class="event-time">All Day</p>
               <span v-if="isMultiDay(ev)" class="event-multiday-badge">Multi-day</span>
-              <p v-if="ev.description" class="event-desc">{{ ev.description }}</p>
+              <p v-if="ev.description" class="event-desc">{{ plainText(ev.description) }}</p>
             </div>
           </div>
         </div>
@@ -257,6 +257,18 @@
     const hour = h % 12 || 12;
     return `${hour}:${m.toString().padStart(2, '0')} ${ampm}`;
   }
+  function plainText(html: string): string {
+    return html
+      .replace(/&nbsp;/gi, ' ')
+      .replace(/&amp;/gi, '&')
+      .replace(/&lt;/gi, '<')
+      .replace(/&gt;/gi, '>')
+      .replace(/&quot;/gi, '"')
+      .replace(/<[^>]*>/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim()
+  }
+
   function isMultiDay(ev: CalendarEvent): boolean {
     return ev.startDate !== ev.endDate;
   }
@@ -298,7 +310,7 @@
   const chapterStats = [
     { value: 'Est. 1873', label: 'Alpha Nu Founded',          icon: 'pi-history'        },
     { value: '25',        label: 'Brothers Per Pledge Class', icon: 'pi-users'          },
-    { value: '#1 GPA',    label: '20+ Consecutive Years Among All KU Recognized Organizations', icon: 'pi-graduation-cap' },
+    { value: '94 of 100', label: 'Semesters Atop KU IFC GPA Rankings', icon: 'pi-graduation-cap' },
     { value: '1,000+',   label: 'Active Alumni & a Network That Opens Doors', icon: 'pi-globe' },
     { value: 'Lawrence', label: 'Kansas — Home of the Jayhawks', icon: 'pi-map-marker' },
   ] as const;
