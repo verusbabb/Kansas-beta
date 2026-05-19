@@ -158,8 +158,30 @@
       </div>
     </section>
 
-    <!-- Timeline / Milestones -->
+    <!-- Centennial Video -->
     <section class="content-section bg-slate-50">
+      <div class="section-inner">
+        <p class="eyebrow text-center">100 Years</p>
+        <h2 class="section-title text-center">The Centennial Celebration</h2>
+        <p class="body-text text-center max-w-2xl mx-auto mb-10">
+          In 2013, Alpha Nu marked 100 years at the Usher Mansion. Brothers spanning
+          generations returned to Lawrence for a weekend of reunion, remembrance, and
+          celebration of the house that has been home to so many.
+        </p>
+        <div class="video-wrapper">
+          <iframe
+            src="https://www.youtube-nocookie.com/embed/eWb5Z-Gp5G0"
+            title="100 Years of Alpha Nu at Usher Mansion 1913–2013"
+            frameborder="0"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+            allowfullscreen
+          ></iframe>
+        </div>
+      </div>
+    </section>
+
+    <!-- Timeline / Milestones -->
+    <section class="content-section bg-white">
       <div class="section-inner">
         <p class="eyebrow text-center">A Century and a Half</p>
         <h2 class="section-title text-center">Chapter Milestones</h2>
@@ -735,6 +757,23 @@ const traditions = [
   font-size: 0.875rem;
   color: #64748b;
   line-height: 1.7;
+}
+
+/* ── Centennial Video ─────────────────────────────────── */
+.video-wrapper {
+  position: relative;
+  max-width: 860px;
+  margin: 0 auto;
+  border-radius: 1rem;
+  overflow: hidden;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+  aspect-ratio: 16 / 9;
+}
+.video-wrapper iframe {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
 }
 
 /* ── Photo Gallery ────────────────────────────────────── */
