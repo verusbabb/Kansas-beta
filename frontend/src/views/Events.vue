@@ -178,9 +178,12 @@
                   v-for="event in day.events"
                   :key="event.id"
                   @click="showEventDetails(event)"
-                  class="p-2 bg-blue-50 rounded cursor-pointer hover:bg-blue-100 transition-colors border-l-4 border-[#6F8FAF]"
+                  class="p-2 bg-blue-50 rounded cursor-pointer hover:bg-blue-100 transition-colors border-l-4 border-[#6F8FAF] group"
                 >
-                  <div class="font-semibold text-sm text-surface-900">{{ event.name }}</div>
+                  <div class="flex items-start justify-between gap-2">
+                    <div class="font-semibold text-sm text-surface-900">{{ event.name }}</div>
+                    <i class="pi pi-arrow-right text-xs text-[#6F8FAF] flex-shrink-0 mt-0.5 opacity-0 group-hover:opacity-100 transition-opacity"></i>
+                  </div>
                   <div v-if="!event.allDay && event.startTime" class="text-xs text-surface-600 mt-1">
                     <i class="pi pi-clock mr-1"></i>
                     {{ formatTime(event.startTime) }}
@@ -203,7 +206,7 @@
         <Card
           v-for="event in sortedEvents"
           :key="event.id"
-          class="cursor-pointer hover:shadow-lg transition-shadow"
+          class="event-list-card cursor-pointer"
           @click="showEventDetails(event)"
         >
           <template #content>
@@ -213,7 +216,7 @@
                   <i class="pi pi-calendar text-2xl"></i>
                 </div>
               </div>
-              <div class="flex-1">
+              <div class="flex-1 min-w-0">
                 <h3 class="text-xl font-bold mb-2 text-surface-900">{{ event.name }}</h3>
                 <p class="text-surface-700 mb-2">
                   <i class="pi pi-calendar mr-2"></i>
@@ -226,7 +229,10 @@
                     (All Day)
                   </span>
                 </p>
-                <div v-if="event.description" class="text-surface-600 line-clamp-2" v-html="event.description"></div>
+                <div v-if="event.description" class="description-preview text-surface-600 line-clamp-2 mb-3" v-html="event.description"></div>
+                <span class="view-details-link">
+                  View Details <i class="pi pi-arrow-right ml-1 text-xs"></i>
+                </span>
               </div>
             </div>
           </template>
@@ -508,5 +514,30 @@ onMounted(async () => {
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+}
+
+/* ── List view card affordance ─────────────────────────── */
+.event-list-card {
+  transition: box-shadow 0.2s ease, transform 0.2s ease, border-left-color 0.2s ease;
+  border-left: 3px solid transparent;
+}
+.event-list-card:hover {
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  transform: translateY(-2px);
+  border-left-color: #6F8FAF;
+}
+
+.view-details-link {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #6F8FAF;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  transition: color 0.15s ease, gap 0.15s ease;
+}
+.event-list-card:hover .view-details-link {
+  color: #466383;
 }
 </style>
