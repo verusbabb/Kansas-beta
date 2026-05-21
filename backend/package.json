@@ -33,6 +33,8 @@
   "dependencies": {
     "@google-cloud/secret-manager": "^5.0.1",
     "@google-cloud/storage": "^7.18.0",
+    "@google-cloud/vertexai": "^1.12.0",
+    "@google/genai": "^2.5.0",
     "@nestjs/axios": "^4.0.1",
     "@nestjs/common": "^10.0.0",
     "@nestjs/config": "^3.1.1",

@@ -71,4 +71,22 @@ export class EnvironmentVariables {
   @IsString()
   @IsOptional()
   GCS_BUCKET_NAME?: string
+
+  // Alumni enrichment (optional — feature degrades gracefully without these)
+  @IsString()
+  @IsOptional()
+  PROXYCURL_API_KEY?: string
+
+  @IsString()
+  @IsOptional()
+  TAVILY_API_KEY?: string
+
+  @IsString()
+  @IsOptional()
+  PDL_API_KEY?: string
+
+  // Gemini AI (Ask feature)
+  @IsString()
+  @IsOptional()
+  GEMINI_API_KEY?: string
 }

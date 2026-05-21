@@ -33,9 +33,13 @@ const SECRET_MAPPINGS: Record<string, string> = {
   // Google Cloud Storage
   'gcs-bucket-name': 'GCS_BUCKET_NAME',
 
-  // Add more mappings as needed
-  // 'api-key': 'API_KEY',
-  // 'third-party-secret': 'THIRD_PARTY_SECRET',
+  // Alumni enrichment
+  'proxycurl-api-key': 'PROXYCURL_API_KEY',
+  'tavily-api-key': 'TAVILY_API_KEY',
+  'pdl-api-key': 'PDL_API_KEY',
+
+  // Gemini AI (Ask feature)
+  'gemini-api-key': 'GEMINI_API_KEY',
 }
 
 /**

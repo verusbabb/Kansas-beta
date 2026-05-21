@@ -3,7 +3,7 @@
     <Toast />
 
     <div>
-      <Menubar :model="items" breakpoint="1024px">
+      <Menubar :model="items" breakpoint="960px">
         <template #start>
           <div class="flex items-center gap-3">
             <span class="font-semibold">Beta Theta Pi</span>
@@ -42,7 +42,7 @@
 </template>
 
 <script setup>
-  import { computed } from "vue";
+  import { computed, ref, onMounted, onUnmounted } from "vue";
   import { env } from '@/config/env';
   import { useAuth0 } from '@auth0/auth0-vue';
   import Badge from 'primevue/badge';
@@ -73,50 +73,47 @@
   // Get auth store for user info
   const authStore = useAuthStore();
 
-  // Menu items - computed to reactively include/exclude Admin based on user role
+  // Track window width so we can collapse overflow items at mid-range widths
+  const windowWidth = ref(typeof window !== 'undefined' ? window.innerWidth : 1280)
+  const onResize = () => { windowWidth.value = window.innerWidth }
+  onMounted(() => window.addEventListener('resize', onResize))
+  onUnmounted(() => window.removeEventListener('resize', onResize))
+
+  // Menu items - computed to reactively include/exclude items based on role + screen width
   const items = computed(() => {
-    const baseItems = [
-      {
-        label: "Home",
-        icon: "pi pi-home",
-        route: "/",
-      },
-      {
-        label: "Rush",
-        icon: "pi pi-users",
-        route: "/rush",
-      },
-      {
-        label: "NewsLetters",
-        icon: "pi pi-book",
-        route: "/newsletters",
-      },
-      {
-        label: "Calendar",
-        icon: "pi pi-calendar",
-        route: "/events",
-      },
-      {
-        label: "People",
-        icon: "pi pi-id-card",
-        route: "/members",
-      },
-      {
-        label: "History",
-        icon: "pi pi-book",
-        route: "/history",
-      },
-      {
-        label: "Donate",
-        icon: "pi pi-heart",
-        route: "/donate",
-      },
-      {
-        label: "Contact Us",
-        icon: "pi pi-envelope",
-        route: "/contact",
-      },
-    ];
+    const canAsk = authStore.canAccessAdminPanel
+    const useFlat = windowWidth.value >= 1500
+
+    const moreItems = [
+      { label: "News",    icon: "pi pi-book",     route: "/newsletters" },
+      { label: "History", icon: "pi pi-clock",    route: "/history" },
+      { separator: true },
+      { label: "Donate",  icon: "pi pi-heart",    route: "/donate" },
+      { label: "Contact", icon: "pi pi-envelope", route: "/contact" },
+    ]
+
+    const flatItems = [
+      { label: "Home",     icon: "pi pi-home",      route: "/" },
+      { label: "Rush",     icon: "pi pi-users",     route: "/rush" },
+      { label: "Calendar", icon: "pi pi-calendar",  route: "/events" },
+      { label: "People",   icon: "pi pi-id-card",   route: "/members" },
+      ...(canAsk ? [{ label: "Ask", icon: "pi pi-sparkles", route: "/ask" }] : []),
+      { label: "News",     icon: "pi pi-book",      route: "/newsletters" },
+      { label: "History",  icon: "pi pi-clock",     route: "/history" },
+      { label: "Donate",   icon: "pi pi-heart",     route: "/donate" },
+      { label: "Contact",  icon: "pi pi-envelope",  route: "/contact" },
+    ]
+
+    const groupedItems = [
+      { label: "Home",     icon: "pi pi-home",      route: "/" },
+      { label: "Rush",     icon: "pi pi-users",     route: "/rush" },
+      { label: "Calendar", icon: "pi pi-calendar",  route: "/events" },
+      { label: "People",   icon: "pi pi-id-card",   route: "/members" },
+      ...(canAsk ? [{ label: "Ask", icon: "pi pi-sparkles", route: "/ask" }] : []),
+      { label: "More", icon: "pi pi-ellipsis-h", items: moreItems },
+    ]
+
+    const baseItems = useFlat ? flatItems : groupedItems
 
     // Admins and site editors (settings-only in /admin); viewers never see this link
     if (authStore.canAccessAdminPanel) {

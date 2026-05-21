@@ -7,6 +7,10 @@ export interface AppConfig {
     port: number
     name: string
   }
+  enrichment: {
+    proxycurlApiKey?: string
+    tavilyApiKey?: string
+  }
   frontend: {
     url: string
   }
@@ -67,6 +71,10 @@ export default registerAs('config', (): AppConfig => {
     auth0: {
       domain: env.AUTH0_DOMAIN,
       audience: env.AUTH0_AUDIENCE,
+    },
+    enrichment: {
+      proxycurlApiKey: env.PROXYCURL_API_KEY,
+      tavilyApiKey: env.TAVILY_API_KEY,
     },
   }
 })

@@ -416,7 +416,8 @@ export class PeopleService {
       )
     }
 
-    if (isSelf) {
+    // Non-admin self-edit: restricted fields only
+    if (isSelf && !isAdmin) {
       const accountLinked = currentUser.personId != null && currentUser.personId === person.id
       await this.applySelfPersonPatch(person, dto, accountLinked)
       if (!person.isMember && !person.isParent) {
@@ -429,7 +430,7 @@ export class PeopleService {
       })
     }
 
-    // Admin-only: update someone else’s row (admin panel)
+    // Admin path: full edit rights on any record, including own
     if (dto.email !== undefined) {
       const normalized = dto.email.toLowerCase().trim()
       if (normalized !== person.email) {
