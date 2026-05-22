@@ -423,15 +423,15 @@ const traditions = [
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #0f1923 0%, #1a2a3a 40%, #2c3e50 100%);
+  background: linear-gradient(135deg, #4a6a8f 0%, #5A7A9F 40%, #6F8FAF 100%);
   overflow: hidden;
 }
 .history-hero::before {
   content: '';
   position: absolute;
   inset: 0;
-  background-image: radial-gradient(circle at 20% 80%, rgba(111, 143, 175, 0.15) 0%, transparent 50%),
-    radial-gradient(circle at 80% 20%, rgba(139, 90, 43, 0.1) 0%, transparent 50%);
+  background-image: radial-gradient(circle at 20% 80%, rgba(255, 255, 255, 0.08) 0%, transparent 50%),
+    radial-gradient(circle at 80% 20%, rgba(255, 255, 255, 0.06) 0%, transparent 50%);
 }
 .hero-overlay {
   position: absolute;
@@ -509,14 +509,14 @@ const traditions = [
 .section-title {
   font-size: clamp(1.75rem, 4vw, 2.5rem);
   font-weight: 700;
-  color: #1a2a3a;
+  color: #334155;
   line-height: 1.2;
   margin-bottom: 1.5rem;
 }
 .subsection-title {
   font-size: 1.2rem;
   font-weight: 700;
-  color: #1a2a3a;
+  color: #334155;
   margin-bottom: 0.5rem;
   font-family: 'Inter', sans-serif;
 }
@@ -529,7 +529,7 @@ const traditions = [
 
 /* ── Founding card ────────────────────────────────────── */
 .founding-card {
-  background: linear-gradient(135deg, #1a2a3a 0%, #2c3e50 100%);
+  background: linear-gradient(135deg, #5A7A9F 0%, #6F8FAF 100%);
   border-radius: 1.5rem;
   padding: 2.5rem 2rem;
   text-align: center;
@@ -542,7 +542,7 @@ const traditions = [
   font-size: 5rem;
   font-weight: 800;
   line-height: 1;
-  color: #6F8FAF;
+  color: #fff;
   margin-bottom: 0.25rem;
 }
 .founding-label {
@@ -675,7 +675,7 @@ const traditions = [
   background: linear-gradient(135deg, #f0f4f8 0%, #e8eef4 100%);
 }
 .excellence-card {
-  background: linear-gradient(135deg, #1a2a3a 0%, #2c3e50 100%);
+  background: linear-gradient(135deg, #5A7A9F 0%, #6F8FAF 100%);
   border-radius: 1.5rem;
   padding: 2.5rem 2rem;
   text-align: center;
@@ -687,7 +687,7 @@ const traditions = [
   display: block;
   font-size: 5rem;
   font-weight: 800;
-  color: #6F8FAF;
+  color: #fff;
   line-height: 1;
 }
 .excellence-denom {
@@ -847,7 +847,7 @@ const traditions = [
 
 /* ── Closing Band ─────────────────────────────────────── */
 .closing-band {
-  background: linear-gradient(135deg, #1a2a3a 0%, #2c3e50 100%);
+  background: linear-gradient(135deg, #5A7A9F 0%, #6F8FAF 100%);
   padding: 5rem 2rem;
 }
 .closing-inner {

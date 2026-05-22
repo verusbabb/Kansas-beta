@@ -1,14 +1,14 @@
 <template>
   <div class="bg-surface-0 min-h-screen">
     <!-- Hero -->
-    <div class="bg-gradient-to-r from-[#5A7A9F] via-[#6F8FAF] to-[#5A7A9F] text-white py-16 px-6">
+    <div class="bg-gradient-to-r from-[#5A7A9F] via-[#6F8FAF] to-[#5A7A9F] text-white py-12 px-6">
       <div class="max-w-3xl mx-auto text-center">
-        <div class="flex items-center justify-center gap-3 mb-4">
-          <div class="text-4xl md:text-5xl font-bold">Ask</div>
-          <span class="text-xs font-semibold uppercase tracking-widest bg-yellow-400 text-yellow-900 rounded px-2 py-1 self-center">Beta</span>
+        <div class="flex items-center justify-center gap-3 mb-2">
+          <img src="/woogle-dragon-v2.png" alt="" class="h-9 w-9 md:h-10 md:w-10 rounded-full object-cover flex-shrink-0" />
+          <span class="text-4xl md:text-5xl font-bold">Woogle</span>
+          <span class="text-xs font-semibold uppercase tracking-widest bg-yellow-400 text-yellow-900 rounded px-2 py-1">Beta</span>
         </div>
-        <div class="text-xl text-gray-300 mb-2">Search the alumni directory in plain English</div>
-        <div class="w-24 h-1 bg-gray-400 mx-auto mb-4"></div>
+        <div class="text-lg text-gray-200 mb-3">Search the alumni directory in plain English</div>
         <p class="text-sm text-gray-200 max-w-xl mx-auto">
           Professional data (employer, title) is looked up live via web search and may not always be current or complete.
           Results are best for location and class year queries — professional queries are a work in progress.
@@ -39,7 +39,7 @@
                   @keydown.enter="submit"
                 />
                 <Button
-                  label="Ask"
+                  label="Woogle"
                   icon="pi pi-search"
                   :loading="loading"
                   :disabled="!query.trim() || loading"

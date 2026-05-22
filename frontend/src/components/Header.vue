@@ -97,7 +97,7 @@
       { label: "Rush",     icon: "pi pi-users",     route: "/rush" },
       { label: "Calendar", icon: "pi pi-calendar",  route: "/events" },
       { label: "People",   icon: "pi pi-id-card",   route: "/members" },
-      ...(canAsk ? [{ label: "Ask", icon: "pi pi-sparkles", route: "/ask" }] : []),
+      ...(canAsk ? [{ label: "Woogle", icon: "pi pi-sparkles", route: "/ask" }] : []),
       { label: "News",     icon: "pi pi-book",      route: "/newsletters" },
       { label: "History",  icon: "pi pi-clock",     route: "/history" },
       { label: "Donate",   icon: "pi pi-heart",     route: "/donate" },
@@ -109,7 +109,7 @@
       { label: "Rush",     icon: "pi pi-users",     route: "/rush" },
       { label: "Calendar", icon: "pi pi-calendar",  route: "/events" },
       { label: "People",   icon: "pi pi-id-card",   route: "/members" },
-      ...(canAsk ? [{ label: "Ask", icon: "pi pi-sparkles", route: "/ask" }] : []),
+      ...(canAsk ? [{ label: "Woogle", icon: "pi pi-sparkles", route: "/ask" }] : []),
       { label: "More", icon: "pi pi-ellipsis-h", items: moreItems },
     ]
 
