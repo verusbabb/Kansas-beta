@@ -8,8 +8,9 @@ export interface AppConfig {
     name: string
   }
   enrichment: {
-    proxycurlApiKey?: string
-    tavilyApiKey?: string
+    pdlApiKey?: string
+    fullcontactApiKey?: string
+    datagmaApiKey?: string
   }
   frontend: {
     url: string
@@ -73,8 +74,9 @@ export default registerAs('config', (): AppConfig => {
       audience: env.AUTH0_AUDIENCE,
     },
     enrichment: {
-      proxycurlApiKey: env.PROXYCURL_API_KEY,
-      tavilyApiKey: env.TAVILY_API_KEY,
+      pdlApiKey: env.PDL_API_KEY,
+      fullcontactApiKey: env.FULLCONTACT_API_KEY,
+      datagmaApiKey: env.DATAGMA_API_KEY,
     },
   }
 })

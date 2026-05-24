@@ -522,7 +522,7 @@
         <InputText
           id="edit-person-linkedin"
           v-model="editForm.linkedinProfileUrl"
-          type="url"
+          type="text"
           placeholder="https://www.linkedin.com/in/…"
           :class="{ 'p-invalid': editErrors.linkedinProfileUrl }"
           class="w-full"
@@ -1244,14 +1244,12 @@ function validateEditForm(): boolean {
   }
   const li = f.linkedinProfileUrl.trim()
   if (li) {
+    const normalized = /^https?:\/\//i.test(li) ? li : `https://${li}`
     try {
-      const u = new URL(li)
-      if (u.protocol !== 'http:' && u.protocol !== 'https:') {
-        editErrors.value.linkedinProfileUrl = 'Use a link starting with http:// or https://'
-        ok = false
-      }
+      new URL(normalized)
+      editForm.value.linkedinProfileUrl = normalized
     } catch {
-      editErrors.value.linkedinProfileUrl = 'Enter a valid URL'
+      editErrors.value.linkedinProfileUrl = 'Enter a valid LinkedIn URL'
       ok = false
     }
   }

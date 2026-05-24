@@ -135,6 +135,9 @@
           <!-- History page images -->
           <AdminHistoryImages v-if="activeSection === 'history-images'" />
 
+          <!-- Woogle Re-index Section -->
+          <AdminWoogleIndex v-if="activeSection === 'woogle-index'" />
+
           <!-- Health Check Section -->
           <AdminHealthCheck v-if="activeSection === 'health'" />
 
@@ -167,6 +170,7 @@ import AdminRushEvents from '@/components/AdminRushEvents.vue'
 import AdminRushWidgets from '@/components/AdminRushWidgets.vue'
 import AdminRushPhotos from '@/components/AdminRushPhotos.vue'
 import AdminHealthCheck from '@/components/AdminHealthCheck.vue'
+import AdminWoogleIndex from '@/components/AdminWoogleIndex.vue'
 import AdminOverview from '@/components/AdminOverview.vue'
 import AdminExecTeam from '@/components/AdminExecTeam.vue'
 import AdminHouseMom from '@/components/AdminHouseMom.vue'
@@ -196,6 +200,7 @@ const validSectionIds = [
   'health',
   'settings-home-images',
   'history-images',
+  'woogle-index',
 ] as const
 
 /** Editor-accessible content sections (home images, calendar, newsletters). */
@@ -456,6 +461,11 @@ const fullNavItems = [
     id: 'house-mom',
     label: 'Edit House Mom',
     icon: 'pi pi-heart',
+  },
+  {
+    id: 'woogle-index',
+    label: 'Woogle: Re-index Content',
+    icon: 'pi pi-sync',
   },
   {
     id: 'health',

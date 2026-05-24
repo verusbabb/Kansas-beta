@@ -1,37 +1,38 @@
 <template>
-  <Card class="mb-6" :pt="cardPassThrough">
-    <template #title>
-      <button
-        id="add-member-parent-trigger"
-        type="button"
-        class="add-member-parent-header flex flex-wrap items-center justify-between gap-3 w-full text-left text-xl font-semibold leading-normal rounded-md border-0 bg-transparent p-1 -m-1 cursor-pointer text-surface-900 transition-colors hover:bg-surface-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6F8FAF]"
-        :aria-expanded="formOpen"
-        aria-controls="add-member-parent-panel"
-        :aria-label="formOpen ? 'Hide add member or parent form' : 'Show add member or parent form'"
-        v-tooltip.top="formOpen ? 'Hide form' : 'Show form'"
-        @click="formOpen = !formOpen"
-      >
-        <span class="flex items-center gap-2 min-w-0">
-          <i class="pi pi-user-plus ml-3 text-xl text-[#6F8FAF] shrink-0" aria-hidden="true"></i>
-          <span>Add A Member or Parent</span>
-        </span>
-        <i
-          :class="[
-            'pi shrink-0 text-xl text-[#6F8FAF]',
-            formOpen ? 'pi-minus' : 'pi-plus',
-          ]"
-          aria-hidden="true"
+  <div class="flex flex-col gap-6">
+    <!-- Header: title + add button outside any card -->
+    <div class="flex items-center justify-between">
+      <h2 class="text-xl font-semibold text-surface-900 flex items-center gap-2">
+        <i class="pi pi-user-plus text-[#6F8FAF]"></i>
+        Add A Member or Parent
+      </h2>
+      <div class="flex items-center gap-2">
+        <Button
+          label="Download CSV"
+          icon="pi pi-download"
+          severity="secondary"
+          outlined
+          :loading="csvDownloading"
+          @click="downloadCsv"
         />
-      </button>
-    </template>
+        <Button
+          v-if="!formOpen"
+          label="Add A Member or Parent"
+          icon="pi pi-plus"
+          @click="formOpen = true"
+          class="bg-[#6F8FAF] hover:bg-[#5a7a9a] border-[#6F8FAF]"
+        />
+      </div>
+    </div>
+
+  <Card v-show="formOpen" class="mb-6" :pt="cardPassThrough">
     <template #content>
-      <div
-        id="add-member-parent-panel"
-        v-show="formOpen"
-        class="flex flex-col gap-6"
-        role="region"
-        aria-labelledby="add-member-parent-trigger"
-      >
+      <div class="flex flex-col gap-6">
+        <div
+          id="add-member-parent-panel"
+          class="flex flex-col gap-6"
+          role="region"
+        >
         <div class="text-surface-600">
           Add a member, parent, or both to the chapter directory. Email must be unique.
         </div>
@@ -171,7 +172,7 @@
             <InputText
               id="person-linkedin"
               v-model="form.linkedinProfileUrl"
-              type="url"
+              type="text"
               placeholder="https://www.linkedin.com/in/…"
               :class="{ 'p-invalid': errors.linkedinProfileUrl }"
               class="w-full md:max-w-xl"
@@ -244,8 +245,10 @@
           </div>
         </form>
       </div>
+      </div>
     </template>
   </Card>
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -265,6 +268,24 @@ const toast = useToast()
 const peopleStore = usePeopleStore()
 
 const formOpen = ref(false)
+const csvDownloading = ref(false)
+
+async function downloadCsv() {
+  csvDownloading.value = true
+  try {
+    const response = await apiClient.get('/people/export', { responseType: 'blob' })
+    const url = URL.createObjectURL(new Blob([response.data], { type: 'text/csv' }))
+    const a = document.createElement('a')
+    a.href = url
+    a.download = 'members.csv'
+    a.click()
+    URL.revokeObjectURL(url)
+  } catch {
+    toast.add({ severity: 'error', summary: 'Export failed', detail: 'Could not download CSV.', life: 4000 })
+  } finally {
+    csvDownloading.value = false
+  }
+}
 
 /** Avoid an empty padded body when the form is collapsed. */
 const cardPassThrough = computed(() =>
@@ -377,14 +398,12 @@ function validate(): boolean {
 
   const li = f.linkedinProfileUrl.trim()
   if (li) {
+    const normalized = /^https?:\/\//i.test(li) ? li : `https://${li}`
     try {
-      const u = new URL(li)
-      if (u.protocol !== 'http:' && u.protocol !== 'https:') {
-        errors.value.linkedinProfileUrl = 'Use a link starting with http:// or https://'
-        ok = false
-      }
+      new URL(normalized)
+      form.value.linkedinProfileUrl = normalized
     } catch {
-      errors.value.linkedinProfileUrl = 'Enter a valid URL'
+      errors.value.linkedinProfileUrl = 'Enter a valid LinkedIn URL'
       ok = false
     }
   }

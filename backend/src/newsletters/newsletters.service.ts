@@ -5,6 +5,7 @@ import { Newsletter } from '../database/entities/newsletter.entity'
 import { CreateNewsletterDto } from './dto/create-newsletter.dto'
 import { NewsletterResponseDto } from './dto/newsletter-response.dto'
 import { StorageService } from '../storage/storage.service'
+import { IndexingService } from '../knowledge/indexing.service'
 
 // Type for uploaded file from multer
 export interface NewsletterFile {
@@ -22,6 +23,7 @@ export class NewslettersService {
     @InjectModel(Newsletter)
     private newsletterModel: typeof Newsletter,
     private readonly storageService: StorageService,
+    private readonly indexingService: IndexingService,
     private readonly logger: PinoLogger,
   ) {
     this.logger.setContext(NewslettersService.name)
@@ -150,6 +152,17 @@ export class NewslettersService {
         filePath: uploadedFilePath,
         season,
         year,
+      })
+
+      // Asynchronously index the newsletter PDF into the knowledge base.
+      // Fire-and-forget — don't block the upload response.
+      this.indexingService.indexNewsletter(newsletter).catch((err) => {
+        this.logger.warn('Failed to index newsletter after upload', {
+          newsletterId: newsletter.id,
+          season,
+          year,
+          error: err?.message,
+        })
       })
 
       return this.toResponseDto(newsletter)

@@ -34,9 +34,9 @@ const SECRET_MAPPINGS: Record<string, string> = {
   'gcs-bucket-name': 'GCS_BUCKET_NAME',
 
   // Alumni enrichment
-  'proxycurl-api-key': 'PROXYCURL_API_KEY',
-  'tavily-api-key': 'TAVILY_API_KEY',
   'pdl-api-key': 'PDL_API_KEY',
+  'fullcontact-api-key': 'FULLCONTACT_API_KEY',
+  'datagma-api-key': 'DATAGMA_API_KEY',
 
   // Gemini AI (Ask feature)
   'gemini-api-key': 'GEMINI_API_KEY',

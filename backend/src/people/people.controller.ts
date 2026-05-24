@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   Get,
+  Header,
   HttpCode,
   HttpStatus,
   Param,
@@ -82,6 +83,19 @@ export class PeopleController {
     file: PersonHeadshotFile,
   ): Promise<BulkImportResponseDto> {
     return this.peopleService.bulkImportFromFile(file.buffer)
+  }
+
+  @Get('export')
+  @UseGuards(JwtAuthGuard, UserLookupGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  @Header('Content-Type', 'text/csv; charset=utf-8')
+  @Header('Content-Disposition', 'attachment; filename="members.csv"')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Export full members table as CSV (admin only)' })
+  @ApiResponse({ status: HttpStatus.OK, description: 'CSV file download' })
+  @ApiResponse({ status: HttpStatus.FORBIDDEN, description: 'Admin required' })
+  async exportCsv(): Promise<string> {
+    return this.peopleService.exportCsv()
   }
 
   @Get(':id')

@@ -1,47 +1,29 @@
 <template>
   <div class="flex flex-col gap-6">
-    <div ref="formCardRef" class="mb-6">
+    <!-- Header: title + add button outside any card -->
+    <div class="flex items-center justify-between">
+      <h2 class="text-xl font-semibold text-surface-900 flex items-center gap-2">
+        <i class="pi pi-flag text-[#6F8FAF]"></i>
+        {{ editingEvent ? 'Edit Rush Event' : 'Rush Events' }}
+      </h2>
+      <Button
+        v-if="!formOpen"
+        label="Add Rush Event"
+        icon="pi pi-plus"
+        @click="formOpen = true"
+        class="bg-[#6F8FAF] hover:bg-[#5a7a9a] border-[#6F8FAF]"
+      />
+    </div>
+
+    <!-- Form card — only shown when open -->
+    <div ref="formCardRef" v-show="formOpen">
       <Card :pt="formCardPassThrough">
-        <template #title>
-          <button
-            id="rush-event-form-trigger"
-            type="button"
-            class="flex flex-wrap items-center justify-between gap-3 w-full text-left text-xl font-semibold leading-normal rounded-md border-0 bg-transparent p-1 -m-1 cursor-pointer text-surface-900 transition-colors hover:bg-surface-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6F8FAF]"
-            :aria-expanded="formOpen"
-            aria-controls="rush-event-form-panel"
-            :aria-label="
-              formOpen
-                ? editingEvent
-                  ? 'Hide edit rush event form'
-                  : 'Hide add rush event form'
-                : editingEvent
-                  ? 'Show edit rush event form'
-                  : 'Show add rush event form'
-            "
-            v-tooltip.top="formOpen ? 'Hide form' : 'Show form'"
-            @click="formOpen = !formOpen"
-          >
-            <span class="flex items-center gap-2 min-w-0">
-              <i class="pi pi-plus-circle ml-3 text-xl text-[#6F8FAF] shrink-0" aria-hidden="true"></i>
-              <span>{{ editingEvent ? 'Edit Rush Event' : 'Add Rush Event' }}</span>
-            </span>
-            <i
-              :class="[
-                'pi shrink-0 text-xl text-[#6F8FAF]',
-                formOpen ? 'pi-minus' : 'pi-plus',
-              ]"
-              aria-hidden="true"
-            />
-          </button>
-        </template>
         <template #content>
-          <div
-            id="rush-event-form-panel"
-            v-show="formOpen"
-            class="flex flex-col gap-6"
-            role="region"
-            aria-labelledby="rush-event-form-trigger"
-          >
+          <div class="flex flex-col gap-6">
+            <div
+              id="rush-event-form-panel"
+              class="flex flex-col gap-6"
+            >
             <form class="flex flex-col gap-5" @submit.prevent="handleSubmit">
               <div class="flex flex-col gap-2">
                 <label for="rush-title" class="font-semibold text-surface-700">
@@ -157,6 +139,7 @@
                 />
               </div>
             </form>
+          </div>
           </div>
         </template>
       </Card>

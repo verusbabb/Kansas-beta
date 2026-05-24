@@ -111,6 +111,33 @@ export class StorageService {
   }
 
   /**
+   * Download a file from Cloud Storage and return its contents as a Buffer.
+   * Returns null if the file does not exist.
+   */
+  async downloadFile(fileName: string): Promise<Buffer | null> {
+    if (!this.bucketName) {
+      throw new InternalServerErrorException('Storage bucket not configured')
+    }
+
+    try {
+      const bucket = this.storage.bucket(this.bucketName)
+      const fileHandle = bucket.file(fileName)
+
+      const [exists] = await fileHandle.exists()
+      if (!exists) {
+        this.logger.warn('downloadFile: file not found', { fileName })
+        return null
+      }
+
+      const [contents] = await fileHandle.download()
+      return contents
+    } catch (error) {
+      this.logger.error('Failed to download file', { fileName, error })
+      throw new InternalServerErrorException(`Failed to download file: ${fileName}`)
+    }
+  }
+
+  /**
    * Delete a file from Cloud Storage
    * @param fileName - Path/name of the file in the bucket
    */

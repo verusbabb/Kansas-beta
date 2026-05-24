@@ -75,15 +75,15 @@ export class EnvironmentVariables {
   // Alumni enrichment (optional — feature degrades gracefully without these)
   @IsString()
   @IsOptional()
-  PROXYCURL_API_KEY?: string
-
-  @IsString()
-  @IsOptional()
-  TAVILY_API_KEY?: string
-
-  @IsString()
-  @IsOptional()
   PDL_API_KEY?: string
+
+  @IsString()
+  @IsOptional()
+  FULLCONTACT_API_KEY?: string
+
+  @IsString()
+  @IsOptional()
+  DATAGMA_API_KEY?: string
 
   // Gemini AI (Ask feature)
   @IsString()

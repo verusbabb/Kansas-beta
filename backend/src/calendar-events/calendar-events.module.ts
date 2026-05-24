@@ -6,11 +6,13 @@ import { CalendarEvent } from '../database/entities/calendar-event.entity'
 import { User } from '../database/entities/user.entity'
 import { Person } from '../database/entities/person.entity'
 import { AuthModule } from '../auth/auth.module'
+import { KnowledgeModule } from '../knowledge/knowledge.module'
 
 @Module({
   imports: [
     SequelizeModule.forFeature([CalendarEvent, User, Person]), // User + Person for UserLookupGuard
     AuthModule,
+    KnowledgeModule,
   ],
   controllers: [CalendarEventsController],
   providers: [CalendarEventsService],

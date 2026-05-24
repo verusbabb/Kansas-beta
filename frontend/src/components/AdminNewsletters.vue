@@ -1,10 +1,16 @@
 <template>
   <div class="flex flex-col gap-6">
+    <!-- Header: title outside the card -->
+    <h2 class="text-xl font-semibold text-surface-900 flex items-center gap-2">
+      <i class="pi pi-book text-[#6F8FAF]"></i>
+      Newsletters
+    </h2>
+
     <!-- Add Newsletter Section -->
     <Card class="mb-6">
       <template #title>
         <div class="flex items-center gap-2">
-          <i class="pi pi-book text-[#6F8FAF]"></i>
+          <i class="pi pi-plus-circle text-[#6F8FAF]"></i>
           <span>Add Newsletter</span>
         </div>
       </template>
@@ -96,6 +102,7 @@
                 icon="pi pi-plus"
                 :loading="isSubmittingNewsletter"
                 :disabled="isSubmittingNewsletter || !isNewsletterFormValid"
+                class="bg-[#6F8FAF] hover:bg-[#5a7a9a] border-[#6F8FAF]"
               />
             </div>
           </form>

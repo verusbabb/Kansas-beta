@@ -7,12 +7,14 @@ import { User } from '../database/entities/user.entity'
 import { Person } from '../database/entities/person.entity'
 import { AuthModule } from '../auth/auth.module'
 import { StorageModule } from '../storage/storage.module'
+import { KnowledgeModule } from '../knowledge/knowledge.module'
 
 @Module({
   imports: [
-    SequelizeModule.forFeature([Newsletter, User, Person]), // User + Person for UserLookupGuard
+    SequelizeModule.forFeature([Newsletter, User, Person]),
     AuthModule,
     StorageModule,
+    KnowledgeModule,
   ],
   controllers: [NewslettersController],
   providers: [NewslettersService],

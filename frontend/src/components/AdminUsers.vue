@@ -1,38 +1,25 @@
 <template>
   <div class="flex flex-col gap-6">
-    <Card class="mb-6" :pt="assignRolesCardPassThrough">
-      <template #title>
-        <button
-          id="assign-roles-trigger"
-          type="button"
-          class="flex flex-wrap items-center justify-between gap-3 w-full text-left text-xl font-semibold leading-normal rounded-md border-0 bg-transparent p-1 -m-1 cursor-pointer text-surface-900 transition-colors hover:bg-surface-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6F8FAF]"
-          :aria-expanded="assignRolesFormOpen"
-          aria-controls="assign-roles-panel"
-          :aria-label="assignRolesFormOpen ? 'Hide add/manage user roles' : 'Show add/manage user roles'"
-          v-tooltip.top="assignRolesFormOpen ? 'Hide panel' : 'Show panel'"
-          @click="assignRolesFormOpen = !assignRolesFormOpen"
-        >
-          <span class="flex items-center gap-2 min-w-0">
-            <i class="pi pi-users ml-3 text-xl text-[#6F8FAF] shrink-0" aria-hidden="true"></i>
-            <span>Add/Manage User Roles</span>
-          </span>
-          <i
-            :class="[
-              'pi shrink-0 text-xl text-[#6F8FAF]',
-              assignRolesFormOpen ? 'pi-minus' : 'pi-plus',
-            ]"
-            aria-hidden="true"
-          />
-        </button>
-      </template>
-      <template #content>
-        <div
-          id="assign-roles-panel"
-          v-show="assignRolesFormOpen"
-          class="flex flex-col gap-6"
-          role="region"
-          aria-labelledby="assign-roles-trigger"
-        >
+    <!-- Header: title + button outside any card -->
+    <div class="flex items-center justify-between">
+      <h2 class="text-xl font-semibold text-surface-900 flex items-center gap-2">
+        <i class="pi pi-users text-[#6F8FAF]"></i>
+        Add/Manage User Roles
+      </h2>
+      <Button
+        v-if="!assignRolesFormOpen"
+        label="Manage Roles"
+        icon="pi pi-plus"
+        @click="assignRolesFormOpen = true"
+        class="bg-[#6F8FAF] hover:bg-[#5a7a9a] border-[#6F8FAF]"
+      />
+    </div>
+
+    <!-- Assign roles form — only shown when open -->
+    <div v-show="assignRolesFormOpen">
+      <Card class="mb-6">
+        <template #content>
+          <div class="flex flex-col gap-6">
           <p class="text-surface-600 text-sm m-0">
             Search the chapter directory, choose someone with an email on file, then set their app role
             (Viewer, Editor, or Admin). This creates an app account if they do not have one yet, or updates
@@ -107,6 +94,7 @@
         </div>
       </template>
     </Card>
+    </div>
 
     <Card class="mb-6">
       <template #title>
@@ -265,14 +253,6 @@ const directoryRole = ref<UserRole>(UserRole.VIEWER)
 const assignRolesBaseline = ref('')
 const assignRoleSaving = ref(false)
 
-const assignRolesCardPassThrough = computed(() =>
-  assignRolesFormOpen.value
-    ? {}
-    : {
-        body: { class: '!p-0' },
-        content: { class: '!p-0' },
-      },
-)
 
 const peopleSelectOptions = computed(() =>
   [...peopleStore.list]

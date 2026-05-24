@@ -6,6 +6,7 @@ import { CalendarEvent } from '../database/entities/calendar-event.entity'
 import { CreateCalendarEventDto } from './dto/create-calendar-event.dto'
 import { UpdateCalendarEventDto } from './dto/update-calendar-event.dto'
 import { CalendarEventResponseDto } from './dto/calendar-event-response.dto'
+import { IndexingService } from '../knowledge/indexing.service'
 
 @Injectable()
 export class CalendarEventsService {
@@ -13,6 +14,7 @@ export class CalendarEventsService {
     @InjectModel(CalendarEvent)
     private calendarEventModel: typeof CalendarEvent,
     private readonly logger: PinoLogger,
+    private readonly indexingService: IndexingService,
   ) {
     this.logger.setContext(CalendarEventsService.name)
   }
@@ -59,6 +61,7 @@ export class CalendarEventsService {
         allDay: createCalendarEventDto.allDay,
       })
 
+      void this.indexingService.indexOneCalendarEvent(calendarEvent)
       return this.toResponseDto(calendarEvent)
     } catch (error) {
       if (error instanceof BadRequestException) {
@@ -229,6 +232,7 @@ export class CalendarEventsService {
         allDay,
       })
 
+      void this.indexingService.indexOneCalendarEvent(event)
       return this.toResponseDto(event)
     } catch (error) {
       if (error instanceof NotFoundException || error instanceof BadRequestException) {
@@ -250,6 +254,7 @@ export class CalendarEventsService {
         throw new NotFoundException(`Calendar event with ID ${id} not found`)
       }
 
+      void this.indexingService.deleteCalendarEventIndex(id)
       await event.destroy()
     } catch (error) {
       if (error instanceof NotFoundException) {

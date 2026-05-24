@@ -25,6 +25,7 @@ import {
 import { StorageService } from '../storage/storage.service'
 import { PersonRelationshipsService } from '../person-relationships/person-relationships.service'
 import { ExecTeamService } from '../exec-team/exec-team.service'
+import { IndexingService } from '../knowledge/indexing.service'
 
 /** Match `ExecTeamService` roster headshot signed URL lifetime. */
 const PROFILE_HEADSHOT_URL_EXPIRY_MINUTES = 7 * 24 * 60
@@ -49,8 +50,43 @@ export class PeopleService {
     private readonly logger: PinoLogger,
     private readonly personRelationshipsService: PersonRelationshipsService,
     private readonly execTeamService: ExecTeamService,
+    private readonly indexingService: IndexingService,
   ) {
     this.logger.setContext(PeopleService.name)
+  }
+
+  async exportCsv(): Promise<string> {
+    const EXPORT_COLUMNS = [
+      'firstName',
+      'lastName',
+      'email',
+      'homePhone',
+      'mobilePhone',
+      'addressLine1',
+      'city',
+      'state',
+      'zip',
+      'linkedinProfileUrl',
+      'pledgeClassYear',
+      'isMember',
+      'isParent',
+      'externalContactId',
+    ] as const
+
+    const rows = await this.personModel.findAll({ attributes: [...EXPORT_COLUMNS] })
+
+    const escape = (val: unknown): string => {
+      if (val === null || val === undefined) return ''
+      const str = String(val)
+      if (str.includes('"') || str.includes(',') || str.includes('\n')) {
+        return `"${str.replace(/"/g, '""')}"`
+      }
+      return str
+    }
+
+    const header = EXPORT_COLUMNS.join(',')
+    const lines = rows.map((r) => EXPORT_COLUMNS.map((col) => escape(r[col])).join(','))
+    return [header, ...lines].join('\r\n')
   }
 
   private async signedUrlForHeadshotPath(
@@ -322,6 +358,7 @@ export class PeopleService {
         }
         await existing.save()
         this.logger.info('Restored soft-deleted person', { id: existing.id, email: existing.email })
+        void this.indexingService.indexOnePerson(existing)
         return this.toResponseDto(existing, await this.personHasLegacyMemberLink(existing.id), {
           fullDetail: true,
         })
@@ -356,6 +393,7 @@ export class PeopleService {
       linkedinProfileUrl: this.emptyToNullText(dto.linkedinProfileUrl),
     })
 
+    void this.indexingService.indexOnePerson(person)
     return this.toResponseDto(person, false, { fullDetail: true })
   }
 
@@ -425,6 +463,7 @@ export class PeopleService {
       }
       await person.save()
       this.logger.info('Self-updated person', { id: person.id })
+      void this.indexingService.indexOnePerson(person)
       return this.toResponseDto(person, await this.personHasLegacyMemberLink(person.id), {
         viewer: currentUser,
       })
@@ -522,6 +561,7 @@ export class PeopleService {
 
     await person.save()
     this.logger.info('Updated person', { id: person.id })
+    void this.indexingService.indexOnePerson(person)
     return this.toResponseDto(person, await this.personHasLegacyMemberLink(person.id), {
       fullDetail: true,
     })
@@ -636,6 +676,7 @@ export class PeopleService {
     }
     await person.destroy()
     this.logger.info('Soft-deleted person', { id })
+    void this.indexingService.deletePersonIndex(id)
   }
 
   /**

@@ -18,6 +18,8 @@ import { RushEvent } from './entities/rush-event.entity'
 import { RushPageWidget } from './entities/rush-page-widget.entity'
 import { RushPhoto } from './entities/rush-photo.entity'
 import { HistoryImage } from './entities/history-image.entity'
+import { PersonEnrichment } from './entities/person-enrichment.entity'
+import { KnowledgeChunk } from './entities/knowledge-chunk.entity'
 
 @Module({
   imports: [
@@ -93,6 +95,8 @@ import { HistoryImage } from './entities/history-image.entity'
           ExecTerm,
           ExecAssignment,
           HouseMom,
+          PersonEnrichment,
+          KnowledgeChunk,
         ]
 
         return sequelizeConfig
@@ -115,6 +119,8 @@ import { HistoryImage } from './entities/history-image.entity'
       ExecTerm,
       ExecAssignment,
       HouseMom,
+      PersonEnrichment,
+      KnowledgeChunk,
     ]),
   ],
   exports: [SequelizeModule],
@@ -137,6 +143,35 @@ export class DatabaseModule implements OnModuleInit {
         await this.sequelize.sync({ alter: true })
       } catch (error) {
         // Don't throw - allow app to continue (might be connection issue)
+      }
+
+      // Ensure pgvector extension exists.
+      // Requires superuser — fails gracefully if extension already exists or
+      // if the DB user lacks privileges (the extension may have been created manually).
+      try {
+        await this.sequelize.query(`CREATE EXTENSION IF NOT EXISTS vector`)
+      } catch {
+        // Ignore: extension likely already exists or user lacks CREATE EXTENSION privilege
+      }
+
+      // Ensure the embedding column and HNSW index exist on knowledge_chunks.
+      // These are managed manually because Sequelize does not natively support pgvector.
+      try {
+        await this.sequelize.query(`
+          ALTER TABLE knowledge_chunks
+          ADD COLUMN IF NOT EXISTS embedding vector(768)
+        `)
+      } catch (error) {
+        console.warn('pgvector column setup warning (non-fatal):', (error as Error).message)
+      }
+      try {
+        await this.sequelize.query(`
+          CREATE INDEX IF NOT EXISTS knowledge_chunks_embedding_hnsw_idx
+          ON knowledge_chunks
+          USING hnsw (embedding vector_cosine_ops)
+        `)
+      } catch (error) {
+        console.warn('pgvector index setup warning (non-fatal):', (error as Error).message)
       }
     }
   }

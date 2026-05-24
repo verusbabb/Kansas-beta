@@ -8,19 +8,35 @@ export interface PdlProfile {
   jobTitle: string | null
   industry: string | null
   headline: string | null
+  linkedinUrl: string | null
   /** PDL likelihood score 1–10. Higher = more confident match. */
   likelihood: number
 }
 
-interface PdlResponse {
+interface PdlPersonData {
+  job_title: string | null
+  job_company_name: string | null
+  industry: string | null
+  headline: string | null
+  linkedin_url: string | null
+}
+
+interface PdlEnrichResponse {
   status: number
   likelihood: number
-  data: {
-    job_title: string | null
-    job_company_name: string | null
-    industry: string | null
-    headline: string | null
-  }
+  data: PdlPersonData
+}
+
+interface PdlSearchResult {
+  linkedin_url: string | null
+  first_name: string | null
+  last_name: string | null
+}
+
+interface PdlSearchResponse {
+  status: number
+  total: number
+  data: PdlSearchResult[]
 }
 
 /** Minimum PDL likelihood score to trust a match (1–10 scale). */
@@ -74,7 +90,6 @@ export class PdlService {
     }
 
     if (params.linkedinUrl) {
-      // PDL expects the profile path, not the full URL
       const match = params.linkedinUrl.match(/linkedin\.com\/in\/([^/?#]+)/)
       if (match) {
         query.profile = `linkedin.com/in/${match[1]}`
@@ -83,7 +98,7 @@ export class PdlService {
 
     try {
       const { data } = await firstValueFrom(
-        this.http.get<PdlResponse>('https://api.peopledatalabs.com/v5/person/enrich', {
+        this.http.get<PdlEnrichResponse>('https://api.peopledatalabs.com/v5/person/enrich', {
           params: query,
           timeout: 10000,
         }),
@@ -110,15 +125,86 @@ export class PdlService {
         jobTitle: data.data?.job_title ?? null,
         industry: data.data?.industry ?? null,
         headline: data.data?.headline ?? null,
+        linkedinUrl: data.data?.linkedin_url ?? null,
         likelihood: data.likelihood,
       }
     } catch (err: any) {
       const status = err?.response?.status
-      // 404 = no match found — not an error, just no data
       if (status === 404) return null
 
-      this.logger.warn('PDL: request failed', {
+      this.logger.warn('PDL: enrichPerson request failed', {
         name: `${params.firstName} ${params.lastName}`,
+        status,
+        message: err?.message,
+      })
+      return null
+    }
+  }
+
+  /**
+   * Search PDL by name + location to discover a LinkedIn URL for people
+   * who don't have one stored in the DB.
+   * Returns the best-matching LinkedIn URL, or null if nothing found.
+   */
+  async searchByNameLocation(
+    firstName: string,
+    lastName: string,
+    city?: string | null,
+    state?: string | null,
+  ): Promise<string | null> {
+    if (!this.apiKey) return null
+
+    const must: object[] = [
+      { term: { first_name: firstName.toLowerCase() } },
+      { term: { last_name: lastName.toLowerCase() } },
+    ]
+
+    if (city) {
+      must.push({ term: { location_locality: city.toLowerCase() } })
+    }
+    if (state) {
+      must.push({ term: { location_region: state.toLowerCase() } })
+    }
+
+    const esQuery = { query: { bool: { must } } }
+
+    try {
+      const { data } = await firstValueFrom(
+        this.http.get<PdlSearchResponse>('https://api.peopledatalabs.com/v5/person/search', {
+          params: {
+            api_key: this.apiKey,
+            query: JSON.stringify(esQuery),
+            size: 1,
+            pretty: 'false',
+          },
+          timeout: 10000,
+        }),
+      )
+
+      if (data.status !== 200 || !data.data?.length) {
+        this.logger.info('PDL: name/location search returned no results', {
+          name: `${firstName} ${lastName}`,
+          total: data.total ?? 0,
+          status: data.status,
+        })
+        return null
+      }
+
+      const linkedinUrl = data.data[0]?.linkedin_url ?? null
+
+      this.logger.info('PDL: name/location search result', {
+        name: `${firstName} ${lastName}`,
+        total: data.total,
+        linkedinUrl,
+      })
+
+      return linkedinUrl
+    } catch (err: any) {
+      const status = err?.response?.status
+      if (status === 404) return null
+
+      this.logger.warn('PDL: searchByNameLocation failed', {
+        name: `${firstName} ${lastName}`,
         status,
         message: err?.message,
       })
