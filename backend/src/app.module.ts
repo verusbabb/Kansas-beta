@@ -21,6 +21,7 @@ import { ExecTeamModule } from './exec-team/exec-team.module'
 import { HouseMomModule } from './house-mom/house-mom.module'
 import { AskModule } from './ask/ask.module'
 import { KnowledgeModule } from './knowledge/knowledge.module'
+import { Auth0ManagementModule } from './auth0/auth0-management.module'
 import { createLoggerConfig } from './config/logger.config'
 import { HttpExceptionFilter } from './common/filters/http-exception.filter'
 import { AppConfig } from './config/configuration'
@@ -28,6 +29,7 @@ import { AppConfig } from './config/configuration'
 @Module({
   imports: [
     ConfigModule, // Load configuration (must be first)
+    Auth0ManagementModule, // Auth0 Management API (global — injected wherever needed)
     DatabaseModule, // Database connection (requires ConfigModule)
     AuthModule, // Authentication and authorization
     NewslettersModule, // Newsletters API

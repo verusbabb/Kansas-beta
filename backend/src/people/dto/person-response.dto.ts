@@ -25,14 +25,28 @@ export class PersonResponseDto {
   @ApiPropertyOptional({
     nullable: true,
     description:
-      'Null for guests or when the member has opted out of sharing email with signed-in members.',
+      'Personal (sign-in) email. Null for guests or when the member has opted out of sharing with signed-in members.',
   })
-  email?: string | null
+  personalEmail?: string | null
 
   @ApiPropertyOptional({
-    description: 'True when an email is stored; use with `email: null` for redacted display.',
+    description:
+      'True when a personal email is stored; use with `personalEmail: null` for redacted display.',
   })
   hasEmailOnFile?: boolean
+
+  @ApiPropertyOptional({
+    nullable: true,
+    description:
+      'Work email. Null for guests or when the member has opted out of sharing with signed-in members.',
+  })
+  workEmail?: string | null
+
+  @ApiPropertyOptional({
+    description:
+      'True when a work email is stored; use with `workEmail: null` for redacted display.',
+  })
+  hasWorkEmailOnFile?: boolean
 
   @ApiPropertyOptional({
     description:
@@ -62,6 +76,17 @@ export class PersonResponseDto {
   @ApiPropertyOptional()
   pledgeClassYear?: number | null
 
+  @ApiPropertyOptional({ nullable: true, description: 'Employer name when provided and visible' })
+  employer?: string | null
+
+  @ApiPropertyOptional({ nullable: true, description: 'Job title when provided and visible' })
+  jobTitle?: string | null
+
+  @ApiPropertyOptional({
+    description: 'Present when viewing your own profile or editor/admin full rows.',
+  })
+  shareEmployerWithLoggedInMembers?: boolean
+
   @ApiPropertyOptional({
     description: 'LinkedIn profile URL when provided and visible',
     nullable: true,
@@ -84,6 +109,11 @@ export class PersonResponseDto {
     description: 'Present when viewing your own profile or editor/admin full rows.',
   })
   shareEmailWithLoggedInMembers?: boolean
+
+  @ApiPropertyOptional({
+    description: 'Present when viewing your own profile or editor/admin full rows.',
+  })
+  shareWorkEmailWithLoggedInMembers?: boolean
 
   @ApiPropertyOptional({
     description: 'Present when viewing your own profile or editor/admin full rows.',

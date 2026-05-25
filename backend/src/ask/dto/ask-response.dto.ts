@@ -49,6 +49,8 @@ export class AlumniResultDto {
   @ApiProperty({ nullable: true }) pledgeClassYear!: number | null
   @ApiProperty({ nullable: true }) linkedinProfileUrl!: string | null
   @ApiProperty({ nullable: true }) email!: string | null
+  @ApiProperty({ nullable: true }) employer!: string | null
+  @ApiProperty({ nullable: true }) jobTitle!: string | null
   @ApiProperty({ nullable: true }) profileHeadshotFilePath!: string | null
 
   /** Office positions held in the chapter (exec team history). */

@@ -86,9 +86,17 @@ export class CreatePersonDto {
   @MaxLength(20)
   zip?: string
 
-  @ApiProperty({ example: 'john.doe@example.com' })
+  @ApiProperty({
+    example: 'john.doe@example.com',
+    description: 'Personal (sign-in) email — required and unique',
+  })
   @IsEmail()
-  email!: string
+  personalEmail!: string
+
+  @ApiPropertyOptional({ example: 'john.doe@company.com', description: 'Work email (optional)' })
+  @IsOptional()
+  @IsEmail()
+  workEmail?: string
 
   @ApiPropertyOptional({
     description: 'Optional CRM contact id (e.g. Salesforce) for import-linked rows',
@@ -108,6 +116,20 @@ export class CreatePersonDto {
   @IsOptional()
   @IsString()
   mobilePhone?: string
+
+  @ApiPropertyOptional({ example: 'Acme Corp', description: 'Employer / company name' })
+  @Transform(trimEmptyToUndefined)
+  @IsOptional()
+  @IsString()
+  @MaxLength(256)
+  employer?: string
+
+  @ApiPropertyOptional({ example: 'Software Engineer', description: 'Job title' })
+  @Transform(trimEmptyToUndefined)
+  @IsOptional()
+  @IsString()
+  @MaxLength(256)
+  jobTitle?: string
 
   @ApiPropertyOptional({
     example: 'https://www.linkedin.com/in/example',

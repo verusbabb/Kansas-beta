@@ -67,6 +67,22 @@ export class EnvironmentVariables {
   @IsOptional()
   AUTH0_AUDIENCE?: string
 
+  @IsString()
+  @IsOptional()
+  AUTH0_MGMT_CLIENT_ID?: string
+
+  @IsString()
+  @IsOptional()
+  AUTH0_MGMT_CLIENT_SECRET?: string
+
+  @IsString()
+  @IsOptional()
+  AUTH0_DB_CONNECTION?: string
+
+  @IsString()
+  @IsOptional()
+  PRE_REG_SECRET?: string
+
   // Google Cloud Storage
   @IsString()
   @IsOptional()

@@ -85,7 +85,7 @@ export class OptionalUserLookupGuard implements CanActivate {
     if (user.personId) return
     const norm = user.email.trim().toLowerCase()
     const matches = await this.personModel.findAll({
-      where: { email: { [Op.iLike]: norm } },
+      where: { personalEmail: { [Op.iLike]: norm } },
     })
     if (matches.length !== 1) return
     user.personId = matches[0].id

@@ -152,17 +152,51 @@
 
           <div class="flex flex-col gap-2">
             <label for="person-email" class="font-semibold text-surface-700">
-              Email <span class="text-red-500">*</span>
+              Personal Email (sign-in email) <span class="text-red-500">*</span>
             </label>
             <InputText
               id="person-email"
-              v-model="form.email"
+              v-model="form.personalEmail"
               type="email"
               placeholder="name@example.com"
-              :class="{ 'p-invalid': errors.email }"
+              :class="{ 'p-invalid': errors.personalEmail }"
               class="w-full md:max-w-xl"
             />
-            <small v-if="errors.email" class="p-error">{{ errors.email }}</small>
+            <small v-if="errors.personalEmail" class="p-error">{{ errors.personalEmail }}</small>
+          </div>
+
+          <div class="flex flex-col gap-2">
+            <label for="person-work-email" class="font-semibold text-surface-700">Work Email</label>
+            <InputText
+              id="person-work-email"
+              v-model="form.workEmail"
+              type="email"
+              placeholder="name@company.com"
+              :class="{ 'p-invalid': errors.workEmail }"
+              class="w-full md:max-w-xl"
+            />
+            <small v-if="errors.workEmail" class="p-error">{{ errors.workEmail }}</small>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div class="flex flex-col gap-2">
+              <label for="person-employer" class="font-semibold text-surface-700">Employer</label>
+              <InputText
+                id="person-employer"
+                v-model="form.employer"
+                placeholder="Acme Corp"
+                class="w-full"
+              />
+            </div>
+            <div class="flex flex-col gap-2">
+              <label for="person-job-title" class="font-semibold text-surface-700">Job Title</label>
+              <InputText
+                id="person-job-title"
+                v-model="form.jobTitle"
+                placeholder="Software Engineer"
+                class="w-full"
+              />
+            </div>
           </div>
 
           <div class="flex flex-col gap-2">
@@ -311,7 +345,10 @@ const form = ref({
   city: '',
   state: '',
   zip: '',
-  email: '',
+  personalEmail: '',
+  workEmail: '',
+  employer: '',
+  jobTitle: '',
   linkedinProfileUrl: '',
   externalContactId: '',
   homePhone: '',
@@ -327,7 +364,8 @@ const errors = ref({
   city: '',
   state: '',
   zip: '',
-  email: '',
+  personalEmail: '',
+  workEmail: '',
   linkedinProfileUrl: '',
   pledgeClassYear: '',
 })
@@ -346,8 +384,8 @@ const isFormFilled = computed(() => {
     f.kind &&
     f.firstName.trim() !== '' &&
     f.lastName.trim() !== '' &&
-    f.email.trim() !== '' &&
-    emailRegex.test(f.email) &&
+    f.personalEmail.trim() !== '' &&
+    emailRegex.test(f.personalEmail) &&
     (f.state === '' || US_STATE_CODE_SET.has(f.state))
   )
 })
@@ -361,11 +399,13 @@ function clearErrors() {
     city: '',
     state: '',
     zip: '',
-    email: '',
+    personalEmail: '',
+    workEmail: '',
     linkedinProfileUrl: '',
     pledgeClassYear: '',
   }
 }
+
 
 function validate(): boolean {
   clearErrors()
@@ -388,11 +428,15 @@ function validate(): boolean {
     errors.value.state = 'Select a valid state or leave blank'
     ok = false
   }
-  if (!f.email.trim()) {
-    errors.value.email = 'Email is required'
+  if (!f.personalEmail.trim()) {
+    errors.value.personalEmail = 'Personal email is required'
     ok = false
-  } else if (!emailRegex.test(f.email)) {
-    errors.value.email = 'Enter a valid email'
+  } else if (!emailRegex.test(f.personalEmail)) {
+    errors.value.personalEmail = 'Enter a valid email'
+    ok = false
+  }
+  if (f.workEmail.trim() && !emailRegex.test(f.workEmail)) {
+    errors.value.workEmail = 'Enter a valid email'
     ok = false
   }
 
@@ -428,7 +472,10 @@ function resetForm() {
     city: '',
     state: '',
     zip: '',
-    email: '',
+    personalEmail: '',
+    workEmail: '',
+    employer: '',
+    jobTitle: '',
     linkedinProfileUrl: '',
     externalContactId: '',
     homePhone: '',
@@ -447,8 +494,14 @@ async function handleSubmit() {
       kind: form.value.kind,
       firstName: form.value.firstName.trim(),
       lastName: form.value.lastName.trim(),
-      email: form.value.email.trim(),
+      personalEmail: form.value.personalEmail.trim(),
     }
+    const we = form.value.workEmail.trim()
+    if (we) payload.workEmail = we
+    const emp = form.value.employer.trim()
+    if (emp) payload.employer = emp
+    const jt = form.value.jobTitle.trim()
+    if (jt) payload.jobTitle = jt
     const street = form.value.addressLine1.trim()
     if (street) payload.addressLine1 = street
     const city = form.value.city.trim()

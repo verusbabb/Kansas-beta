@@ -350,7 +350,7 @@ const memberSelectOptions = computed(() =>
     .filter((p) => p.isMember)
     .map((p) => ({
       value: p.id,
-      label: `${p.firstName} ${p.lastName} · ${p.email}`,
+      label: `${p.firstName} ${p.lastName} · ${p.personalEmail}`,
     }))
     .sort((a, b) => a.label.localeCompare(b.label)),
 )

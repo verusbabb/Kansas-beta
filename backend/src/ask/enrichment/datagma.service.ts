@@ -69,10 +69,8 @@ export class DatagmaService {
       }
 
       const person = data.person
-      const employer =
-        person.current_company?.name ?? person.company ?? null
-      const industry =
-        person.current_company?.industry ?? person.industry ?? null
+      const employer = person.current_company?.name ?? person.company ?? null
+      const industry = person.current_company?.industry ?? person.industry ?? null
 
       if (!employer && !person.job_title && !person.linkedin_url) {
         this.logger.info('Datagma: empty person data', { email })

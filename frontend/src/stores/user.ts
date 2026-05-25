@@ -123,6 +123,13 @@ export const useUserStore = defineStore('user', {
     },
 
     /**
+     * Resend the invite / password-reset email to an existing user.
+     */
+    async resendInvite(id: string): Promise<void> {
+      await apiClient.post(`/users/${id}/resend-invite`)
+    },
+
+    /**
      * Delete a user
      */
     async deleteUser(id: string) {

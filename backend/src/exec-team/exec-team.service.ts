@@ -143,7 +143,7 @@ export class ExecTeamService {
           id: p.id,
           firstName: p.firstName,
           lastName: p.lastName,
-          email: term.isCurrent ? (roleEmail ?? p.email) : null,
+          email: term.isCurrent ? (roleEmail ?? p.personalEmail) : null,
           phone: term.isCurrent ? (p.mobilePhone ?? null) : null,
           headshotUrl: await this.headshotUrlForPerson(p),
         }

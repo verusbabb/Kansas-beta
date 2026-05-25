@@ -7,6 +7,7 @@ export interface AppConfig {
     port: number
     name: string
   }
+  preRegSecret?: string
   enrichment: {
     pdlApiKey?: string
     fullcontactApiKey?: string
@@ -36,6 +37,9 @@ export interface AppConfig {
   auth0: {
     domain?: string
     audience?: string
+    mgmtClientId?: string
+    mgmtClientSecret?: string
+    dbConnection: string
   }
 }
 
@@ -43,6 +47,7 @@ export default registerAs('config', (): AppConfig => {
   const env = process.env as unknown as EnvironmentVariables
 
   return {
+    preRegSecret: env.PRE_REG_SECRET,
     app: {
       env: (env.NODE_ENV as Environment) || Environment.Development,
       port: env.PORT ? parseInt(env.PORT, 10) : 3000,
@@ -72,6 +77,9 @@ export default registerAs('config', (): AppConfig => {
     auth0: {
       domain: env.AUTH0_DOMAIN,
       audience: env.AUTH0_AUDIENCE,
+      mgmtClientId: env.AUTH0_MGMT_CLIENT_ID,
+      mgmtClientSecret: env.AUTH0_MGMT_CLIENT_SECRET,
+      dbConnection: env.AUTH0_DB_CONNECTION || 'Username-Password-Authentication',
     },
     enrichment: {
       pdlApiKey: env.PDL_API_KEY,

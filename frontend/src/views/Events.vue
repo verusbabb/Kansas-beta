@@ -278,7 +278,7 @@ import { ref, computed, onMounted } from 'vue'
 import Card from 'primevue/card'
 import Button from 'primevue/button'
 import Dialog from 'primevue/dialog'
-import { useCalendarEventStore } from '@/stores/calendarEvent'
+import { useCalendarEventStore, type CalendarEvent } from '@/stores/calendarEvent'
 
 const calendarEventStore = useCalendarEventStore()
 
@@ -294,7 +294,7 @@ const getCurrentWeekStart = () => {
 }
 const currentWeekStart = ref(getCurrentWeekStart())
 const selectedDate = ref<number | null>(null)
-const selectedEvent = ref(null)
+const selectedEvent = ref<CalendarEvent | null>(null)
 const showEventDialog = ref(false)
 
 const daysOfWeek = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
@@ -357,7 +357,7 @@ const sortedEvents = computed(() => {
   })
 })
 
-const isToday = (day) => {
+const isToday = (day: number) => {
   const today = new Date()
   const year = currentDate.value.getFullYear()
   const month = currentDate.value.getMonth()
@@ -368,21 +368,21 @@ const isToday = (day) => {
   )
 }
 
-const hasEvents = (day) => {
+const hasEvents = (day: number) => {
   const year = currentDate.value.getFullYear()
   const month = currentDate.value.getMonth()
   const dateString = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
   return getEventsForDate(dateString).length > 0
 }
 
-const getEventsForDay = (day) => {
+const getEventsForDay = (day: number) => {
   const year = currentDate.value.getFullYear()
   const month = currentDate.value.getMonth()
   const dateString = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
   return getEventsForDate(dateString)
 }
 
-const getEventsForDate = (dateString) => {
+const getEventsForDate = (dateString: string) => {
   // Compare date strings directly (YYYY-MM-DD) to avoid timezone issues
   return calendarEventStore.upcomingEvents.filter((event) => {
     // event.startDate and event.endDate are already in YYYY-MM-DD format
@@ -390,7 +390,7 @@ const getEventsForDate = (dateString) => {
   })
 }
 
-const selectDate = (day) => {
+const selectDate = (day: number) => {
   selectedDate.value = day
   const year = currentDate.value.getFullYear()
   const month = currentDate.value.getMonth()
@@ -433,10 +433,10 @@ const nextWeek = () => {
   currentWeekStart.value = newWeekStart
 }
 
-const formatDateRange = (event) => {
+const formatDateRange = (event: CalendarEvent) => {
   // Parse dates as local time to avoid timezone issues
   // event.startDate and event.endDate are in YYYY-MM-DD format
-  const parseLocalDate = (dateStr) => {
+  const parseLocalDate = (dateStr: string) => {
     const [year, month, day] = dateStr.split('-').map(Number)
     return new Date(year, month - 1, day) // month is 0-indexed
   }
@@ -456,7 +456,7 @@ const formatDateRange = (event) => {
   return `${start.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${end.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`
 }
 
-const formatTimeRange = (event) => {
+const formatTimeRange = (event: CalendarEvent) => {
   if (!event.startTime) return ''
   if (event.endTime) {
     return `${formatTime(event.startTime)} - ${formatTime(event.endTime)}`
@@ -464,7 +464,7 @@ const formatTimeRange = (event) => {
   return formatTime(event.startTime)
 }
 
-const formatTime = (time) => {
+const formatTime = (time: string) => {
   const [hours, minutes] = time.split(':')
   const hour = parseInt(hours, 10)
   const ampm = hour >= 12 ? 'PM' : 'AM'
@@ -472,7 +472,7 @@ const formatTime = (time) => {
   return `${displayHour}:${minutes} ${ampm}`
 }
 
-const showEventDetails = (event) => {
+const showEventDetails = (event: CalendarEvent) => {
   selectedEvent.value = event
   showEventDialog.value = true
 }

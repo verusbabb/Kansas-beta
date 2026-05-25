@@ -10,7 +10,10 @@ export interface CreatePersonPayload {
   city?: string
   state?: string
   zip?: string
-  email: string
+  personalEmail: string
+  workEmail?: string
+  employer?: string
+  jobTitle?: string
   externalContactId?: string
   /** Public LinkedIn profile URL (https://…) */
   linkedinProfileUrl?: string
@@ -28,13 +31,18 @@ export interface UpdatePersonPayload {
   city?: string | null
   state?: string | null
   zip?: string | null
-  email?: string
+  personalEmail?: string
+  workEmail?: string | null
+  employer?: string | null
+  jobTitle?: string | null
   externalContactId?: string | null
   linkedinProfileUrl?: string | null
   homePhone?: string | null
   mobilePhone?: string | null
   pledgeClassYear?: number | null
   shareEmailWithLoggedInMembers?: boolean
+  shareWorkEmailWithLoggedInMembers?: boolean
+  shareEmployerWithLoggedInMembers?: boolean
   sharePhonesWithLoggedInMembers?: boolean
   shareAddressWithLoggedInMembers?: boolean
   shareLinkedInWithLoggedInMembers?: boolean
@@ -49,9 +57,17 @@ export interface PersonResponse {
   state?: string | null
   zip?: string | null
   /** Null when redacted (guests or member opted out). */
-  email?: string | null
-  /** True when an email exists in the directory; use with `email: null` for redacted UI. */
+  personalEmail?: string | null
+  /** True when a personal email exists in the directory; use with `personalEmail: null` for redacted UI. */
   hasEmailOnFile?: boolean
+  /** Null when redacted (guests or member opted out). */
+  workEmail?: string | null
+  /** True when a work email exists in the directory; use with `workEmail: null` for redacted UI. */
+  hasWorkEmailOnFile?: boolean
+  /** Null when redacted (guests or member opted out). */
+  employer?: string | null
+  /** Null when redacted (guests or member opted out). */
+  jobTitle?: string | null
   externalContactId?: string | null
   linkedinProfileUrl?: string | null
   /** True when a URL exists; use with `linkedinProfileUrl: null` for redacted UI. */
@@ -74,6 +90,8 @@ export interface PersonResponse {
   /** Executive roster (era) photo. */
   hasExecRosterHeadshot?: boolean
   shareEmailWithLoggedInMembers?: boolean
+  shareWorkEmailWithLoggedInMembers?: boolean
+  shareEmployerWithLoggedInMembers?: boolean
   sharePhonesWithLoggedInMembers?: boolean
   shareAddressWithLoggedInMembers?: boolean
   shareLinkedInWithLoggedInMembers?: boolean

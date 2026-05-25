@@ -82,18 +82,16 @@ export class UserLookupGuard implements CanActivate {
       })
 
       if (user) {
-        // Security check: If auth0_id exists and doesn't match, prevent account hijacking
-        if (user.auth0Id && user.auth0Id !== auth0Id) {
-          throw new ForbiddenException(
-            'Account email is already linked to a different Auth0 account.',
-          )
-        }
-
-        // First-time login: Link Auth0 account to database user
-        if (!user.auth0Id && auth0Id) {
+        // Update auth0Id whenever the identity changes (e.g. account linking transition,
+        // or user switching between Google and password before the Post-Login action runs).
+        if (user.auth0Id !== auth0Id) {
+          this.logger.log('Updating stored auth0Id for user matched by email', {
+            email,
+            oldAuth0Id: user.auth0Id,
+            newAuth0Id: auth0Id,
+          })
           user.auth0Id = auth0Id
           await user.save()
-          this.logger.log('Linked Auth0 account to user', { email, auth0Id })
         }
 
         await this.linkPersonIdIfUnset(user)
@@ -129,7 +127,7 @@ export class UserLookupGuard implements CanActivate {
     if (user.personId) return
     const norm = user.email.trim().toLowerCase()
     const matches = await this.personModel.findAll({
-      where: { email: { [Op.iLike]: norm } },
+      where: { personalEmail: { [Op.iLike]: norm } },
     })
     if (matches.length !== 1) return
     user.personId = matches[0].id

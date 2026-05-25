@@ -26,6 +26,10 @@ const SECRET_MAPPINGS: Record<string, string> = {
   // Auth0 secrets
   'auth0-domain': 'AUTH0_DOMAIN',
   'auth0-audience': 'AUTH0_AUDIENCE',
+  'auth0-client-id': 'AUTH0_CLIENT_ID',
+  'auth0-mgmt-client-id': 'AUTH0_MGMT_CLIENT_ID',
+  'auth0-mgmt-client-secret': 'AUTH0_MGMT_CLIENT_SECRET',
+  'pre-reg-secret': 'PRE_REG_SECRET',
 
   // User management
   'master-user-emails': 'MASTER_USER_EMAILS',

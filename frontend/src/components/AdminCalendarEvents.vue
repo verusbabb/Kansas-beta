@@ -271,7 +271,7 @@ import InputText from 'primevue/inputtext'
 import Editor from 'primevue/editor'
 import { useConfirm } from 'primevue/useconfirm'
 import { useToast } from 'primevue/usetoast'
-import { useCalendarEventStore } from '@/stores/calendarEvent'
+import { useCalendarEventStore, type CalendarEvent } from '@/stores/calendarEvent'
 
 const calendarEventStore = useCalendarEventStore()
 const confirm = useConfirm()
@@ -301,7 +301,7 @@ const editorModules = {
   ]
 }
 
-const editingEvent = ref(null)
+const editingEvent = ref<CalendarEvent | null>(null)
 const isSubmitting = ref(false)
 
 const eventForm = ref({
@@ -354,10 +354,10 @@ const isFormValid = computed(() => {
   )
 })
 
-const formatDateRange = (event) => {
+const formatDateRange = (event: CalendarEvent) => {
   // Parse dates as local time to avoid timezone issues
   // event.startDate and event.endDate are in YYYY-MM-DD format
-  const parseLocalDate = (dateStr) => {
+  const parseLocalDate = (dateStr: string) => {
     const [year, month, day] = dateStr.split('-').map(Number)
     return new Date(year, month - 1, day) // month is 0-indexed
   }
@@ -377,7 +377,7 @@ const formatDateRange = (event) => {
   return `${start.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${end.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`
 }
 
-const formatTimeRange = (event) => {
+const formatTimeRange = (event: CalendarEvent) => {
   if (!event.startTime) return ''
   if (event.endTime) {
     return `${formatTime(event.startTime)} - ${formatTime(event.endTime)}`
@@ -385,7 +385,7 @@ const formatTimeRange = (event) => {
   return formatTime(event.startTime)
 }
 
-const formatTime = (time) => {
+const formatTime = (time: string) => {
   const [hours, minutes] = time.split(':')
   const hour = parseInt(hours, 10)
   const ampm = hour >= 12 ? 'PM' : 'AM'
@@ -515,7 +515,7 @@ const handleSubmit = async () => {
   }
 }
 
-const editEvent = (event) => {
+const editEvent = (event: CalendarEvent) => {
   editingEvent.value = event
   eventForm.value = {
     name: event.name,
@@ -537,7 +537,7 @@ const cancelEdit = () => {
   eventFormOpen.value = false
 }
 
-const confirmDelete = (event) => {
+const confirmDelete = (event: CalendarEvent) => {
   confirm.require({
     message: `Are you sure you want to delete "${event.name}"?`,
     header: 'Confirm Deletion',

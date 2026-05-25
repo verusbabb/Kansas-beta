@@ -56,7 +56,7 @@
                 <div class="font-semibold text-surface-900">
                   {{ selectedPerson.firstName }} {{ selectedPerson.lastName }}
                 </div>
-                <div class="text-sm text-surface-600">{{ selectedPerson.email }}</div>
+                <div class="text-sm text-surface-600">{{ selectedPerson.personalEmail }}</div>
                 <div v-if="linkedUserForSelected" class="text-xs text-surface-500 mt-1">
                   Existing app account · current role:
                   <span class="font-medium capitalize">{{ linkedUserForSelected.role }}</span>
@@ -150,11 +150,22 @@
             <div class="flex items-center gap-2">
               <Button
                 v-if="!user.isProtected"
+                icon="pi pi-send"
+                severity="secondary"
+                outlined
+                rounded
+                :loading="resendingInviteUserId === user.id"
+                :disabled="resendingInviteUserId === user.id || removingUserId === user.id || editingUserId === user.id"
+                @click="handleResendInvite(user)"
+                v-tooltip.top="'Resend invite email'"
+              />
+              <Button
+                v-if="!user.isProtected"
                 icon="pi pi-pencil"
                 severity="secondary"
                 outlined
                 rounded
-                :disabled="editingUserId === user.id || removingUserId === user.id"
+                :disabled="editingUserId === user.id || removingUserId === user.id || resendingInviteUserId === user.id"
                 @click="handleEditUser(user)"
                 v-tooltip.top="'Change role'"
               />
@@ -165,7 +176,7 @@
                 outlined
                 rounded
                 :loading="removingUserId === user.id"
-                :disabled="removingUserId === user.id || editingUserId === user.id"
+                :disabled="removingUserId === user.id || editingUserId === user.id || resendingInviteUserId === user.id"
                 @click="handleRemoveUser(user)"
                 v-tooltip.top="'Remove user'"
               />
@@ -256,10 +267,10 @@ const assignRoleSaving = ref(false)
 
 const peopleSelectOptions = computed(() =>
   [...peopleStore.list]
-    .filter((p) => p.email?.trim())
+    .filter((p) => p.personalEmail?.trim())
     .map((p) => ({
       id: p.id,
-      label: `${p.firstName} ${p.lastName} · ${p.email}`,
+      label: `${p.firstName} ${p.lastName} · ${p.personalEmail}`,
     }))
     .sort((a, b) => a.label.localeCompare(b.label)),
 )
@@ -331,6 +342,7 @@ async function handleSaveDirectoryRole() {
 
 const removingUserId = ref<string | null>(null)
 const editingUserId = ref<string | null>(null)
+const resendingInviteUserId = ref<string | null>(null)
 
 const editUserDialogVisible = ref(false)
 const editUserForm = ref({
@@ -421,6 +433,26 @@ function validateEditUserForm(): boolean {
     return false
   }
   return true
+}
+
+const handleResendInvite = async (user: UserResponseDto) => {
+  resendingInviteUserId.value = user.id
+  try {
+    await userStore.resendInvite(user.id)
+    toast.add({
+      severity: 'success',
+      summary: 'Invite sent',
+      detail: `A password-set email was sent to ${user.email}.`,
+      life: 4000,
+    })
+  } catch (error: unknown) {
+    const ax = error as { response?: { data?: { message?: string | string[] } } }
+    const raw = ax.response?.data?.message
+    const detail = Array.isArray(raw) ? raw.join(', ') : raw || 'Failed to resend invite'
+    toast.add({ severity: 'error', summary: 'Error', detail, life: 5000 })
+  } finally {
+    resendingInviteUserId.value = null
+  }
 }
 
 const handleEditUser = (user: UserResponseDto) => {

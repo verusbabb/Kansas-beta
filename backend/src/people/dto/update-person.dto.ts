@@ -87,10 +87,16 @@ export class UpdatePersonDto {
   @MaxLength(20)
   zip?: string | null
 
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({ description: 'Personal (sign-in) email' })
   @IsOptional()
   @IsEmail()
-  email?: string
+  personalEmail?: string
+
+  @ApiPropertyOptional({ description: 'Work email; null clears' })
+  @IsOptional()
+  @ValidateIf((_, v) => v !== null)
+  @IsEmail()
+  workEmail?: string | null
 
   @ApiPropertyOptional({
     description: 'CRM contact id; send null to clear',
@@ -111,6 +117,22 @@ export class UpdatePersonDto {
   @IsString()
   mobilePhone?: string | null
 
+  @ApiPropertyOptional({ description: 'Employer / company name; null clears' })
+  @IsOptional()
+  @Transform(patchTextOrNull)
+  @ValidateIf((_, v) => v !== null && v !== undefined)
+  @IsString()
+  @MaxLength(256)
+  employer?: string | null
+
+  @ApiPropertyOptional({ description: 'Job title; null clears' })
+  @IsOptional()
+  @Transform(patchTextOrNull)
+  @ValidateIf((_, v) => v !== null && v !== undefined)
+  @IsString()
+  @MaxLength(256)
+  jobTitle?: string | null
+
   @ApiPropertyOptional({ description: 'Omit unchanged; null clears' })
   @IsOptional()
   @Transform(patchTextOrNull)
@@ -129,11 +151,27 @@ export class UpdatePersonDto {
 
   @ApiPropertyOptional({
     description:
-      'When false, signed-in chapter members (other than this person) do not receive `email` in API responses. Editors/admins still see full rows in the admin directory.',
+      'When false, signed-in chapter members (other than this person) do not receive `personalEmail` in API responses. Editors/admins still see full rows in the admin directory.',
   })
   @IsOptional()
   @IsBoolean()
   shareEmailWithLoggedInMembers?: boolean
+
+  @ApiPropertyOptional({
+    description:
+      'When false, signed-in chapter members do not receive `workEmail` in API responses.',
+  })
+  @IsOptional()
+  @IsBoolean()
+  shareWorkEmailWithLoggedInMembers?: boolean
+
+  @ApiPropertyOptional({
+    description:
+      'When false, signed-in chapter members do not receive `employer`/`jobTitle` in API responses.',
+  })
+  @IsOptional()
+  @IsBoolean()
+  shareEmployerWithLoggedInMembers?: boolean
 
   @ApiPropertyOptional({
     description:

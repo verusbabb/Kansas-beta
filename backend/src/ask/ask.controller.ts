@@ -1,4 +1,4 @@
-import { Body, Controller, Get, HttpCode, HttpStatus, Post, Req, UseGuards } from '@nestjs/common'
+import { Body, Controller, Get, HttpCode, HttpStatus, Post, UseGuards } from '@nestjs/common'
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger'
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard'
 import { UserLookupGuard } from '../auth/guards/user-lookup.guard'
@@ -25,7 +25,7 @@ export class AskController {
   @ApiOperation({ summary: 'Natural-language search — returns member results and/or RAG answer' })
   @ApiResponse({ status: HttpStatus.OK, type: AskResponseDto })
   @ApiResponse({ status: HttpStatus.UNAUTHORIZED, description: 'Login required' })
-  async ask(@Body() dto: AskQueryDto, @Req() _req: unknown): Promise<AskResponseDto> {
+  async ask(@Body() dto: AskQueryDto): Promise<AskResponseDto> {
     return this.askService.ask(dto)
   }
 
@@ -36,7 +36,7 @@ export class AskController {
   @ApiOperation({ summary: 'Phase-2: enrich a list of alumni with professional data' })
   @ApiResponse({ status: HttpStatus.OK, type: EnrichResponseDto })
   @ApiResponse({ status: HttpStatus.UNAUTHORIZED, description: 'Login required' })
-  async enrich(@Body() dto: EnrichRequestDto, @Req() _req: unknown): Promise<EnrichResponseDto> {
+  async enrich(@Body() dto: EnrichRequestDto): Promise<EnrichResponseDto> {
     return this.askService.enrich(dto)
   }
 
@@ -45,9 +45,11 @@ export class AskController {
   @Roles(UserRole.ADMIN)
   @HttpCode(HttpStatus.ACCEPTED)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Admin: re-index all site content into the knowledge base (runs in background)' })
+  @ApiOperation({
+    summary: 'Admin: re-index all site content into the knowledge base (runs in background)',
+  })
   @ApiResponse({ status: HttpStatus.ACCEPTED, description: 'Indexing started in background' })
-  reindex(@Req() _req: unknown): { status: string } {
+  reindex(): { status: string } {
     // Fire-and-forget — large datasets take minutes; don't hold the HTTP connection open.
     void this.indexingService.reindexAll()
     return { status: 'started' }
@@ -59,7 +61,7 @@ export class AskController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Admin: poll the current reindex job status' })
   @ApiResponse({ status: HttpStatus.OK, description: 'Current indexing status' })
-  reindexStatus(@Req() _req: unknown): IndexingStatus {
+  reindexStatus(): IndexingStatus {
     return this.indexingService.getStatus()
   }
 }

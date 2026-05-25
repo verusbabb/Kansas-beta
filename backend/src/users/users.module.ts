@@ -8,7 +8,7 @@ import { AuthModule } from '../auth/auth.module'
 
 @Module({
   imports: [
-    SequelizeModule.forFeature([User, Person]), // Person for UserLookupGuard (email → personId link)
+    SequelizeModule.forFeature([User, Person]),
     AuthModule,
   ],
   controllers: [UsersController],

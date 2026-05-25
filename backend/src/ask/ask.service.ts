@@ -66,6 +66,8 @@ interface FullProfileCandidate {
   pledgeClassYear: number | null
   linkedinProfileUrl: string | null
   email: string | null
+  employer: string | null
+  jobTitle: string | null
   profileHeadshotFilePath: string | null
   shareAddress: boolean
   shareEmail: boolean
@@ -214,7 +216,9 @@ export class AskService {
       linkedinProfileUrl: p.shareLinkedInWithLoggedInMembers
         ? (p.linkedinProfileUrl ?? null)
         : null,
-      email: p.shareEmailWithLoggedInMembers ? (p.email ?? null) : null,
+      email: p.shareEmailWithLoggedInMembers ? (p.personalEmail ?? null) : null,
+      employer: p.shareEmployerWithLoggedInMembers ? (p.employer ?? null) : null,
+      jobTitle: p.shareEmployerWithLoggedInMembers ? (p.jobTitle ?? null) : null,
       profileHeadshotFilePath: p.profileHeadshotFilePath ?? null,
       shareAddress: p.shareAddressWithLoggedInMembers,
       shareEmail: p.shareEmailWithLoggedInMembers,
@@ -311,6 +315,8 @@ export class AskService {
       pledgeClassYear: c.pledgeClassYear,
       linkedinProfileUrl: c.linkedinProfileUrl,
       email: c.email,
+      employer: c.employer,
+      jobTitle: c.jobTitle,
       profileHeadshotFilePath: c.profileHeadshotFilePath,
       officeHistory: c.officeHistory,
       relationships: c.relationships,

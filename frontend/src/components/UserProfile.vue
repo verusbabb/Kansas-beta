@@ -20,6 +20,7 @@
 
 <script setup>
 import { ref, computed } from 'vue'
+import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useAuth0 } from '@auth0/auth0-vue'
 import Avatar from 'primevue/avatar'
@@ -27,6 +28,7 @@ import Menu from 'primevue/menu'
 
 const authStore = useAuthStore()
 const auth0 = useAuth0()
+const router = useRouter()
 const menu = ref()
 
 const userInitials = computed(() => {
@@ -60,26 +62,39 @@ const handleLogout = () => {
   })
 }
 
-const menuItems = computed(() => [
-  {
-    label: fullName.value,
-    disabled: true,
-    class: 'menu-header',
-  },
-  {
-    label: `Role: ${userRole.value}`,
-    disabled: true,
-    class: 'menu-role',
-  },
-  {
-    separator: true,
-  },
-  {
+const menuItems = computed(() => {
+  const items = [
+    {
+      label: fullName.value,
+      disabled: true,
+      class: 'menu-header',
+    },
+    {
+      label: `Role: ${userRole.value}`,
+      disabled: true,
+      class: 'menu-role',
+    },
+    {
+      separator: true,
+    },
+  ]
+
+  if (authStore.user?.personId) {
+    items.push({
+      label: 'My Profile',
+      icon: 'pi pi-user',
+      command: () => router.push(`/people/${authStore.user.personId}`),
+    })
+  }
+
+  items.push({
     label: 'Log Out',
     icon: 'pi pi-sign-out',
     command: handleLogout,
-  },
-])
+  })
+
+  return items
+})
 
 const toggleMenu = (event) => {
   menu.value.toggle(event)

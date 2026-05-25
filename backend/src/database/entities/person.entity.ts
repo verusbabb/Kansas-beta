@@ -67,13 +67,24 @@ export class Person extends BaseEntity {
   @Unique
   @Index
   @Column({
+    field: 'personal_email',
     type: DataType.STRING,
     allowNull: false,
     validate: {
       isEmail: { msg: 'Email must be a valid email address' },
     },
   })
-  email!: string
+  personalEmail!: string
+
+  @Column({
+    field: 'work_email',
+    type: DataType.STRING,
+    allowNull: true,
+    validate: {
+      isEmail: { msg: 'Work email must be a valid email address' },
+    },
+  })
+  workEmail?: string | null
 
   @Column({
     type: DataType.STRING,
@@ -94,13 +105,44 @@ export class Person extends BaseEntity {
   })
   linkedinProfileUrl?: string | null
 
-  /** Opt-out: when false, logged-in chapter viewers do not receive `email` in API (guests never do). Default true. */
+  /** Opt-out: when false, logged-in chapter viewers do not receive `personalEmail` in API (guests never do). Default true. */
   @Column({
     type: DataType.BOOLEAN,
     allowNull: false,
     defaultValue: true,
   })
   shareEmailWithLoggedInMembers!: boolean
+
+  /** Opt-out: when false, logged-in chapter viewers do not receive `workEmail` in API (guests never do). Default true. */
+  @Column({
+    field: 'share_work_email_with_logged_in_members',
+    type: DataType.BOOLEAN,
+    allowNull: false,
+    defaultValue: true,
+  })
+  shareWorkEmailWithLoggedInMembers!: boolean
+
+  @Column({
+    field: 'employer',
+    type: DataType.STRING,
+    allowNull: true,
+  })
+  employer?: string | null
+
+  @Column({
+    field: 'job_title',
+    type: DataType.STRING,
+    allowNull: true,
+  })
+  jobTitle?: string | null
+
+  /** Opt-out: when false, logged-in chapter viewers do not receive `employer`/`jobTitle` in API. Default true. */
+  @Column({
+    type: DataType.BOOLEAN,
+    allowNull: false,
+    defaultValue: true,
+  })
+  shareEmployerWithLoggedInMembers!: boolean
 
   @Column({
     type: DataType.BOOLEAN,

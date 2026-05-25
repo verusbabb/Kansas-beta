@@ -111,6 +111,16 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   /**
+   * Update the authenticated user's email (self-service).
+   * Calls PATCH /users/me/email, then refreshes the user profile so the
+   * in-memory email stays in sync.
+   */
+  async function updateMyEmail(newEmail: string): Promise<void> {
+    await apiClient.patch('/users/me/email', { email: newEmail })
+    await fetchUserProfile()
+  }
+
+  /**
    * Clear user profile (on logout)
    */
   function clearUser() {
@@ -241,6 +251,7 @@ export const useAuthStore = defineStore('auth', () => {
     fetchUserProfile,
     clearUser,
     getAccessToken,
+    updateMyEmail,
   }
 })
 

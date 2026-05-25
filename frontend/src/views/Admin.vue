@@ -74,7 +74,7 @@
                       class="flex flex-col gap-1 pl-4 mt-1 overflow-hidden transition-all duration-200"
                     >
                       <Button
-                        v-for="subItem in item.items"
+                        v-for="subItem in (item.items ?? [])"
                         :key="subItem.id"
                         @click="setActiveSection(subItem.id)"
                         :class="[
@@ -180,6 +180,13 @@ import AdminAddPerson from '@/components/AdminAddPerson.vue'
 import AdminBulkImportPeople from '@/components/AdminBulkImportPeople.vue'
 import MemberSearch from '@/components/MemberSearch.vue'
 import { useAuthStore } from '@/stores/auth'
+
+interface NavItem {
+  id: string
+  label: string
+  icon: string
+  items?: readonly { id: string; label: string; icon: string }[]
+}
 
 const route = useRoute()
 const router = useRouter()
@@ -296,8 +303,8 @@ function toggleNavGroup(groupId: string) {
   }
 }
 
-function navGroupIsHighlighted(item: { items: readonly { id: string }[] }): boolean {
-  return item.items.some((sub) => sub.id === activeSection.value)
+function navGroupIsHighlighted(item: NavItem): boolean {
+  return item.items?.some((sub) => sub.id === activeSection.value) ?? false
 }
 
 function expandNavGroupsForSection(section: string) {
@@ -431,7 +438,7 @@ const manageRushPageNav = {
 } as const
 
 /** Order mirrors public Header nav (Home → Rush → NewsLetters → Calendar → People), then admin-only tools, health last. */
-const fullNavItems = [
+const fullNavItems: NavItem[] = [
   {
     id: 'overview',
     label: 'Overview',
@@ -474,7 +481,7 @@ const fullNavItems = [
   },
 ]
 
-const editorNavItems = [
+const editorNavItems: NavItem[] = [
   { ...manageHomePageNav },
   { ...manageRushPageNav },
   { ...manageNewslettersNavItem },

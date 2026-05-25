@@ -26,6 +26,7 @@ import { StorageService } from '../storage/storage.service'
 import { PersonRelationshipsService } from '../person-relationships/person-relationships.service'
 import { ExecTeamService } from '../exec-team/exec-team.service'
 import { IndexingService } from '../knowledge/indexing.service'
+import { Auth0ManagementService } from '../auth0/auth0-management.service'
 
 /** Match `ExecTeamService` roster headshot signed URL lifetime. */
 const PROFILE_HEADSHOT_URL_EXPIRY_MINUTES = 7 * 24 * 60
@@ -46,11 +47,14 @@ export class PeopleService {
     private personModel: typeof Person,
     @InjectModel(PersonRelationship)
     private personRelationshipModel: typeof PersonRelationship,
+    @InjectModel(User)
+    private userModel: typeof User,
     private readonly storageService: StorageService,
     private readonly logger: PinoLogger,
     private readonly personRelationshipsService: PersonRelationshipsService,
     private readonly execTeamService: ExecTeamService,
     private readonly indexingService: IndexingService,
+    private readonly auth0: Auth0ManagementService,
   ) {
     this.logger.setContext(PeopleService.name)
   }
@@ -59,7 +63,10 @@ export class PeopleService {
     const EXPORT_COLUMNS = [
       'firstName',
       'lastName',
-      'email',
+      'personalEmail',
+      'workEmail',
+      'employer',
+      'jobTitle',
       'homePhone',
       'mobilePhone',
       'addressLine1',
@@ -122,7 +129,7 @@ export class PeopleService {
     person.city = c.city
     person.state = c.state
     person.zip = c.zip
-    person.email = c.email
+    person.personalEmail = c.email
     person.homePhone = normalizeUsPhoneForStorage(c.homePhone || null)
     person.mobilePhone = normalizeUsPhoneForStorage(c.mobilePhone || null)
     person.pledgeClassYear = c.pledgeClassYear
@@ -157,7 +164,7 @@ export class PeopleService {
   private isSelfView(viewer: User | undefined, person: Person): boolean {
     if (!viewer) return false
     if (viewer.personId && viewer.personId === person.id) return true
-    return viewer.email.trim().toLowerCase() === person.email.trim().toLowerCase()
+    return viewer.email.trim().toLowerCase() === person.personalEmail.trim().toLowerCase()
   }
 
   private personHasAddress(person: Person): boolean {
@@ -187,6 +194,8 @@ export class PeopleService {
     const guest = !viewer
 
     let redactEmail = false
+    let redactWorkEmail = false
+    let redactEmployer = false
     let redactPhones = false
     let redactAddress = false
     let redactLinkedIn = false
@@ -196,11 +205,15 @@ export class PeopleService {
       redactExternalId = guest
       if (guest) {
         redactEmail = true
+        redactWorkEmail = true
+        redactEmployer = true
         redactPhones = true
         redactAddress = true
         redactLinkedIn = true
       } else if (!self) {
         redactEmail = !person.shareEmailWithLoggedInMembers
+        redactWorkEmail = !person.shareWorkEmailWithLoggedInMembers
+        redactEmployer = !person.shareEmployerWithLoggedInMembers
         redactPhones = !person.sharePhonesWithLoggedInMembers
         redactAddress = !person.shareAddressWithLoggedInMembers
         redactLinkedIn = !person.shareLinkedInWithLoggedInMembers
@@ -209,7 +222,8 @@ export class PeopleService {
 
     const hasMobilePhone = this.personHasStoredPhone(person.mobilePhone)
     const hasHomePhone = this.personHasStoredPhone(person.homePhone)
-    const hasEmailOnFile = !!person.email?.trim()
+    const hasEmailOnFile = !!person.personalEmail?.trim()
+    const hasWorkEmailOnFile = !!person.workEmail?.trim()
     const hasAddressOnFile = this.personHasAddress(person)
     const hasLinkedInOnFile = this.hasLinkedInStored(person)
     const includeShareFlags = fullDetail || self
@@ -222,8 +236,12 @@ export class PeopleService {
       city: redactAddress ? null : person.city,
       state: redactAddress ? null : person.state,
       zip: redactAddress ? null : person.zip,
-      email: redactEmail ? null : person.email,
+      personalEmail: redactEmail ? null : person.personalEmail,
       hasEmailOnFile,
+      workEmail: redactWorkEmail ? null : (person.workEmail ?? null),
+      hasWorkEmailOnFile,
+      employer: redactEmployer ? null : (person.employer ?? null),
+      jobTitle: redactEmployer ? null : (person.jobTitle ?? null),
       externalContactId: redactExternalId ? null : (person.externalContactId ?? null),
       homePhone: redactPhones ? null : (person.homePhone ?? null),
       mobilePhone: redactPhones ? null : (person.mobilePhone ?? null),
@@ -244,6 +262,8 @@ export class PeopleService {
 
     if (includeShareFlags) {
       dto.shareEmailWithLoggedInMembers = person.shareEmailWithLoggedInMembers
+      dto.shareWorkEmailWithLoggedInMembers = person.shareWorkEmailWithLoggedInMembers
+      dto.shareEmployerWithLoggedInMembers = person.shareEmployerWithLoggedInMembers
       dto.sharePhonesWithLoggedInMembers = person.sharePhonesWithLoggedInMembers
       dto.shareAddressWithLoggedInMembers = person.shareAddressWithLoggedInMembers
       dto.shareLinkedInWithLoggedInMembers = person.shareLinkedInWithLoggedInMembers
@@ -320,11 +340,12 @@ export class PeopleService {
         ? dto.pledgeClassYear
         : null
 
-    const emailNorm = dto.email.toLowerCase().trim()
+    const emailNorm = dto.personalEmail.toLowerCase().trim()
+    const workEmailNorm = dto.workEmail ? dto.workEmail.toLowerCase().trim() : null
     const ext = this.normalizeExternalContactId(dto.externalContactId)
 
     const existing = await this.personModel.findOne({
-      where: { email: emailNorm },
+      where: { personalEmail: emailNorm },
       paranoid: false,
     })
 
@@ -346,7 +367,10 @@ export class PeopleService {
         existing.city = this.emptyToNullText(dto.city)
         existing.state = dto.state ?? null
         existing.zip = this.emptyToNullText(dto.zip)
-        existing.email = emailNorm
+        existing.personalEmail = emailNorm
+        if (workEmailNorm !== null) existing.workEmail = workEmailNorm
+        if (dto.employer !== undefined) existing.employer = this.emptyToNullText(dto.employer)
+        if (dto.jobTitle !== undefined) existing.jobTitle = this.emptyToNullText(dto.jobTitle)
         existing.homePhone = normalizeUsPhoneForStorage(dto.homePhone)
         existing.mobilePhone = normalizeUsPhoneForStorage(dto.mobilePhone)
         existing.pledgeClassYear = pledgeClassYear
@@ -357,13 +381,16 @@ export class PeopleService {
           existing.linkedinProfileUrl = this.emptyToNullText(dto.linkedinProfileUrl)
         }
         await existing.save()
-        this.logger.info('Restored soft-deleted person', { id: existing.id, email: existing.email })
+        this.logger.info('Restored soft-deleted person', {
+          id: existing.id,
+          personalEmail: existing.personalEmail,
+        })
         void this.indexingService.indexOnePerson(existing)
         return this.toResponseDto(existing, await this.personHasLegacyMemberLink(existing.id), {
           fullDetail: true,
         })
       }
-      throw new ConflictException(`Person with email ${dto.email} already exists`)
+      throw new ConflictException(`Person with email ${dto.personalEmail} already exists`)
     }
 
     if (ext) {
@@ -383,7 +410,10 @@ export class PeopleService {
       city: this.emptyToNullText(dto.city),
       state: dto.state ?? null,
       zip: this.emptyToNullText(dto.zip),
-      email: emailNorm,
+      personalEmail: emailNorm,
+      workEmail: workEmailNorm,
+      employer: this.emptyToNullText(dto.employer),
+      jobTitle: this.emptyToNullText(dto.jobTitle),
       homePhone: normalizeUsPhoneForStorage(dto.homePhone),
       mobilePhone: normalizeUsPhoneForStorage(dto.mobilePhone),
       pledgeClassYear,
@@ -470,15 +500,16 @@ export class PeopleService {
     }
 
     // Admin path: full edit rights on any record, including own
-    if (dto.email !== undefined) {
-      const normalized = dto.email.toLowerCase().trim()
-      if (normalized !== person.email) {
+    const emailBeforeUpdate = person.personalEmail
+    if (dto.personalEmail !== undefined) {
+      const normalized = dto.personalEmail.toLowerCase().trim()
+      if (normalized !== person.personalEmail) {
         const other = await this.personModel.findOne({
-          where: { email: normalized },
+          where: { personalEmail: normalized },
           paranoid: false,
         })
         if (other && other.id !== id) {
-          throw new ConflictException(`Person with email ${dto.email} already exists`)
+          throw new ConflictException(`Person with email ${dto.personalEmail} already exists`)
         }
       }
     }
@@ -505,7 +536,17 @@ export class PeopleService {
     if (dto.zip !== undefined) {
       person.zip = this.emptyToNullText(dto.zip)
     }
-    if (dto.email !== undefined) person.email = dto.email.toLowerCase().trim()
+    if (dto.personalEmail !== undefined)
+      person.personalEmail = dto.personalEmail.toLowerCase().trim()
+    if (dto.workEmail !== undefined) {
+      person.workEmail = dto.workEmail === null ? null : dto.workEmail.toLowerCase().trim() || null
+    }
+    if (dto.employer !== undefined) {
+      person.employer = dto.employer === null ? null : this.emptyToNullText(dto.employer)
+    }
+    if (dto.jobTitle !== undefined) {
+      person.jobTitle = dto.jobTitle === null ? null : this.emptyToNullText(dto.jobTitle)
+    }
 
     if (dto.externalContactId !== undefined) {
       const ext = this.normalizeExternalContactId(dto.externalContactId)
@@ -536,6 +577,12 @@ export class PeopleService {
     if (dto.shareEmailWithLoggedInMembers !== undefined) {
       person.shareEmailWithLoggedInMembers = dto.shareEmailWithLoggedInMembers
     }
+    if (dto.shareWorkEmailWithLoggedInMembers !== undefined) {
+      person.shareWorkEmailWithLoggedInMembers = dto.shareWorkEmailWithLoggedInMembers
+    }
+    if (dto.shareEmployerWithLoggedInMembers !== undefined) {
+      person.shareEmployerWithLoggedInMembers = dto.shareEmployerWithLoggedInMembers
+    }
     if (dto.sharePhonesWithLoggedInMembers !== undefined) {
       person.sharePhonesWithLoggedInMembers = dto.sharePhonesWithLoggedInMembers
     }
@@ -562,13 +609,22 @@ export class PeopleService {
     await person.save()
     this.logger.info('Updated person', { id: person.id })
     void this.indexingService.indexOnePerson(person)
+
+    // If personal email actually changed, sync to Auth0 for any linked app user
+    if (dto.personalEmail !== undefined) {
+      const normalizedNew = dto.personalEmail.toLowerCase().trim()
+      if (normalizedNew !== emailBeforeUpdate) {
+        void this.syncPersonEmailToAuth0(person.id, normalizedNew)
+      }
+    }
+
     return this.toResponseDto(person, await this.personHasLegacyMemberLink(person.id), {
       fullDetail: true,
     })
   }
 
   /**
-   * Self-service: no `kind` / `externalContactId` / `email`.
+   * Self-service: no `kind` / `externalContactId` / `personalEmail`.
    * Contact fields require `users.personId` to match this person; otherwise only share toggles apply.
    */
   private selfPatchHasNonShareFields(dto: UpdatePersonDto): boolean {
@@ -580,7 +636,10 @@ export class PeopleService {
       'city',
       'state',
       'zip',
-      'email',
+      'personalEmail',
+      'workEmail',
+      'employer',
+      'jobTitle',
       'externalContactId',
       'homePhone',
       'mobilePhone',
@@ -593,6 +652,12 @@ export class PeopleService {
   private applySelfShareFlags(person: Person, dto: UpdatePersonDto): void {
     if (dto.shareEmailWithLoggedInMembers !== undefined) {
       person.shareEmailWithLoggedInMembers = dto.shareEmailWithLoggedInMembers
+    }
+    if (dto.shareWorkEmailWithLoggedInMembers !== undefined) {
+      person.shareWorkEmailWithLoggedInMembers = dto.shareWorkEmailWithLoggedInMembers
+    }
+    if (dto.shareEmployerWithLoggedInMembers !== undefined) {
+      person.shareEmployerWithLoggedInMembers = dto.shareEmployerWithLoggedInMembers
     }
     if (dto.sharePhonesWithLoggedInMembers !== undefined) {
       person.sharePhonesWithLoggedInMembers = dto.sharePhonesWithLoggedInMembers
@@ -610,9 +675,9 @@ export class PeopleService {
     dto: UpdatePersonDto,
     accountLinkedToPerson: boolean,
   ): Promise<void> {
-    if (dto.email !== undefined) {
+    if (dto.personalEmail !== undefined) {
       throw new BadRequestException(
-        'Directory email cannot be changed here; it is tied to your login. Ask an administrator to update your account email if needed.',
+        'Personal email cannot be changed here; it is tied to your login. Use the email field in your profile to update it.',
       )
     }
 
@@ -646,6 +711,16 @@ export class PeopleService {
         dto.linkedinProfileUrl === null ? null : this.emptyToNullText(dto.linkedinProfileUrl)
     }
 
+    if (dto.workEmail !== undefined) {
+      person.workEmail = dto.workEmail === null ? null : dto.workEmail.toLowerCase().trim() || null
+    }
+    if (dto.employer !== undefined) {
+      person.employer = dto.employer === null ? null : this.emptyToNullText(dto.employer)
+    }
+    if (dto.jobTitle !== undefined) {
+      person.jobTitle = dto.jobTitle === null ? null : this.emptyToNullText(dto.jobTitle)
+    }
+
     if (dto.homePhone !== undefined) {
       person.homePhone = normalizeUsPhoneForStorage(dto.homePhone)
     }
@@ -664,6 +739,35 @@ export class PeopleService {
     }
 
     this.applySelfShareFlags(person, dto)
+  }
+
+  /**
+   * When an admin changes a person's email, update the linked app user's email in Auth0.
+   * Admin-driven change → trusted, mark email as verified.
+   */
+  private async syncPersonEmailToAuth0(personId: string, newEmail: string): Promise<void> {
+    try {
+      const linkedUser = await this.userModel.findOne({
+        where: { personId },
+      })
+      if (!linkedUser?.auth0Id) return
+      await this.auth0.updateEmail(linkedUser.auth0Id, newEmail, true)
+      if (linkedUser.email !== newEmail) {
+        linkedUser.email = newEmail
+        await linkedUser.save()
+      }
+      this.logger.info('Synced person email change to Auth0 and users table', {
+        personId,
+        newEmail,
+        auth0Id: linkedUser.auth0Id,
+      })
+    } catch (error) {
+      this.logger.warn('Failed to sync person email change to Auth0', {
+        personId,
+        newEmail,
+        error: error instanceof Error ? error.message : String(error),
+      })
+    }
   }
 
   /**
@@ -852,7 +956,7 @@ export class PeopleService {
         paranoid: false,
       }),
       this.personModel.findAll({
-        where: { email: { [Op.in]: emails } },
+        where: { personalEmail: { [Op.in]: emails } },
         paranoid: false,
       }),
     ])
@@ -866,7 +970,7 @@ export class PeopleService {
     const contactToPerson = new Map<string, Person>()
     const emailToPerson = new Map<string, Person>()
     for (const p of peopleList) {
-      emailToPerson.set(p.email, p)
+      emailToPerson.set(p.personalEmail, p)
       if (p.externalContactId) contactToPerson.set(p.externalContactId, p)
     }
 
@@ -890,8 +994,8 @@ export class PeopleService {
             })
             continue
           }
-          if (person.email !== c.email) {
-            emailToPerson.delete(person.email)
+          if (person.personalEmail !== c.email) {
+            emailToPerson.delete(person.personalEmail)
           }
           if (person.deletedAt) {
             await person.restore({ transaction })
@@ -936,7 +1040,7 @@ export class PeopleService {
             city: c.city,
             state: c.state,
             zip: c.zip,
-            email: c.email,
+            personalEmail: c.email,
             homePhone: normalizeUsPhoneForStorage(c.homePhone || null),
             mobilePhone: normalizeUsPhoneForStorage(c.mobilePhone || null),
             pledgeClassYear: c.pledgeClassYear,

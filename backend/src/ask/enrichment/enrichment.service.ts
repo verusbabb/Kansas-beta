@@ -3,7 +3,11 @@ import { InjectModel } from '@nestjs/sequelize'
 import { PinoLogger } from 'nestjs-pino'
 import { Op } from 'sequelize'
 import { Person } from '../../database/entities/person.entity'
-import { PersonEnrichment, EnrichmentSource, EnrichmentConfidence } from '../../database/entities/person-enrichment.entity'
+import {
+  PersonEnrichment,
+  EnrichmentSource,
+  EnrichmentConfidence,
+} from '../../database/entities/person-enrichment.entity'
 import { PdlService } from './pdl.service'
 import { FullContactService } from './fullcontact.service'
 import { DatagmaService } from './datagma.service'
@@ -191,7 +195,10 @@ export class EnrichmentService {
 
     // ── Tier 3: Datagma by personal email ───────────────────────────────────
     if (person.email && this.datagma.isConfigured) {
-      this.logger.info('Enrichment: trying Tier 3 — Datagma by email', { name, email: person.email })
+      this.logger.info('Enrichment: trying Tier 3 — Datagma by email', {
+        name,
+        email: person.email,
+      })
       const dgResult = await this.datagma.enrichByEmail(person.email)
 
       if (dgResult) {
@@ -255,7 +262,10 @@ export class EnrichmentService {
     }
 
     // ── All tiers exhausted: cache the empty result with a short TTL ─────────
-    this.logger.warn('Enrichment: all tiers exhausted — no data found', { name, personId: person.id })
+    this.logger.warn('Enrichment: all tiers exhausted — no data found', {
+      name,
+      personId: person.id,
+    })
     await this.saveCache(person.id, empty, EMPTY_TTL_DAYS)
     return empty
   }

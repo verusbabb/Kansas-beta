@@ -10,12 +10,16 @@ import {
   HttpStatus,
   UseGuards,
   ParseUUIDPipe,
+  Query,
+  Headers,
+  ForbiddenException,
 } from '@nestjs/common'
-import { ApiOperation, ApiResponse, ApiTags, ApiBearerAuth } from '@nestjs/swagger'
+import { ApiOperation, ApiResponse, ApiTags, ApiBearerAuth, ApiQuery } from '@nestjs/swagger'
 import { PinoLogger } from 'nestjs-pino'
 import { UsersService } from './users.service'
 import { CreateUserDto } from './dto/create-user.dto'
 import { UpdateUserDto } from './dto/update-user.dto'
+import { UpdateMyEmailDto } from './dto/update-my-email.dto'
 import { AssignDirectoryUserRoleDto } from './dto/assign-directory-user-role.dto'
 import { UserResponseDto } from './dto/user-response.dto'
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard'
@@ -79,6 +83,31 @@ export class UsersController {
     return this.usersService.assignRoleForDirectoryPerson(personId, dto.role)
   }
 
+  @Get('check-email')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Check whether an email is authorized (used by Auth0 Pre-Registration Action)',
+    description:
+      'No JWT required. Authenticated via X-Pre-Reg-Secret header. Returns { authorized: boolean }.',
+  })
+  @ApiQuery({ name: 'email', required: true, type: String })
+  @ApiResponse({ status: HttpStatus.OK, description: '{ authorized: boolean }' })
+  @ApiResponse({ status: HttpStatus.FORBIDDEN, description: 'Invalid or missing secret' })
+  async checkEmail(
+    @Query('email') email: string,
+    @Headers('x-pre-reg-secret') secret: string,
+  ): Promise<{ authorized: boolean }> {
+    const expected = process.env.PRE_REG_SECRET
+    if (!expected || secret !== expected) {
+      throw new ForbiddenException('Invalid pre-registration secret')
+    }
+    if (!email) {
+      return { authorized: false }
+    }
+    const authorized = await this.usersService.isEmailAuthorized(email)
+    return { authorized }
+  }
+
   @Get('me')
   @UseGuards(JwtAuthGuard, UserLookupGuard)
   @ApiOperation({ summary: 'Get current user profile' })
@@ -90,6 +119,27 @@ export class UsersController {
   @ApiResponse({ status: HttpStatus.UNAUTHORIZED, description: 'Unauthorized' })
   async getCurrentUser(@CurrentUser() user: User): Promise<UserResponseDto> {
     return this.usersService.findOne(user.id)
+  }
+
+  @Patch('me/email')
+  @UseGuards(JwtAuthGuard, UserLookupGuard)
+  @ApiOperation({
+    summary: 'Update your own email address',
+    description:
+      'Updates email in the database and in Auth0. Auth0 will send a verification email to the new address.',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Email updated. A verification email has been sent to the new address.',
+    type: UserResponseDto,
+  })
+  @ApiResponse({ status: HttpStatus.BAD_REQUEST, description: 'Invalid email or no change' })
+  @ApiResponse({ status: HttpStatus.CONFLICT, description: 'Email already in use' })
+  async updateMyEmail(
+    @CurrentUser() user: User,
+    @Body() dto: UpdateMyEmailDto,
+  ): Promise<UserResponseDto> {
+    return this.usersService.updateMyEmail(user, dto.email)
   }
 
   @Get()
@@ -104,6 +154,18 @@ export class UsersController {
   @ApiResponse({ status: HttpStatus.FORBIDDEN, description: 'Forbidden - Admin role required' })
   async findAll(): Promise<UserResponseDto[]> {
     return this.usersService.findAll()
+  }
+
+  @Post(':id/resend-invite')
+  @UseGuards(JwtAuthGuard, UserLookupGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: 'Resend invite / password-reset email to a user (admin only)' })
+  @ApiResponse({ status: HttpStatus.NO_CONTENT, description: 'Invite email sent' })
+  @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'User not found' })
+  @ApiResponse({ status: HttpStatus.FORBIDDEN, description: 'Forbidden - Admin role required' })
+  async resendInvite(@Param('id', ParseUUIDPipe) id: string): Promise<void> {
+    await this.usersService.resendInvite(id)
   }
 
   @Get(':id')
@@ -143,7 +205,7 @@ export class UsersController {
   @UseGuards(JwtAuthGuard, UserLookupGuard, RolesGuard)
   @Roles(UserRole.ADMIN)
   @HttpCode(HttpStatus.NO_CONTENT)
-  @ApiOperation({ summary: 'Delete a user by ID (admin only, soft delete)' })
+  @ApiOperation({ summary: 'Delete a user by ID (admin only, soft delete + Auth0 block)' })
   @ApiResponse({
     status: HttpStatus.NO_CONTENT,
     description: 'The user has been successfully deleted.',

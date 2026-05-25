@@ -10,6 +10,7 @@ import { PinoLogger } from 'nestjs-pino'
 import { Op } from 'sequelize'
 import { User, UserRole } from '../database/entities/user.entity'
 import { Person } from '../database/entities/person.entity'
+import { Auth0ManagementService } from '../auth0/auth0-management.service'
 import { CreateUserDto } from './dto/create-user.dto'
 import { UpdateUserDto } from './dto/update-user.dto'
 import { UserResponseDto } from './dto/user-response.dto'
@@ -26,6 +27,7 @@ export class UsersService {
     private userModel: typeof User,
     @InjectModel(Person)
     private personModel: typeof Person,
+    private readonly auth0: Auth0ManagementService,
     private readonly logger: PinoLogger,
   ) {
     this.logger.setContext(UsersService.name)
@@ -39,51 +41,49 @@ export class UsersService {
   }
 
   /**
-   * Create a new user
-   * If a soft-deleted user exists with the same email, it will be restored and updated.
+   * Create a new user.
+   * If a soft-deleted user exists with the same email, it is restored and updated.
+   * Provisions the user in Auth0 and sends a password-set invite.
    */
   async create(createUserDto: CreateUserDto): Promise<UserResponseDto> {
     // Check if user with email already exists (including soft-deleted users)
     const existingUser = await this.userModel.findOne({
       where: { email: createUserDto.email },
-      paranoid: false, // Include soft-deleted records
+      paranoid: false,
     })
 
     if (existingUser) {
-      // If user is soft-deleted, restore and update it
       if (existingUser.deletedAt) {
-        // Use Sequelize's restore() method to properly restore the soft-deleted record
         await existingUser.restore()
-
-        // Update the user fields with new data
         existingUser.firstName = createUserDto.firstName
         existingUser.lastName = createUserDto.lastName
         existingUser.role = createUserDto.role
-        // Keep existing auth0Id if set, otherwise leave as null
-        // The auth0Id will be set when user signs up in Auth0
-
         await existingUser.save()
         this.logger.info('Restored soft-deleted user', {
           id: existingUser.id,
           email: createUserDto.email,
         })
-
+        await this.syncAuth0OnRestore(existingUser)
         return this.toResponseDto(existingUser)
       } else {
-        // Active user already exists
         throw new ConflictException(`User with email ${createUserDto.email} already exists`)
       }
     }
 
     try {
-      // No existing user, create a new one
       const user = await this.userModel.create({
         email: createUserDto.email,
         firstName: createUserDto.firstName,
         lastName: createUserDto.lastName,
         role: createUserDto.role,
-        auth0Id: null, // Will be set when user signs up in Auth0
+        auth0Id: null,
       })
+
+      const auth0Id = await this.auth0.provisionUser(user.email, user.firstName, user.lastName)
+      if (auth0Id) {
+        user.auth0Id = auth0Id
+        await user.save()
+      }
 
       return this.toResponseDto(user)
     } catch (error) {
@@ -93,14 +93,15 @@ export class UsersService {
   }
 
   /**
-   * Create or update the app user tied to a directory person: sync name/email from `people`, set role and `personId`.
+   * Create or update the app user tied to a directory person: sync name/email from `people`,
+   * set role and `personId`. Provisions the user in Auth0 if not already linked.
    */
   async assignRoleForDirectoryPerson(personId: string, role: UserRole): Promise<UserResponseDto> {
     const person = await this.personModel.findByPk(personId)
     if (!person) {
       throw new NotFoundException('Directory person not found')
     }
-    const rawEmail = person.email?.trim().toLowerCase()
+    const rawEmail = person.personalEmail?.trim().toLowerCase()
     if (!rawEmail) {
       throw new BadRequestException('Directory person has no email; cannot assign an app role')
     }
@@ -113,7 +114,8 @@ export class UsersService {
       paranoid: false,
     })
     if (byPerson) {
-      if (byPerson.deletedAt) {
+      const wasDeleted = !!byPerson.deletedAt
+      if (wasDeleted) {
         await byPerson.restore()
       }
       if (this.isProtectedUser(byPerson)) {
@@ -129,6 +131,11 @@ export class UsersService {
         personId,
         userId: byPerson.id,
       })
+      if (wasDeleted) {
+        await this.syncAuth0OnRestore(byPerson)
+      } else {
+        await this.syncAuth0OnProvision(byPerson)
+      }
       return this.toResponseDto(byPerson)
     }
 
@@ -137,7 +144,8 @@ export class UsersService {
       paranoid: false,
     })
     if (byEmail) {
-      if (byEmail.deletedAt) {
+      const wasDeleted = !!byEmail.deletedAt
+      if (wasDeleted) {
         await byEmail.restore()
       }
       if (this.isProtectedUser(byEmail)) {
@@ -158,6 +166,11 @@ export class UsersService {
         personId,
         userId: byEmail.id,
       })
+      if (wasDeleted) {
+        await this.syncAuth0OnRestore(byEmail)
+      } else {
+        await this.syncAuth0OnProvision(byEmail)
+      }
       return this.toResponseDto(byEmail)
     }
 
@@ -170,6 +183,13 @@ export class UsersService {
       auth0Id: null,
     })
     this.logger.info('Created app user from directory person', { personId, userId: user.id })
+
+    const auth0Id = await this.auth0.provisionUser(rawEmail, firstName, lastName)
+    if (auth0Id) {
+      user.auth0Id = auth0Id
+      await user.save()
+    }
+
     return this.toResponseDto(user)
   }
 
@@ -231,7 +251,7 @@ export class UsersService {
   }
 
   /**
-   * Update a user
+   * Update a user (admin)
    */
   async update(id: string, updateUserDto: UpdateUserDto): Promise<UserResponseDto> {
     try {
@@ -241,31 +261,40 @@ export class UsersService {
         throw new NotFoundException(`User with ID ${id} not found`)
       }
 
-      // Prevent editing protected users
       if (this.isProtectedUser(user)) {
         throw new ForbiddenException('This user is protected and cannot be edited')
       }
 
-      // Check if email is being changed and if new email already exists (including soft-deleted users)
-      if (updateUserDto.email && updateUserDto.email !== user.email) {
+      const emailChanging = updateUserDto.email && updateUserDto.email !== user.email
+
+      if (emailChanging) {
         const existingUser = await this.userModel.findOne({
           where: { email: updateUserDto.email },
-          paranoid: false, // Include soft-deleted records
+          paranoid: false,
         })
 
         if (existingUser) {
-          // Don't allow updating to an email that belongs to any user (active or soft-deleted)
           throw new ConflictException(`User with email ${updateUserDto.email} already exists`)
         }
       }
 
-      // Update user fields
+      const oldEmail = user.email
       if (updateUserDto.email) user.email = updateUserDto.email
       if (updateUserDto.firstName) user.firstName = updateUserDto.firstName
       if (updateUserDto.lastName) user.lastName = updateUserDto.lastName
       if (updateUserDto.role !== undefined) user.role = updateUserDto.role
 
       await user.save()
+
+      // Sync email change to Auth0 (admin-driven = trusted, mark verified)
+      if (emailChanging && user.auth0Id && updateUserDto.email) {
+        await this.auth0.updateEmail(user.auth0Id, updateUserDto.email, true)
+        this.logger.info('Synced email change to Auth0', {
+          userId: user.id,
+          oldEmail,
+          newEmail: updateUserDto.email,
+        })
+      }
 
       return this.toResponseDto(user)
     } catch (error) {
@@ -282,7 +311,66 @@ export class UsersService {
   }
 
   /**
-   * Delete a user (soft delete)
+   * Self-service email update for the currently authenticated user.
+   * Requires re-verification via Auth0 email.
+   */
+  async updateMyEmail(currentUser: User, newEmail: string): Promise<UserResponseDto> {
+    const normalizedEmail = newEmail.trim().toLowerCase()
+
+    if (normalizedEmail === currentUser.email) {
+      throw new BadRequestException('New email is the same as the current email')
+    }
+
+    const conflict = await this.userModel.findOne({
+      where: { email: normalizedEmail },
+      paranoid: false,
+    })
+    if (conflict) {
+      throw new ConflictException(`Email ${newEmail} is already in use`)
+    }
+
+    currentUser.email = normalizedEmail
+    await currentUser.save()
+
+    // Self-service = not trusted, require Auth0 email verification
+    if (currentUser.auth0Id) {
+      await this.auth0.updateEmail(currentUser.auth0Id, normalizedEmail, false)
+    }
+
+    this.logger.info('User updated their own email', {
+      userId: currentUser.id,
+      newEmail: normalizedEmail,
+    })
+
+    return this.toResponseDto(currentUser)
+  }
+
+  /**
+   * Resend the Auth0 password-reset / invite email to an existing user.
+   * Safe to call at any time — Auth0 always returns 200 for this endpoint.
+   */
+  async resendInvite(id: string): Promise<void> {
+    const user = await this.userModel.findByPk(id)
+    if (!user) {
+      throw new NotFoundException(`User with ID ${id} not found`)
+    }
+    await this.auth0.resendPasswordResetEmail(user.email)
+    this.logger.info('Resent invite email', { userId: id, email: user.email })
+  }
+
+  /**
+   * Check whether an email is authorized (used by the Auth0 Pre-Registration Action).
+   * Only active (non-deleted) users count.
+   */
+  async isEmailAuthorized(email: string): Promise<boolean> {
+    const user = await this.userModel.findOne({
+      where: { email: email.trim().toLowerCase() },
+    })
+    return user !== null
+  }
+
+  /**
+   * Delete a user (soft delete) and block them in Auth0.
    */
   async remove(id: string): Promise<void> {
     try {
@@ -292,19 +380,50 @@ export class UsersService {
         throw new NotFoundException(`User with ID ${id} not found`)
       }
 
-      // Prevent deleting protected users
       if (this.isProtectedUser(user)) {
         throw new ForbiddenException('This user is protected and cannot be deleted')
       }
 
+      const auth0Id = user.auth0Id
       await user.destroy()
-      this.logger.info('User deleted successfully', { id })
+      this.logger.info('User soft-deleted', { id })
+
+      if (auth0Id) {
+        await this.auth0.blockUser(auth0Id)
+      }
     } catch (error) {
       if (error instanceof NotFoundException || error instanceof ForbiddenException) {
         throw error
       }
       this.logger.error('Failed to delete user', { id, error })
       throw error
+    }
+  }
+
+  /**
+   * If the user has no auth0Id yet, provision them now (e.g. users created before this feature).
+   */
+  private async syncAuth0OnProvision(user: User): Promise<void> {
+    if (user.auth0Id) return
+    const auth0Id = await this.auth0.provisionUser(user.email, user.firstName, user.lastName)
+    if (auth0Id) {
+      user.auth0Id = auth0Id
+      await user.save()
+    }
+  }
+
+  /**
+   * On restore: unblock if already linked, otherwise provision fresh.
+   */
+  private async syncAuth0OnRestore(user: User): Promise<void> {
+    if (user.auth0Id) {
+      await this.auth0.unblockUser(user.auth0Id)
+    } else {
+      const auth0Id = await this.auth0.provisionUser(user.email, user.firstName, user.lastName)
+      if (auth0Id) {
+        user.auth0Id = auth0Id
+        await user.save()
+      }
     }
   }
 

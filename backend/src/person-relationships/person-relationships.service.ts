@@ -56,12 +56,12 @@ export class PersonRelationshipsService {
   private isSelfView(viewer: User | undefined, person: Person): boolean {
     if (!viewer) return false
     if (viewer.personId && viewer.personId === person.id) return true
-    return viewer.email.trim().toLowerCase() === person.email.trim().toLowerCase()
+    return viewer.email.trim().toLowerCase() === person.personalEmail.trim().toLowerCase()
   }
 
   private counterpartDto(person: Person, viewer?: User): PersonRelationshipCounterpartDto {
-    const hasEmailOnFile = !!person.email?.trim()
-    let email: string | null = person.email
+    const hasEmailOnFile = !!person.personalEmail?.trim()
+    let email: string | null = person.personalEmail
     if (!this.viewerIsAdmin(viewer)) {
       if (!viewer) {
         email = null

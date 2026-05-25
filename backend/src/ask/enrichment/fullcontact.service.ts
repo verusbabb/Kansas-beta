@@ -68,10 +68,7 @@ export class FullContactService {
       )
 
       // FullContact returns 200 with a body even on partial matches
-      const linkedin =
-        data.linkedin ??
-        data.details?.linkedin?.url ??
-        null
+      const linkedin = data.linkedin ?? data.details?.linkedin?.url ?? null
 
       // Prefer current employment from details array
       const currentJob = data.details?.employment?.find((e) => e.current)

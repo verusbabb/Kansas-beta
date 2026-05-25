@@ -131,14 +131,14 @@
                   </RouterLink>
                 </template>
               </Column>
-              <Column field="email" header="Email" sortable>
+              <Column field="personalEmail" header="Email" sortable>
                 <template #body="{ data }">
                   <a
-                    v-if="data.email"
-                    :href="`mailto:${data.email}`"
+                    v-if="data.personalEmail"
+                    :href="`mailto:${data.personalEmail}`"
                     class="text-[#6F8FAF] hover:underline break-all"
                   >
-                    {{ data.email }}
+                    {{ data.personalEmail }}
                   </a>
                   <span
                     v-else-if="data.hasEmailOnFile"
@@ -505,16 +505,50 @@
 
       <div class="flex flex-col gap-2">
         <label for="edit-person-email" class="font-semibold text-surface-700">
-          Email <span class="text-red-500">*</span>
+          Personal Email (sign-in email) <span class="text-red-500">*</span>
         </label>
         <InputText
           id="edit-person-email"
-          v-model="editForm.email"
+          v-model="editForm.personalEmail"
           type="email"
-          :class="{ 'p-invalid': editErrors.email }"
+          :class="{ 'p-invalid': editErrors.personalEmail }"
           class="w-full"
         />
-        <small v-if="editErrors.email" class="p-error">{{ editErrors.email }}</small>
+        <small v-if="editErrors.personalEmail" class="p-error">{{ editErrors.personalEmail }}</small>
+      </div>
+
+      <div class="flex flex-col gap-2">
+        <label for="edit-person-work-email" class="font-semibold text-surface-700">Work Email</label>
+        <InputText
+          id="edit-person-work-email"
+          v-model="editForm.workEmail"
+          type="email"
+          :class="{ 'p-invalid': editErrors.workEmail }"
+          class="w-full"
+        />
+        <small v-if="editErrors.workEmail" class="p-error">{{ editErrors.workEmail }}</small>
+        <small v-else class="text-surface-500 text-xs">Optional — leave blank to remove.</small>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+        <div class="flex flex-col gap-2">
+          <label for="edit-person-employer" class="font-semibold text-surface-700">Employer</label>
+          <InputText
+            id="edit-person-employer"
+            v-model="editForm.employer"
+            placeholder="Acme Corp"
+            class="w-full"
+          />
+        </div>
+        <div class="flex flex-col gap-2">
+          <label for="edit-person-job-title" class="font-semibold text-surface-700">Job Title</label>
+          <InputText
+            id="edit-person-job-title"
+            v-model="editForm.jobTitle"
+            placeholder="Software Engineer"
+            class="w-full"
+          />
+        </div>
       </div>
 
       <div class="flex flex-col gap-2">
@@ -552,8 +586,16 @@
           rows in this admin directory.
         </p>
         <div class="flex flex-wrap items-center justify-between gap-2">
-          <label for="edit-share-email" class="text-surface-800">Email</label>
+          <label for="edit-share-email" class="text-surface-800">Personal email</label>
           <ToggleSwitch v-model="editForm.shareEmailWithLoggedInMembers" inputId="edit-share-email" />
+        </div>
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <label for="edit-share-work-email" class="text-surface-800">Work email</label>
+          <ToggleSwitch v-model="editForm.shareWorkEmailWithLoggedInMembers" inputId="edit-share-work-email" />
+        </div>
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <label for="edit-share-employer" class="text-surface-800">Employer / job title</label>
+          <ToggleSwitch v-model="editForm.shareEmployerWithLoggedInMembers" inputId="edit-share-employer" />
         </div>
         <div class="flex flex-wrap items-center justify-between gap-2">
           <label for="edit-share-phones" class="text-surface-800">Phone numbers</label>
@@ -810,7 +852,7 @@ function rowCounterpartSelectOptions(anchorId: string) {
     .filter((p) => p.id !== anchorId)
     .map((p) => ({
       value: p.id,
-      label: `${p.firstName} ${p.lastName} · ${p.email}`,
+      label: `${p.firstName} ${p.lastName} · ${p.personalEmail}`,
     }))
     .sort((a, b) => a.label.localeCompare(b.label))
 }
@@ -946,12 +988,17 @@ const editForm = ref({
   city: '',
   state: '',
   zip: '',
-  email: '',
+  personalEmail: '',
+  workEmail: '',
+  employer: '',
+  jobTitle: '',
   linkedinProfileUrl: '',
   homePhone: '',
   mobilePhone: '',
   pledgeClassYear: null as number | null,
   shareEmailWithLoggedInMembers: true,
+  shareWorkEmailWithLoggedInMembers: true,
+  shareEmployerWithLoggedInMembers: true,
   sharePhonesWithLoggedInMembers: true,
   shareAddressWithLoggedInMembers: true,
   shareLinkedInWithLoggedInMembers: true,
@@ -965,7 +1012,8 @@ const editErrors = ref({
   city: '',
   state: '',
   zip: '',
-  email: '',
+  personalEmail: '',
+  workEmail: '',
   linkedinProfileUrl: '',
   pledgeClassYear: '',
 })
@@ -1024,7 +1072,7 @@ function matchesSearch(person: PersonResponse, q: string): boolean {
     .filter(Boolean)
     .join(' ')
   const emailHint =
-    person.hasEmailOnFile && !(person.email && String(person.email).trim()) ? 'email on file' : ''
+    person.hasEmailOnFile && !(person.personalEmail && String(person.personalEmail).trim()) ? 'email on file' : ''
   const addressHint =
     person.hasAddressOnFile && formatAddress(person) === '—' ? 'address on file' : ''
 
@@ -1032,7 +1080,10 @@ function matchesSearch(person: PersonResponse, q: string): boolean {
     person.firstName,
     person.lastName,
     `${person.firstName} ${person.lastName}`,
-    person.email ?? '',
+    person.personalEmail ?? '',
+    person.workEmail ?? '',
+    person.employer ?? '',
+    person.jobTitle ?? '',
     emailHint,
     person.externalContactId ?? '',
     person.linkedinProfileUrl ?? '',
@@ -1125,11 +1176,13 @@ function clearEditErrors() {
     city: '',
     state: '',
     zip: '',
-    email: '',
+    personalEmail: '',
+    workEmail: '',
     linkedinProfileUrl: '',
     pledgeClassYear: '',
   }
 }
+
 
 function snapshotEditFormState(): string {
   return JSON.stringify(editForm.value)
@@ -1175,12 +1228,17 @@ function resetEditForm() {
     city: '',
     state: '',
     zip: '',
-    email: '',
+    personalEmail: '',
+    workEmail: '',
+    employer: '',
+    jobTitle: '',
     linkedinProfileUrl: '',
     homePhone: '',
     mobilePhone: '',
     pledgeClassYear: null,
     shareEmailWithLoggedInMembers: true,
+    shareWorkEmailWithLoggedInMembers: true,
+    shareEmployerWithLoggedInMembers: true,
     sharePhonesWithLoggedInMembers: true,
     shareAddressWithLoggedInMembers: true,
     shareLinkedInWithLoggedInMembers: true,
@@ -1198,12 +1256,17 @@ function openEditDialog(p: PersonResponse) {
     city: p.city ?? '',
     state: normalizeUsStateForSelect(p.state),
     zip: p.zip ?? '',
-    email: p.email ?? '',
+    personalEmail: p.personalEmail ?? '',
+    workEmail: p.workEmail ?? '',
+    employer: p.employer ?? '',
+    jobTitle: p.jobTitle ?? '',
     linkedinProfileUrl: p.linkedinProfileUrl ?? '',
     mobilePhone: formatUsPhoneForDisplay(p.mobilePhone ?? ''),
     homePhone: formatUsPhoneForDisplay(p.homePhone ?? ''),
     pledgeClassYear: p.pledgeClassYear ?? null,
     shareEmailWithLoggedInMembers: p.shareEmailWithLoggedInMembers ?? true,
+    shareWorkEmailWithLoggedInMembers: p.shareWorkEmailWithLoggedInMembers ?? true,
+    shareEmployerWithLoggedInMembers: p.shareEmployerWithLoggedInMembers ?? true,
     sharePhonesWithLoggedInMembers: p.sharePhonesWithLoggedInMembers ?? true,
     shareAddressWithLoggedInMembers: p.shareAddressWithLoggedInMembers ?? true,
     shareLinkedInWithLoggedInMembers: p.shareLinkedInWithLoggedInMembers ?? true,
@@ -1235,11 +1298,15 @@ function validateEditForm(): boolean {
     editErrors.value.state = 'Select a valid state or leave blank'
     ok = false
   }
-  if (!f.email.trim()) {
-    editErrors.value.email = 'Email is required'
+  if (!f.personalEmail.trim()) {
+    editErrors.value.personalEmail = 'Personal email is required'
     ok = false
-  } else if (!emailRegex.test(f.email)) {
-    editErrors.value.email = 'Enter a valid email'
+  } else if (!emailRegex.test(f.personalEmail)) {
+    editErrors.value.personalEmail = 'Enter a valid email'
+    ok = false
+  }
+  if (f.workEmail.trim() && !emailRegex.test(f.workEmail)) {
+    editErrors.value.workEmail = 'Enter a valid email'
     ok = false
   }
   const li = f.linkedinProfileUrl.trim()
@@ -1279,7 +1346,10 @@ async function submitEdit() {
       state:
         f.state && US_STATE_CODE_SET.has(f.state) ? f.state.trim().toUpperCase() : null,
       zip: f.zip.trim() || null,
-      email: f.email.trim(),
+      personalEmail: f.personalEmail.trim(),
+      workEmail: f.workEmail.trim() || null,
+      employer: f.employer.trim() || null,
+      jobTitle: f.jobTitle.trim() || null,
       linkedinProfileUrl: f.linkedinProfileUrl.trim() ? f.linkedinProfileUrl.trim() : null,
       mobilePhone: f.mobilePhone.trim() || null,
       homePhone: f.homePhone.trim() || null,
@@ -1291,6 +1361,8 @@ async function submitEdit() {
     }
 
     payload.shareEmailWithLoggedInMembers = f.shareEmailWithLoggedInMembers
+    payload.shareWorkEmailWithLoggedInMembers = f.shareWorkEmailWithLoggedInMembers
+    payload.shareEmployerWithLoggedInMembers = f.shareEmployerWithLoggedInMembers
     payload.sharePhonesWithLoggedInMembers = f.sharePhonesWithLoggedInMembers
     payload.shareAddressWithLoggedInMembers = f.shareAddressWithLoggedInMembers
     payload.shareLinkedInWithLoggedInMembers = f.shareLinkedInWithLoggedInMembers

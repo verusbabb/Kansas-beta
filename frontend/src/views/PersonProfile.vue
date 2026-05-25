@@ -95,18 +95,17 @@
           <template #title>Contact</template>
           <template #content>
             <dl class="grid grid-cols-1 sm:grid-cols-[8rem_1fr] gap-x-4 gap-y-3 text-sm m-0">
-              <dt class="text-surface-500 font-medium">Email</dt>
+              <dt class="text-surface-500 font-medium">Personal Email</dt>
               <dd class="m-0">
-                <div v-if="profile.person.email" class="flex flex-col gap-1">
+                <div v-if="profile.person.personalEmail" class="flex flex-col gap-1">
                   <a
-                    :href="`mailto:${profile.person.email}`"
+                    :href="`mailto:${profile.person.personalEmail}`"
                     class="text-[#6F8FAF] hover:underline break-all"
                   >
-                    {{ profile.person.email }}
+                    {{ profile.person.personalEmail }}
                   </a>
                   <p v-if="isMyProfile" class="text-surface-500 text-xs m-0 max-w-xl">
-                    Used for sign-in and your directory record. It cannot be changed on this page; contact
-                    an administrator if your login email needs to be updated.
+                    Used for sign-in and your directory record. You can update it in the edit form below.
                   </p>
                 </div>
                 <span
@@ -119,6 +118,41 @@
                   <i class="pi pi-lock text-xs opacity-70 shrink-0" aria-hidden="true" />
                   <span class="select-none blur-sm text-surface-500" aria-hidden="true">email on file</span>
                 </span>
+                <span v-else class="text-surface-400">—</span>
+              </dd>
+              <dt class="text-surface-500 font-medium">Work Email</dt>
+              <dd class="m-0">
+                <a
+                  v-if="profile.person.workEmail"
+                  :href="`mailto:${profile.person.workEmail}`"
+                  class="text-[#6F8FAF] hover:underline break-all"
+                >
+                  {{ profile.person.workEmail }}
+                </a>
+                <span
+                  v-else-if="profile.person.hasWorkEmailOnFile"
+                  v-tooltip.top="contactHiddenTooltip"
+                  class="inline-flex items-center gap-2 text-surface-600 text-sm cursor-default"
+                  role="img"
+                  :aria-label="contactHiddenTooltip"
+                >
+                  <i class="pi pi-lock text-xs opacity-70 shrink-0" aria-hidden="true" />
+                  <span class="select-none blur-sm text-surface-500" aria-hidden="true">work email on file</span>
+                </span>
+                <span v-else class="text-surface-400">—</span>
+              </dd>
+              <dt class="text-surface-500 font-medium">Employer</dt>
+              <dd class="m-0 text-surface-800">
+                <span v-if="profile.person.employer">{{ profile.person.employer }}</span>
+                <span
+                  v-else-if="isMyProfile && profile.person.shareEmployerWithLoggedInMembers === false"
+                  class="text-surface-400 text-sm italic"
+                >Hidden from members</span>
+                <span v-else class="text-surface-400">—</span>
+              </dd>
+              <dt class="text-surface-500 font-medium">Job Title</dt>
+              <dd class="m-0 text-surface-800">
+                <span v-if="profile.person.jobTitle">{{ profile.person.jobTitle }}</span>
                 <span v-else class="text-surface-400">—</span>
               </dd>
               <dt class="text-surface-500 font-medium">Mobile</dt>
@@ -223,8 +257,16 @@
             </p>
             <div class="flex flex-col gap-4">
               <div class="flex flex-wrap items-center justify-between gap-2">
-                <span class="text-surface-800 font-medium">Email</span>
+                <span class="text-surface-800 font-medium">Personal email</span>
                 <ToggleSwitch v-model="privacyShareEmail" inputId="unlinked-share-email" />
+              </div>
+              <div class="flex flex-wrap items-center justify-between gap-2">
+                <span class="text-surface-800 font-medium">Work email</span>
+                <ToggleSwitch v-model="privacyShareWorkEmail" inputId="unlinked-share-work-email" />
+              </div>
+              <div class="flex flex-wrap items-center justify-between gap-2">
+                <span class="text-surface-800 font-medium">Employer / job title</span>
+                <ToggleSwitch v-model="privacyShareEmployer" inputId="unlinked-share-employer" />
               </div>
               <div class="flex flex-wrap items-center justify-between gap-2">
                 <span class="text-surface-800 font-medium">Phone numbers</span>
@@ -442,6 +484,59 @@
                 </div>
               </div>
 
+              <div class="flex flex-col gap-2">
+                <label for="me-email" class="font-medium text-surface-800 text-sm">
+                  Personal Email (sign-in email)
+                </label>
+                <InputText
+                  id="me-email"
+                  v-model="editEmail"
+                  type="email"
+                  class="w-full"
+                  :class="{ 'p-invalid': editFieldErrors.email }"
+                />
+                <small v-if="editFieldErrors.email" class="p-error">{{ editFieldErrors.email }}</small>
+                <small v-else class="text-surface-500 text-xs">
+                  This is your sign-in email. Changing it will update the email you use to log in.
+                </small>
+              </div>
+
+              <div class="flex flex-col gap-2">
+                <label for="me-work-email" class="font-medium text-surface-800 text-sm">
+                  Work Email
+                </label>
+                <InputText
+                  id="me-work-email"
+                  v-model="editWorkEmail"
+                  type="email"
+                  class="w-full"
+                  :class="{ 'p-invalid': editFieldErrors.workEmail }"
+                />
+                <small v-if="editFieldErrors.workEmail" class="p-error">{{ editFieldErrors.workEmail }}</small>
+                <small v-else class="text-surface-500 text-xs">Optional — leave blank to remove.</small>
+              </div>
+
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div class="flex flex-col gap-2">
+                  <label for="me-employer" class="font-medium text-surface-800 text-sm">Employer</label>
+                  <InputText
+                    id="me-employer"
+                    v-model="editEmployer"
+                    placeholder="Acme Corp"
+                    class="w-full"
+                  />
+                </div>
+                <div class="flex flex-col gap-2">
+                  <label for="me-job-title" class="font-medium text-surface-800 text-sm">Job Title</label>
+                  <InputText
+                    id="me-job-title"
+                    v-model="editJobTitle"
+                    placeholder="Software Engineer"
+                    class="w-full"
+                  />
+                </div>
+              </div>
+
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div class="flex flex-col gap-2">
                   <label for="me-first" class="font-medium text-surface-800 text-sm">First name</label>
@@ -541,8 +636,16 @@
                   </p>
                 </div>
                 <div class="flex flex-wrap items-center justify-between gap-2">
-                  <span class="text-surface-800">Email</span>
+                  <span class="text-surface-800">Personal email</span>
                   <ToggleSwitch v-model="privacyShareEmail" inputId="me-share-email" />
+                </div>
+                <div class="flex flex-wrap items-center justify-between gap-2">
+                  <span class="text-surface-800">Work email</span>
+                  <ToggleSwitch v-model="privacyShareWorkEmail" inputId="me-share-work-email" />
+                </div>
+                <div class="flex flex-wrap items-center justify-between gap-2">
+                  <span class="text-surface-800">Employer / job title</span>
+                  <ToggleSwitch v-model="privacyShareEmployer" inputId="me-share-employer" />
                 </div>
                 <div class="flex flex-wrap items-center justify-between gap-2">
                   <span class="text-surface-800">Phone numbers</span>
@@ -949,7 +1052,7 @@ const isMyProfile = computed(() => {
   const p = profile.value?.person
   if (!u || !p || !authStore.isAuthenticated) return false
   if (u.personId && u.personId === p.id) return true
-  const pe = p.email?.trim().toLowerCase()
+  const pe = p.personalEmail?.trim().toLowerCase()
   if (pe && u.email?.trim().toLowerCase() === pe) return true
   return false
 })
@@ -981,7 +1084,7 @@ const profileConnectionSelectOptions = computed(() => {
     .filter((p) => p.id !== me)
     .map((p) => ({
       value: p.id,
-      label: `${p.firstName} ${p.lastName}${p.email ? ` · ${p.email}` : ''}`.trim(),
+      label: `${p.firstName} ${p.lastName}${p.personalEmail ? ` · ${p.personalEmail}` : ''}`.trim(),
     }))
     .sort((a, b) => a.label.localeCompare(b.label))
 })
@@ -1075,10 +1178,16 @@ const canSubmitExecOfficeAdd = computed(() => {
 const privacySaving = ref(false)
 const myProfileSaving = ref(false)
 const privacyShareEmail = ref(true)
+const privacyShareWorkEmail = ref(true)
+const privacyShareEmployer = ref(true)
 const privacySharePhones = ref(true)
 const privacyShareAddress = ref(true)
 const privacyShareLinkedIn = ref(true)
 
+const editEmail = ref('')
+const editWorkEmail = ref('')
+const editEmployer = ref('')
+const editJobTitle = ref('')
 const editFirstName = ref('')
 const editLastName = ref('')
 const editAddressLine1 = ref('')
@@ -1091,6 +1200,8 @@ const editLinkedin = ref('')
 const editPledgeYear = ref<number | null>(null)
 
 const editFieldErrors = ref({
+  email: '',
+  workEmail: '',
   firstName: '',
   lastName: '',
   linkedin: '',
@@ -1098,17 +1209,23 @@ const editFieldErrors = ref({
 })
 
 function clearEditFieldErrors() {
-  editFieldErrors.value = { firstName: '', lastName: '', linkedin: '', pledge: '' }
+  editFieldErrors.value = { email: '', workEmail: '', firstName: '', lastName: '', linkedin: '', pledge: '' }
 }
 
 function hydratePrivacySharesFromPerson(person: PersonResponse) {
   privacyShareEmail.value = person.shareEmailWithLoggedInMembers ?? true
+  privacyShareWorkEmail.value = person.shareWorkEmailWithLoggedInMembers ?? true
+  privacyShareEmployer.value = person.shareEmployerWithLoggedInMembers ?? true
   privacySharePhones.value = person.sharePhonesWithLoggedInMembers ?? true
   privacyShareAddress.value = person.shareAddressWithLoggedInMembers ?? true
   privacyShareLinkedIn.value = person.shareLinkedInWithLoggedInMembers ?? true
 }
 
 function hydrateContactEditFieldsFromPerson(person: PersonResponse) {
+  editEmail.value = person.personalEmail ?? ''
+  editWorkEmail.value = person.workEmail ?? ''
+  editEmployer.value = person.employer ?? ''
+  editJobTitle.value = person.jobTitle ?? ''
   editFirstName.value = person.firstName
   editLastName.value = person.lastName
   editAddressLine1.value = person.addressLine1 ?? ''
@@ -1553,6 +1670,8 @@ async function savePrivacySettings() {
   try {
     const person = await peopleStore.updatePerson(id, {
       shareEmailWithLoggedInMembers: privacyShareEmail.value,
+      shareWorkEmailWithLoggedInMembers: privacyShareWorkEmail.value,
+      shareEmployerWithLoggedInMembers: privacyShareEmployer.value,
       sharePhonesWithLoggedInMembers: privacySharePhones.value,
       shareAddressWithLoggedInMembers: privacyShareAddress.value,
       shareLinkedInWithLoggedInMembers: privacyShareLinkedIn.value,
@@ -1569,12 +1688,25 @@ async function savePrivacySettings() {
 function validateMyDirectoryForm(): boolean {
   clearEditFieldErrors()
   let ok = true
+  const emailVal = editEmail.value.trim()
+  if (!emailVal) {
+    editFieldErrors.value.email = 'Email is required'
+    ok = false
+  } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailVal)) {
+    editFieldErrors.value.email = 'Enter a valid email address'
+    ok = false
+  }
   if (!editFirstName.value.trim()) {
     editFieldErrors.value.firstName = 'First name is required'
     ok = false
   }
   if (!editLastName.value.trim()) {
     editFieldErrors.value.lastName = 'Last name is required'
+    ok = false
+  }
+  const workEmailVal = editWorkEmail.value.trim()
+  if (workEmailVal && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(workEmailVal)) {
+    editFieldErrors.value.workEmail = 'Enter a valid email address'
     ok = false
   }
   const li = editLinkedin.value.trim()
@@ -1616,6 +1748,17 @@ async function runDirectoryProfileSave(): Promise<boolean> {
   myProfileSaving.value = true
   try {
     const p = profile.value!.person
+    const newEmail = editEmail.value.trim().toLowerCase()
+    const currentEmail = (p.personalEmail ?? '').toLowerCase()
+    const emailChanged = newEmail !== currentEmail
+
+    // If email changed, update via the self-service endpoint (PATCH /users/me/email)
+    // which syncs to both the users table and Auth0 with email_verified: false.
+    // This is intentionally separate from PATCH /people/:id (the admin path).
+    if (emailChanged) {
+      await authStore.updateMyEmail(newEmail)
+    }
+
     const payload: UpdatePersonPayload = {
       firstName: editFirstName.value.trim(),
       lastName: editLastName.value.trim(),
@@ -1627,9 +1770,14 @@ async function runDirectoryProfileSave(): Promise<boolean> {
           : null,
       zip: editZip.value.trim() || null,
       linkedinProfileUrl: editLinkedin.value.trim() ? editLinkedin.value.trim() : null,
+      workEmail: editWorkEmail.value.trim() || null,
+      employer: editEmployer.value.trim() || null,
+      jobTitle: editJobTitle.value.trim() || null,
       mobilePhone: editMobilePhone.value.trim() || null,
       homePhone: editHomePhone.value.trim() || null,
       shareEmailWithLoggedInMembers: privacyShareEmail.value,
+      shareWorkEmailWithLoggedInMembers: privacyShareWorkEmail.value,
+      shareEmployerWithLoggedInMembers: privacyShareEmployer.value,
       sharePhonesWithLoggedInMembers: privacySharePhones.value,
       shareAddressWithLoggedInMembers: privacyShareAddress.value,
       shareLinkedInWithLoggedInMembers: privacyShareLinkedIn.value,
@@ -1644,8 +1792,10 @@ async function runDirectoryProfileSave(): Promise<boolean> {
     toast.add({
       severity: 'success',
       summary: 'Saved',
-      detail: 'Your directory profile was updated.',
-      life: 3500,
+      detail: emailChanged
+        ? `Profile updated. Use ${newEmail} to sign in from now on.`
+        : 'Your directory profile was updated.',
+      life: emailChanged ? 5000 : 3500,
     })
     return true
   } catch {
@@ -1657,6 +1807,34 @@ async function runDirectoryProfileSave(): Promise<boolean> {
 }
 
 async function saveMyDirectoryProfile() {
+  const newEmail = editEmail.value.trim().toLowerCase()
+  const currentEmail = (profile.value?.person.personalEmail ?? '').toLowerCase()
+  const emailChanging = newEmail !== currentEmail
+
+  if (emailChanging) {
+    // Validate the form first so errors surface before the dialog appears
+    if (!validateMyDirectoryForm()) return
+
+    confirm.require({
+      header: 'Change sign-in email?',
+      message: `Your login email will change from "${profile.value?.person.personalEmail}" to "${editEmail.value.trim()}". Your password stays the same — just use the new email next time you log in.`,
+      icon: 'pi pi-envelope',
+      rejectClass: 'p-button-secondary p-button-outlined',
+      rejectLabel: 'Cancel',
+      acceptLabel: 'Yes, update email',
+      acceptClass: 'p-button-primary',
+      accept: async () => {
+        const ok = await runDirectoryProfileSave()
+        if (ok) {
+          myDirectoryFormOpen.value = false
+          resetProfileConnectionForm()
+          resetExecOfficeForm()
+        }
+      },
+    })
+    return
+  }
+
   const ok = await runDirectoryProfileSave()
   if (ok) {
     myDirectoryFormOpen.value = false
