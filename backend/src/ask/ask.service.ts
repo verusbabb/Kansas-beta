@@ -40,8 +40,15 @@ interface ParsedFilters {
    * 'mixed'            — RAG + people search
    * 'exec_lookup'      — exec officer history (joins exec_assignments → terms → positions)
    * 'parent_lookup'    — parents of members (traverses person_relationships)
+   * 'legacy_lookup'    — members who have at least one member↔member relationship
    */
-  queryType: 'member_directory' | 'site_content' | 'mixed' | 'exec_lookup' | 'parent_lookup'
+  queryType:
+    | 'member_directory'
+    | 'site_content'
+    | 'mixed'
+    | 'exec_lookup'
+    | 'parent_lookup'
+    | 'legacy_lookup'
   /** exec_lookup: position title to search (e.g. "president", "treasurer") */
   execPosition: string | null
   /** exec_lookup: only return officers from the current active term */
@@ -124,6 +131,8 @@ export class AskService {
       dbResults = await this.queryExecTeam(filters)
     } else if (filters.queryType === 'parent_lookup') {
       dbResults = await this.queryParents(filters)
+    } else if (filters.queryType === 'legacy_lookup') {
+      dbResults = await this.queryLegacyMembers()
     } else {
       dbResults = await this.queryPeople(filters, QUERY_LIMIT)
     }
@@ -319,7 +328,7 @@ Available member database fields: firstName, lastName, city (mailing address), s
 
 Return ONLY valid JSON (no markdown, no code fences):
 {
-  "queryType": "member_directory" | "site_content" | "mixed" | "exec_lookup" | "parent_lookup",
+  "queryType": "member_directory" | "site_content" | "mixed" | "exec_lookup" | "parent_lookup" | "legacy_lookup",
   "cityFilter": string | null,
   "cityFilters": string[] | null,
   "stateFilter": string | null,
@@ -341,6 +350,7 @@ Rules:
   - "mixed": BOTH member directory AND site content needed simultaneously.
   - "exec_lookup": ANY question about who held/holds a chapter officer position (president, VP, treasurer, secretary, IFC, etc.), or the current exec team. Use this whenever querying by role/position title.
   - "parent_lookup": questions asking who the PARENTS are of specific members or a pledge class (e.g. "who are the parents of class of 2019", "who is John Smith's parent", "show all parents").
+  - "legacy_lookup": questions about legacy members — members who have a family/relationship connection to another chapter member (e.g. "show legacy members", "who are the legacy members", "which members have legacy connections").
 - cityFilter: lowercase city substring for simple single-city queries.
 - cityFilters: for metro areas spanning suburbs, return array of substrings. Set cityFilter null when used.
 - stateFilter: 2-letter uppercase code only when a specific state is explicitly mentioned.
@@ -361,6 +371,8 @@ Examples:
 - "who are the parents of the class of 2019" -> queryType: "parent_lookup", pledgeClassYearMin: 2019, pledgeClassYearMax: 2019
 - "who is John Smith parent" -> queryType: "parent_lookup", nameFragment: "John Smith"
 - "show all parents" -> queryType: "parent_lookup"
+- "show legacy members" -> queryType: "legacy_lookup"
+- "which members have legacy connections" -> queryType: "legacy_lookup"
 - "Joe Simmons LinkedIn" -> queryType: "member_directory", needsProfessionalData: true, nameFragment: "Joe Simmons"
 - "when is the next rush event" -> queryType: "site_content"
 - "summarize the Buddy Bianca article" -> queryType: "site_content"
@@ -495,15 +507,43 @@ User query: "${query}"`
 
   /**
    * Find parents linked to members matching the given filters.
+   *
+   * Identifies parents by relationship type ('parent') rather than the isParent
+   * flag, which may be inconsistently set. Handles both storage directions:
+   *   - from=Parent, to=Member, type='parent'
+   *   - from=Member, to=Parent, type='son'
+   *
    * - If pledgeClassYear or nameFragment: find those members then traverse
    *   person_relationships to their parents.
-   * - Otherwise: return all persons with isParent = true.
+   * - Otherwise: return all persons linked via parent-type relationships.
    */
   private async queryParents(filters: ParsedFilters): Promise<Person[]> {
-    // No member criteria — return all parents directly
+    const PARENT_AS_FROM_TYPES = [
+      'parent',
+      'grandparent',
+      'great_grandparent',
+      'great_great_grandparent',
+    ]
+    const PARENT_AS_TO_TYPES = ['son', 'grandchild', 'great_grandchild', 'great_great_grandchild']
+
+    // No member criteria — return all people who appear as a parent in any relationship
     if (!filters.nameFragment && filters.pledgeClassYearMin == null) {
+      const [fromRows, toRows] = await Promise.all([
+        this.relationshipModel.findAll({
+          where: { relationshipType: { [Op.in]: PARENT_AS_FROM_TYPES } },
+          attributes: ['fromPersonId'],
+        }),
+        this.relationshipModel.findAll({
+          where: { relationshipType: { [Op.in]: PARENT_AS_TO_TYPES } },
+          attributes: ['toPersonId'],
+        }),
+      ])
+      const parentIds = [
+        ...new Set([...fromRows.map((r) => r.fromPersonId), ...toRows.map((r) => r.toPersonId)]),
+      ]
+      if (!parentIds.length) return []
       return this.personModel.findAll({
-        where: { isParent: true },
+        where: { id: { [Op.in]: parentIds } },
         order: [
           ['lastName', 'ASC'],
           ['firstName', 'ASC'],
@@ -544,39 +584,82 @@ User query: "${query}"`
       limit: QUERY_LIMIT,
     })
     if (!members.length) return []
-
     const memberIds = members.map((m) => m.id)
 
-    // Traverse person_relationships to find related persons
-    const relationships = await this.relationshipModel.findAll({
-      where: {
-        [Op.or]: [
-          { fromPersonId: { [Op.in]: memberIds } },
-          { toPersonId: { [Op.in]: memberIds } },
-        ],
-      },
-      attributes: ['fromPersonId', 'toPersonId'],
-    })
-    if (!relationships.length) return []
+    // Find parent-type relationships: parent is 'from', member is 'to'
+    // Also handle reverse: member is 'from', parent is 'to' with child-type
+    const [fromRows, toRows] = await Promise.all([
+      this.relationshipModel.findAll({
+        where: {
+          toPersonId: { [Op.in]: memberIds },
+          relationshipType: { [Op.in]: PARENT_AS_FROM_TYPES },
+        },
+        attributes: ['fromPersonId'],
+      }),
+      this.relationshipModel.findAll({
+        where: {
+          fromPersonId: { [Op.in]: memberIds },
+          relationshipType: { [Op.in]: PARENT_AS_TO_TYPES },
+        },
+        attributes: ['toPersonId'],
+      }),
+    ])
 
-    // Collect all related IDs that are NOT the member themselves
-    const relatedIds = new Set<string>()
-    for (const r of relationships) {
-      if (r.fromPersonId && !memberIds.includes(r.fromPersonId)) relatedIds.add(r.fromPersonId)
-      if (r.toPersonId && !memberIds.includes(r.toPersonId)) relatedIds.add(r.toPersonId)
-    }
-    if (!relatedIds.size) return []
+    const parentIds = [
+      ...new Set([...fromRows.map((r) => r.fromPersonId), ...toRows.map((r) => r.toPersonId)]),
+    ]
+    if (!parentIds.length) return []
 
-    // Return only those who are parents
     return this.personModel.findAll({
-      where: {
-        id: { [Op.in]: [...relatedIds] },
-        isParent: true,
-      },
+      where: { id: { [Op.in]: parentIds } },
       order: [
         ['lastName', 'ASC'],
         ['firstName', 'ASC'],
       ],
+    })
+  }
+
+  /**
+   * Find all members who have at least one relationship where BOTH endpoints
+   * are chapter members — the definition of a "legacy" member.
+   */
+  private async queryLegacyMembers(): Promise<Person[]> {
+    // Find relationships where both sides are members
+    const legacyRelationships = await this.relationshipModel.findAll({
+      include: [
+        {
+          model: Person,
+          as: 'fromPerson',
+          attributes: ['id'],
+          where: { isMember: true },
+          required: true,
+        },
+        {
+          model: Person,
+          as: 'toPerson',
+          attributes: ['id'],
+          where: { isMember: true },
+          required: true,
+        },
+      ],
+      attributes: ['fromPersonId', 'toPersonId'],
+    })
+
+    const legacyIds = new Set<string>()
+    for (const r of legacyRelationships) {
+      legacyIds.add(r.fromPersonId)
+      legacyIds.add(r.toPersonId)
+    }
+
+    if (!legacyIds.size) return []
+
+    return this.personModel.findAll({
+      where: { id: { [Op.in]: [...legacyIds] }, isMember: true },
+      order: [
+        ['lastName', 'ASC'],
+        ['firstName', 'ASC'],
+      ],
+      limit: QUERY_LIMIT,
     })
   }
 
@@ -591,16 +674,11 @@ User query: "${query}"`
     })
   }
 
-  private async loadRelationships(
-    personIds: string[],
-  ): Promise<PersonRelationship[]> {
+  private async loadRelationships(personIds: string[]): Promise<PersonRelationship[]> {
     if (!personIds.length) return []
     return this.relationshipModel.findAll({
       where: {
-        [Op.or]: [
-          { fromPersonId: { [Op.in]: personIds } },
-          { toPersonId: { [Op.in]: personIds } },
-        ],
+        [Op.or]: [{ fromPersonId: { [Op.in]: personIds } }, { toPersonId: { [Op.in]: personIds } }],
       },
       include: [
         {
@@ -657,7 +735,9 @@ Question: "${query}"`
    * using Gemini. Used for site_content and mixed query types.
    * Runs multi-query decomposition to improve recall on broad questions.
    */
-  private async generateRagAnswer(query: string): Promise<{ answer: string; sources: NewsletterSourceDto[] }> {
+  private async generateRagAnswer(
+    query: string,
+  ): Promise<{ answer: string; sources: NewsletterSourceDto[] }> {
     if (!this.genAI) return { answer: 'AI service unavailable.', sources: [] }
 
     const subQueries = await this.decomposeQuery(query)
@@ -683,7 +763,11 @@ Question: "${query}"`
     const mergedChunks = [...chunkMap.values()].sort((a, b) => b.similarity - a.similarity)
 
     if (!mergedChunks.length) {
-      return { answer: "I couldn't find relevant information in the site knowledge base for that question.", sources: [] }
+      return {
+        answer:
+          "I couldn't find relevant information in the site knowledge base for that question.",
+        sources: [],
+      }
     }
 
     const contextText = mergedChunks

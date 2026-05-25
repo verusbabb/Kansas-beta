@@ -263,10 +263,11 @@ const openNewsletter = async (newsletterId: string) => {
 }
 
 const examples = [
-  'Summarize the newsletter article about [member name]',
-  'What are our chapter values?',
-  'Who has served as President?',
-  'What events are coming up this semester?',
+  'What was our most recent GPA?',
+  'Who are parents of the class of 2019?',
+  'Who are legacy members?',
+  'Summarize the article written about Buddy Biancalana',
+  'Class of 2026',
 ]
 
 function useExample(example: string) {
