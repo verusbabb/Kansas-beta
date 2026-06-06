@@ -51,6 +51,15 @@ const router = createRouter({
   ],
 })
 
+// Redirect www to non-www
+router.beforeEach((to, _from, next) => {
+  if (window.location.hostname === 'www.kansasbeta.org') {
+    window.location.replace(`https://kansasbeta.org${to.fullPath}`)
+    return
+  }
+  next()
+})
+
 // Route guard for protected routes
 router.beforeEach(async (to, _from, next) => {
   const requiresAuth = to.matched.some(record => record.meta.requiresAuth)
