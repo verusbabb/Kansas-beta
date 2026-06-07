@@ -125,8 +125,9 @@ export const useUserStore = defineStore('user', {
     /**
      * Resend the invite / password-reset email to an existing user.
      */
-    async resendInvite(id: string): Promise<void> {
-      await apiClient.post(`/users/${id}/resend-invite`)
+    async resendInvite(id: string): Promise<{ sent: boolean; reason?: string }> {
+      const response = await apiClient.post<{ sent: boolean; reason?: string }>(`/users/${id}/resend-invite`)
+      return response.data
     },
 
     /**

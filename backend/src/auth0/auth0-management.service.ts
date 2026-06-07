@@ -146,14 +146,51 @@ export class Auth0ManagementService {
   }
 
   /**
-   * Send a password reset / invite email via Auth0's Authentication API.
-   * Callable publicly so admins can resend the invite to an existing user.
-   * Auth0 always returns 200 regardless of whether the email exists in the
-   * database connection (prevents email enumeration), so this is safe to call
-   * at any time without prior Auth0 existence checks.
+   * Resend a password reset / invite email to a user.
+   * Looks up the user in Auth0 first to determine whether they have a database
+   * connection identity. Google-only users already have a login method and
+   * cannot receive a password reset email — the caller is informed via the
+   * returned result rather than silently doing nothing.
    */
-  async resendPasswordResetEmail(email: string): Promise<void> {
-    return this.sendPasswordResetEmail(email)
+  async resendPasswordResetEmail(
+    email: string,
+  ): Promise<{ sent: boolean; reason?: string }> {
+    if (!this.client) {
+      await this.sendPasswordResetEmail(email)
+      return { sent: true }
+    }
+
+    try {
+      const result = await this.client.usersByEmail.getByEmail({ email })
+      const users = result.data
+
+      if (users.length === 0) {
+        // No Auth0 account at all — send anyway (creates a reset link if they sign up later)
+        await this.sendPasswordResetEmail(email)
+        return { sent: true }
+      }
+
+      const hasDbIdentity = users.some((u) => u.user_id?.startsWith('auth0|'))
+
+      if (!hasDbIdentity) {
+        // Social-only user (e.g. Google) — password reset email won't reach them
+        return {
+          sent: false,
+          reason: 'This user has logged in with Google and does not have a password-based account. They can continue to sign in with Google.',
+        }
+      }
+
+      await this.sendPasswordResetEmail(email)
+      return { sent: true }
+    } catch (error) {
+      // If the lookup fails, fall back to sending — better to send than to block
+      this.logger.warn('Auth0 user lookup failed in resendPasswordResetEmail, sending anyway', {
+        email,
+        error: error instanceof Error ? error.message : String(error),
+      })
+      await this.sendPasswordResetEmail(email)
+      return { sent: true }
+    }
   }
 
   /**

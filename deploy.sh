@@ -93,18 +93,8 @@ deploy_backend() {
   echo -e "${BLUE}📦 Building backend Docker image...${NC}"
   gcloud builds submit --tag gcr.io/${PROJECT_ID}/${SERVICE_BACKEND} --project=${PROJECT_ID}
   
-  # Get frontend URL if it exists (for CORS configuration)
-  local frontend_url=$(gcloud run services describe ${SERVICE_FRONTEND} \
-    --region ${REGION} \
-    --format="value(status.url)" 2>/dev/null || echo "")
-  
   # Build env vars
-  local env_vars="NODE_ENV=production,GCP_SECRET_MANAGER_ENABLED=true,GCP_PROJECT_ID=${PROJECT_ID},DATABASE_HOST=/cloudsql/${PROJECT_ID}:${REGION}:${DATABASE_INSTANCE},DATABASE_NAME=${DATABASE_NAME},DATABASE_USER=postgres"
-  
-  # Add frontend URL if available
-  if [ -n "${frontend_url}" ]; then
-    env_vars="${env_vars},FRONTEND_URL=${frontend_url}"
-  fi
+  local env_vars="NODE_ENV=production,GCP_SECRET_MANAGER_ENABLED=true,GCP_PROJECT_ID=${PROJECT_ID},DATABASE_HOST=/cloudsql/${PROJECT_ID}:${REGION}:${DATABASE_INSTANCE},DATABASE_NAME=${DATABASE_NAME},DATABASE_USER=postgres,FRONTEND_URL=https://kansasbeta.org"
   
   echo -e "${BLUE}🚀 Deploying backend to Cloud Run...${NC}"
   gcloud run deploy ${SERVICE_BACKEND} \
@@ -115,8 +105,9 @@ deploy_backend() {
     --port 3000 \
     --memory 512Mi \
     --cpu 1 \
-    --min-instances 0 \
+    --min-instances 1 \
     --max-instances 10 \
+    --no-cpu-throttling \
     --timeout 300 \
     --set-env-vars ${env_vars} \
     --add-cloudsql-instances ${PROJECT_ID}:${REGION}:${DATABASE_INSTANCE} \

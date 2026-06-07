@@ -159,13 +159,25 @@ export class UsersController {
   @Post(':id/resend-invite')
   @UseGuards(JwtAuthGuard, UserLookupGuard, RolesGuard)
   @Roles(UserRole.ADMIN)
-  @HttpCode(HttpStatus.NO_CONTENT)
+  @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Resend invite / password-reset email to a user (admin only)' })
-  @ApiResponse({ status: HttpStatus.NO_CONTENT, description: 'Invite email sent' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Returns whether the invite email was sent. Google-only users cannot receive a password reset email.',
+    schema: {
+      type: 'object',
+      properties: {
+        sent: { type: 'boolean' },
+        reason: { type: 'string', nullable: true },
+      },
+    },
+  })
   @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'User not found' })
   @ApiResponse({ status: HttpStatus.FORBIDDEN, description: 'Forbidden - Admin role required' })
-  async resendInvite(@Param('id', ParseUUIDPipe) id: string): Promise<void> {
-    await this.usersService.resendInvite(id)
+  async resendInvite(
+    @Param('id', ParseUUIDPipe) id: string,
+  ): Promise<{ sent: boolean; reason?: string }> {
+    return this.usersService.resendInvite(id)
   }
 
   @Get(':id')

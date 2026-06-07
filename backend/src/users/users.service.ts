@@ -332,6 +332,15 @@ export class UsersService {
     currentUser.email = normalizedEmail
     await currentUser.save()
 
+    // Keep the linked directory person in sync
+    if (currentUser.personId) {
+      const person = await this.personModel.findByPk(currentUser.personId)
+      if (person && person.personalEmail !== normalizedEmail) {
+        person.personalEmail = normalizedEmail
+        await person.save()
+      }
+    }
+
     // Self-service = not trusted, require Auth0 email verification
     if (currentUser.auth0Id) {
       await this.auth0.updateEmail(currentUser.auth0Id, normalizedEmail, false)
@@ -347,15 +356,24 @@ export class UsersService {
 
   /**
    * Resend the Auth0 password-reset / invite email to an existing user.
-   * Safe to call at any time — Auth0 always returns 200 for this endpoint.
+   * Returns whether the email was sent and an optional reason if it was not.
    */
-  async resendInvite(id: string): Promise<void> {
+  async resendInvite(id: string): Promise<{ sent: boolean; reason?: string }> {
     const user = await this.userModel.findByPk(id)
     if (!user) {
       throw new NotFoundException(`User with ID ${id} not found`)
     }
-    await this.auth0.resendPasswordResetEmail(user.email)
-    this.logger.info('Resent invite email', { userId: id, email: user.email })
+    const result = await this.auth0.resendPasswordResetEmail(user.email)
+    if (result.sent) {
+      this.logger.info('Resent invite email', { userId: id, email: user.email })
+    } else {
+      this.logger.info('Skipped invite email (social-only user)', {
+        userId: id,
+        email: user.email,
+        reason: result.reason,
+      })
+    }
+    return result
   }
 
   /**

@@ -438,13 +438,22 @@ function validateEditUserForm(): boolean {
 const handleResendInvite = async (user: UserResponseDto) => {
   resendingInviteUserId.value = user.id
   try {
-    await userStore.resendInvite(user.id)
-    toast.add({
-      severity: 'success',
-      summary: 'Invite sent',
-      detail: `A password-set email was sent to ${user.email}.`,
-      life: 4000,
-    })
+    const result = await userStore.resendInvite(user.id)
+    if (result.sent) {
+      toast.add({
+        severity: 'success',
+        summary: 'Invite sent',
+        detail: `A password-set email was sent to ${user.email}.`,
+        life: 4000,
+      })
+    } else {
+      toast.add({
+        severity: 'warn',
+        summary: 'Email not sent',
+        detail: result.reason ?? 'This user already has a login method and does not need a password reset.',
+        life: 6000,
+      })
+    }
   } catch (error: unknown) {
     const ax = error as { response?: { data?: { message?: string | string[] } } }
     const raw = ax.response?.data?.message

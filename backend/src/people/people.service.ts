@@ -511,6 +511,18 @@ export class PeopleService {
         if (other && other.id !== id) {
           throw new ConflictException(`Person with email ${dto.personalEmail} already exists`)
         }
+
+        // Prevent out-of-sync state: reject if a user account with this email
+        // is already linked to a different directory person
+        const conflictingUser = await this.userModel.findOne({
+          where: { email: normalized },
+          paranoid: false,
+        })
+        if (conflictingUser && conflictingUser.personId !== id) {
+          throw new ConflictException(
+            `A user account with email ${normalized} already exists and belongs to a different person`,
+          )
+        }
       }
     }
 
@@ -614,7 +626,7 @@ export class PeopleService {
     if (dto.personalEmail !== undefined) {
       const normalizedNew = dto.personalEmail.toLowerCase().trim()
       if (normalizedNew !== emailBeforeUpdate) {
-        void this.syncPersonEmailToAuth0(person.id, normalizedNew)
+        await this.syncPersonEmailToAuth0(person.id, normalizedNew)
       }
     }
 
@@ -750,19 +762,30 @@ export class PeopleService {
       const linkedUser = await this.userModel.findOne({
         where: { personId },
       })
-      if (!linkedUser?.auth0Id) return
-      await this.auth0.updateEmail(linkedUser.auth0Id, newEmail, true)
+      if (!linkedUser) return
+
+      // Always keep users.email in sync with people.personalEmail
       if (linkedUser.email !== newEmail) {
         linkedUser.email = newEmail
         await linkedUser.save()
       }
-      this.logger.info('Synced person email change to Auth0 and users table', {
-        personId,
-        newEmail,
-        auth0Id: linkedUser.auth0Id,
-      })
+
+      // If the user has an Auth0 account, update it there too
+      if (linkedUser.auth0Id) {
+        await this.auth0.updateEmail(linkedUser.auth0Id, newEmail, true)
+        this.logger.info('Synced person email change to users table and Auth0', {
+          personId,
+          newEmail,
+          auth0Id: linkedUser.auth0Id,
+        })
+      } else {
+        this.logger.info('Synced person email change to users table (no Auth0 account yet)', {
+          personId,
+          newEmail,
+        })
+      }
     } catch (error) {
-      this.logger.warn('Failed to sync person email change to Auth0', {
+      this.logger.warn('Failed to fully sync person email change', {
         personId,
         newEmail,
         error: error instanceof Error ? error.message : String(error),
