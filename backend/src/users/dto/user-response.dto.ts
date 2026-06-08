@@ -63,4 +63,18 @@ export class UserResponseDto {
     example: false,
   })
   isProtected!: boolean
+
+  @ApiProperty({
+    description: 'Timestamp of the most recent successful login (null if never logged in)',
+    nullable: true,
+    example: '2026-06-07T18:00:00.000Z',
+  })
+  lastLoginAt!: Date | null
+
+  @ApiProperty({
+    description: "Auth0's cumulative login count for this user",
+    example: 12,
+    default: 0,
+  })
+  loginCount!: number
 }

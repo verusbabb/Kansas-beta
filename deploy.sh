@@ -94,7 +94,8 @@ deploy_backend() {
   gcloud builds submit --tag gcr.io/${PROJECT_ID}/${SERVICE_BACKEND} --project=${PROJECT_ID}
   
   # Build env vars
-  local env_vars="NODE_ENV=production,GCP_SECRET_MANAGER_ENABLED=true,GCP_PROJECT_ID=${PROJECT_ID},DATABASE_HOST=/cloudsql/${PROJECT_ID}:${REGION}:${DATABASE_INSTANCE},DATABASE_NAME=${DATABASE_NAME},DATABASE_USER=postgres,FRONTEND_URL=https://kansasbeta.org"
+  local action_secret=$(gcloud secrets versions access latest --secret="auth0-action-secret" --project=${PROJECT_ID} 2>/dev/null || echo "")
+  local env_vars="NODE_ENV=production,GCP_SECRET_MANAGER_ENABLED=true,GCP_PROJECT_ID=${PROJECT_ID},DATABASE_HOST=/cloudsql/${PROJECT_ID}:${REGION}:${DATABASE_INSTANCE},DATABASE_NAME=${DATABASE_NAME},DATABASE_USER=postgres,FRONTEND_URL=https://kansasbeta.org,AUTH0_ACTION_SECRET=${action_secret}"
   
   echo -e "${BLUE}🚀 Deploying backend to Cloud Run...${NC}"
   gcloud run deploy ${SERVICE_BACKEND} \

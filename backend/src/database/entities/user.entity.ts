@@ -89,4 +89,21 @@ export class User extends BaseEntity {
 
   @BelongsTo(() => Person)
   person?: Person
+
+  /** Set to now() by the Auth0 Post-Login Action on every successful login. */
+  @Column({
+    type: DataType.DATE,
+    allowNull: true,
+    field: 'last_login_at',
+  })
+  lastLoginAt!: Date | null
+
+  /** Auth0's authoritative logins_count, synced by the Post-Login Action. */
+  @Column({
+    type: DataType.INTEGER,
+    allowNull: false,
+    defaultValue: 0,
+    field: 'login_count',
+  })
+  loginCount!: number
 }

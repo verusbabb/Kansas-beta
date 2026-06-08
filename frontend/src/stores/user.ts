@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import apiClient from '@/services/api'
-import { UserResponseDto, CreateUserDto, UpdateUserDto, UserRole } from '@/types/user'
+import { UserResponseDto, CreateUserDto, UpdateUserDto, UserRole, BulkInviteDto, BulkInviteResultDto } from '@/types/user'
 
 export const useUserStore = defineStore('user', {
   state: () => ({
@@ -127,6 +127,18 @@ export const useUserStore = defineStore('user', {
      */
     async resendInvite(id: string): Promise<{ sent: boolean; reason?: string }> {
       const response = await apiClient.post<{ sent: boolean; reason?: string }>(`/users/${id}/resend-invite`)
+      return response.data
+    },
+
+    /**
+     * Invite a specific list of directory people selected by the admin.
+     * Timeout scales with the number of IDs (each person takes ~1–2s to provision).
+     */
+    async bulkInvite(dto: BulkInviteDto): Promise<BulkInviteResultDto> {
+      const perPersonMs = 2000
+      const minMs = 15_000
+      const timeout = dto.dryRun ? 10_000 : Math.max(minMs, dto.personIds.length * perPersonMs + 10_000)
+      const response = await apiClient.post<BulkInviteResultDto>('/users/bulk-invite', dto, { timeout })
       return response.data
     },
 

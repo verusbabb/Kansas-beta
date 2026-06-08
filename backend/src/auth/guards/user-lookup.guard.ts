@@ -53,11 +53,7 @@ export class UserLookupGuard implements CanActivate {
     if (!email) {
       // Email should always be present via custom claim from Auth0 Action
       // If missing, it's a configuration issue
-      this.logger.error('Email not found in token', {
-        auth0Id,
-        hasCustomClaim: !!jwtPayload['https://kansas-beta-api/email'],
-        hasStandardClaim: !!jwtPayload.email,
-      })
+      this.logger.error(`Email not found in token auth0Id=${auth0Id} hasCustomClaim=${!!jwtPayload['https://kansas-beta-api/email']} hasStandardClaim=${!!jwtPayload.email}`)
       throw new ForbiddenException(
         'Invalid token: missing email claim. Please ensure Auth0 Action is configured correctly.',
       )
@@ -85,11 +81,7 @@ export class UserLookupGuard implements CanActivate {
         // Update auth0Id whenever the identity changes (e.g. account linking transition,
         // or user switching between Google and password before the Post-Login action runs).
         if (user.auth0Id !== auth0Id) {
-          this.logger.log('Updating stored auth0Id for user matched by email', {
-            email,
-            oldAuth0Id: user.auth0Id,
-            newAuth0Id: auth0Id,
-          })
+          this.logger.log(`Updating stored auth0Id for user matched by email=${email} old=${user.auth0Id} new=${auth0Id}`)
           user.auth0Id = auth0Id
           await user.save()
         }
@@ -100,10 +92,7 @@ export class UserLookupGuard implements CanActivate {
       }
 
       // User not found in database
-      this.logger.warn('User not found in database', {
-        auth0Id,
-        email,
-      })
+      this.logger.warn(`User not found in database auth0Id=${auth0Id} email=${email}`)
       throw new ForbiddenException(
         'Account not authorized. Please contact an administrator. Your account may need to be created in the system first.',
       )
@@ -111,11 +100,10 @@ export class UserLookupGuard implements CanActivate {
       if (error instanceof ForbiddenException) {
         throw error
       }
-      this.logger.error('Error in user lookup', {
-        error: error instanceof Error ? error.message : String(error),
-        auth0Id,
-        email,
-      })
+      this.logger.error(
+        `Error in user lookup auth0Id=${auth0Id} email=${email}: ${error instanceof Error ? error.message : String(error)}`,
+        error instanceof Error ? error.stack : undefined,
+      )
       throw new ForbiddenException(
         'Error authenticating user. Please try again or contact support.',
       )
@@ -132,9 +120,6 @@ export class UserLookupGuard implements CanActivate {
     if (matches.length !== 1) return
     user.personId = matches[0].id
     await user.save()
-    this.logger.log('Linked user to directory person by email', {
-      userId: user.id,
-      personId: user.personId,
-    })
+    this.logger.log(`Linked user to directory person by email userId=${user.id} personId=${user.personId}`)
   }
 }

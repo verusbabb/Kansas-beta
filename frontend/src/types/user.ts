@@ -20,6 +20,8 @@ export interface UserResponseDto {
   createdAt: string
   updatedAt: string
   isProtected?: boolean
+  lastLoginAt?: string | null
+  loginCount?: number
 }
 
 export interface CreateUserDto {
@@ -34,5 +36,17 @@ export interface UpdateUserDto {
   firstName?: string
   lastName?: string
   role?: UserRole
+}
+
+export interface BulkInviteDto {
+  personIds: string[]
+  dryRun?: boolean
+}
+
+export interface BulkInviteResultDto {
+  total: number
+  skipped: number
+  invited: number
+  failed: number
 }
 

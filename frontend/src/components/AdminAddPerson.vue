@@ -22,6 +22,15 @@
           @click="formOpen = true"
           class="bg-[#6F8FAF] hover:bg-[#5a7a9a] border-[#6F8FAF]"
         />
+        <Button
+          v-else
+          label="Cancel"
+          icon="pi pi-times"
+          severity="secondary"
+          outlined
+          :disabled="submitting"
+          @click="cancelForm"
+        />
       </div>
     </div>
 
@@ -43,7 +52,7 @@
         >
           <div class="flex flex-col gap-2">
             <label for="person-kind" class="font-semibold text-surface-700">
-              Role <span class="text-red-500">*</span>
+              Directory type <span class="text-red-500">*</span>
             </label>
             <Select
               id="person-kind"
@@ -51,7 +60,7 @@
               :options="kindOptions"
               optionLabel="label"
               optionValue="value"
-              placeholder="Select role"
+              placeholder="Select type"
               :class="{ 'p-invalid': errors.kind }"
               class="w-full md:max-w-md"
             />
@@ -267,6 +276,23 @@
             <small v-if="errors.pledgeClassYear" class="p-error">{{ errors.pledgeClassYear }}</small>
           </div>
 
+          <div class="flex flex-col gap-2 border-t border-surface-200 pt-5">
+            <label for="person-app-role" class="font-semibold text-surface-700">
+              App access <span class="text-red-500">*</span>
+            </label>
+            <Select
+              id="person-app-role"
+              v-model="form.appRole"
+              :options="appRoleOptions"
+              optionLabel="label"
+              optionValue="value"
+              class="w-full md:max-w-md"
+            />
+            <small class="text-surface-500">
+              An account will be created and a password-set invite sent to their email. Viewer is the standard access level for members.
+            </small>
+          </div>
+
           <div class="flex gap-3">
             <Button
               type="submit"
@@ -275,6 +301,15 @@
               :loading="submitting"
               :disabled="submitting || !isFormFilled"
               class="bg-[#6F8FAF] hover:bg-[#5A7A9F]"
+            />
+            <Button
+              type="button"
+              label="Cancel"
+              icon="pi pi-times"
+              severity="secondary"
+              outlined
+              :disabled="submitting"
+              @click="cancelForm"
             />
           </div>
         </form>
@@ -293,13 +328,18 @@ import InputText from 'primevue/inputtext'
 import InputNumber from 'primevue/inputnumber'
 import Select from 'primevue/select'
 import { useToast } from 'primevue/usetoast'
+import { useConfirm } from 'primevue/useconfirm'
 import apiClient from '@/services/api'
 import { usePeopleStore } from '@/stores/people'
+import { useUserStore } from '@/stores/user'
+import { UserRole } from '@/types/user'
 import type { CreatePersonPayload, PersonKind, PersonResponse } from '@/types/person'
 import { US_STATE_CODE_SET, US_STATE_OPTIONS } from '@/constants/usStates'
 
 const toast = useToast()
+const confirm = useConfirm()
 const peopleStore = usePeopleStore()
+const userStore = useUserStore()
 
 const formOpen = ref(false)
 const csvDownloading = ref(false)
@@ -337,6 +377,12 @@ const kindOptions = [
   { label: 'Member and parent', value: 'both' as PersonKind },
 ]
 
+const appRoleOptions = [
+  { label: 'Viewer — can browse the directory', value: UserRole.VIEWER },
+  { label: 'Editor — has partial admin access', value: UserRole.EDITOR },
+  { label: 'Admin — full access', value: UserRole.ADMIN },
+]
+
 const form = ref({
   kind: 'member' as PersonKind,
   firstName: '',
@@ -354,6 +400,7 @@ const form = ref({
   homePhone: '',
   mobilePhone: '',
   pledgeClassYear: null as number | null,
+  appRole: UserRole.VIEWER as UserRole,
 })
 
 const errors = ref({
@@ -481,8 +528,53 @@ function resetForm() {
     homePhone: '',
     mobilePhone: '',
     pledgeClassYear: null,
+    appRole: UserRole.VIEWER,
   }
   clearErrors()
+}
+
+/** True when the user has entered anything beyond the blank defaults. */
+const isFormDirty = computed(() => {
+  const f = form.value
+  return (
+    f.firstName.trim() !== '' ||
+    f.lastName.trim() !== '' ||
+    f.personalEmail.trim() !== '' ||
+    f.workEmail.trim() !== '' ||
+    f.employer.trim() !== '' ||
+    f.jobTitle.trim() !== '' ||
+    f.addressLine1.trim() !== '' ||
+    f.city.trim() !== '' ||
+    f.state !== '' ||
+    f.zip.trim() !== '' ||
+    f.linkedinProfileUrl.trim() !== '' ||
+    f.externalContactId.trim() !== '' ||
+    f.mobilePhone.trim() !== '' ||
+    f.homePhone.trim() !== '' ||
+    f.pledgeClassYear !== null ||
+    f.appRole !== UserRole.VIEWER
+  )
+})
+
+function cancelForm() {
+  if (!isFormDirty.value) {
+    resetForm()
+    formOpen.value = false
+    return
+  }
+  confirm.require({
+    message: 'Discard your changes and close the form?',
+    header: 'Discard changes',
+    icon: 'pi pi-exclamation-triangle',
+    rejectClass: 'p-button-secondary p-button-outlined',
+    rejectLabel: 'Keep editing',
+    acceptLabel: 'Discard',
+    acceptClass: 'p-button-danger',
+    accept: () => {
+      resetForm()
+      formOpen.value = false
+    },
+  })
 }
 
 async function handleSubmit() {
@@ -525,12 +617,28 @@ async function handleSubmit() {
 
     const { data } = await apiClient.post<PersonResponse>('/people', payload)
 
-    toast.add({
-      severity: 'success',
-      summary: 'Saved',
-      detail: `${data.firstName} ${data.lastName} was added to the directory.`,
-      life: 4000,
-    })
+    // Create the user account and send the invite
+    try {
+      await userStore.assignDirectoryPersonRole(data.id, form.value.appRole)
+      toast.add({
+        severity: 'success',
+        summary: 'Saved',
+        detail: `${data.firstName} ${data.lastName} was added to the directory and an invite was sent to ${data.personalEmail}.`,
+        life: 5000,
+      })
+    } catch (inviteErr: unknown) {
+      // Person was saved successfully; only the invite step failed — surface it as a warning
+      const ax = inviteErr as { response?: { data?: { message?: string | string[] } } }
+      const raw = ax.response?.data?.message
+      const detail = Array.isArray(raw) ? raw.join(', ') : raw || 'Person added, but invite could not be sent.'
+      toast.add({
+        severity: 'warn',
+        summary: 'Person added',
+        detail,
+        life: 6000,
+      })
+    }
+
     resetForm()
     formOpen.value = false
     void peopleStore.fetchPeople({ silent: true })

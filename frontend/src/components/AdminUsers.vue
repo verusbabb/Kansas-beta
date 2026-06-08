@@ -1,109 +1,19 @@
 <template>
   <div class="flex flex-col gap-6">
-    <!-- Header: title + button outside any card -->
-    <div class="flex items-center justify-between">
-      <h2 class="text-xl font-semibold text-surface-900 flex items-center gap-2">
-        <i class="pi pi-users text-[#6F8FAF]"></i>
-        Add/Manage User Roles
-      </h2>
-      <Button
-        v-if="!assignRolesFormOpen"
-        label="Manage Roles"
-        icon="pi pi-plus"
-        @click="assignRolesFormOpen = true"
-        class="bg-[#6F8FAF] hover:bg-[#5a7a9a] border-[#6F8FAF]"
-      />
-    </div>
-
-    <!-- Assign roles form — only shown when open -->
-    <div v-show="assignRolesFormOpen">
-      <Card class="mb-6">
-        <template #content>
-          <div class="flex flex-col gap-6">
-          <p class="text-surface-600 text-sm m-0">
-            Search the chapter directory, choose someone with an email on file, then set their app role
-            (Viewer, Editor, or Admin). This creates an app account if they do not have one yet, or updates
-            their role if they do.
-          </p>
-
-          <div v-if="peopleStore.loading" class="text-surface-600 text-sm">Loading directory…</div>
-          <template v-else>
-            <div class="flex flex-col gap-2 max-w-xl">
-              <label for="admin-user-role-person" class="font-semibold text-surface-700 text-sm"
-                >Directory person</label
-              >
-              <Select
-                id="admin-user-role-person"
-                :model-value="selectedPersonId"
-                :options="peopleSelectOptions"
-                option-label="label"
-                option-value="id"
-                placeholder="Search by name or email…"
-                filter
-                filter-placeholder="Search"
-                show-clear
-                class="w-full"
-                :disabled="assignRoleSaving"
-                @update:model-value="onDirectoryPersonSelected"
-              />
-            </div>
-
-            <div
-              v-if="selectedPerson"
-              class="flex flex-col gap-4 border-t border-surface-200 pt-4 max-w-xl"
-            >
-              <div class="rounded-lg border border-surface-200 bg-surface-50 p-4 flex flex-col gap-1">
-                <div class="font-semibold text-surface-900">
-                  {{ selectedPerson.firstName }} {{ selectedPerson.lastName }}
-                </div>
-                <div class="text-sm text-surface-600">{{ selectedPerson.personalEmail }}</div>
-                <div v-if="linkedUserForSelected" class="text-xs text-surface-500 mt-1">
-                  Existing app account · current role:
-                  <span class="font-medium capitalize">{{ linkedUserForSelected.role }}</span>
-                </div>
-                <div v-else class="text-xs text-surface-500 mt-1">No app account yet — saving will create one.</div>
-              </div>
-
-              <div class="flex flex-col gap-2">
-                <label for="admin-directory-role" class="font-semibold text-surface-700 text-sm">Role</label>
-                <Select
-                  id="admin-directory-role"
-                  v-model="directoryRole"
-                  :options="roleOptions"
-                  option-label="label"
-                  option-value="value"
-                  placeholder="Select role"
-                  class="w-full"
-                  :disabled="assignRoleSaving"
-                />
-              </div>
-
-              <div class="flex gap-3">
-                <Button
-                  type="button"
-                  label="Save role"
-                  icon="pi pi-check"
-                  class="bg-[#6F8FAF] hover:bg-[#5A7A9F]"
-                  :loading="assignRoleSaving"
-                  :disabled="assignRoleSaving || !canSaveDirectoryRole"
-                  @click="handleSaveDirectoryRole"
-                />
-              </div>
-            </div>
-          </template>
-        </div>
-      </template>
-    </Card>
-    </div>
-
     <Card class="mb-6">
       <template #title>
         <div class="flex items-center gap-2">
-          <i class="pi pi-list text-[#6F8FAF]"></i>
-          <span>App users and roles ({{ userStore.activeUsers.length }})</span>
+          <i class="pi pi-users text-[#6F8FAF]"></i>
+          <span>App users ({{ userStore.activeUsers.length }})</span>
         </div>
       </template>
       <template #content>
+        <p class="text-surface-600 text-sm mb-5 m-0">
+          People are invited to the app from the <strong>Members</strong> page. This page manages existing
+          accounts — change a user's role, resend a lost invite email, or remove app access entirely.
+          Protected accounts cannot be edited or deleted.
+        </p>
+
         <div v-if="userStore.loading" class="text-center py-8">
           <i class="pi pi-spin pi-spinner text-4xl text-[#6F8FAF]"></i>
           <div class="mt-4 text-surface-600">Loading users...</div>
@@ -112,8 +22,7 @@
         <div v-else-if="userStore.activeUsers.length === 0" class="text-center py-8">
           <i class="pi pi-inbox text-6xl text-surface-400 mb-4"></i>
           <div class="text-surface-600">
-            No app users yet. Open <strong>Add/Manage User Roles</strong> above to assign roles from the
-            directory.
+            No app users yet. Go to <strong>Admin / Members</strong> to invite people from the directory.
           </div>
         </div>
 
@@ -142,6 +51,14 @@
                       ]"
                     >
                       {{ user.role }}
+                    </span>
+                    <span class="text-xs text-surface-500">
+                      <template v-if="user.lastLoginAt">
+                        Last login {{ formatRelativeDate(user.lastLoginAt) }} · {{ user.loginCount ?? 0 }} {{ (user.loginCount ?? 0) === 1 ? 'login' : 'logins' }}
+                      </template>
+                      <template v-else>
+                        Not yet logged in
+                      </template>
                     </span>
                   </div>
                 </div>
@@ -249,41 +166,28 @@ import Dialog from 'primevue/dialog'
 import { useToast } from 'primevue/usetoast'
 import { useConfirm } from 'primevue/useconfirm'
 import { useUserStore } from '@/stores/user'
-import { usePeopleStore } from '@/stores/people'
 import { UserRole, type UserResponseDto } from '@/types/user'
 import { registerAdminUnsaved } from '@/utils/adminUnsavedRegistry'
 
 const toast = useToast()
 const confirm = useConfirm()
 const userStore = useUserStore()
-const peopleStore = usePeopleStore()
 
-const assignRolesFormOpen = ref(false)
-const selectedPersonId = ref<string | null>(null)
-const directoryRole = ref<UserRole>(UserRole.VIEWER)
-const assignRolesBaseline = ref('')
-const assignRoleSaving = ref(false)
-
-
-const peopleSelectOptions = computed(() =>
-  [...peopleStore.list]
-    .filter((p) => p.personalEmail?.trim())
-    .map((p) => ({
-      id: p.id,
-      label: `${p.firstName} ${p.lastName} · ${p.personalEmail}`,
-    }))
-    .sort((a, b) => a.label.localeCompare(b.label)),
-)
-
-const selectedPerson = computed(() =>
-  selectedPersonId.value ? peopleStore.list.find((p) => p.id === selectedPersonId.value) ?? null : null,
-)
-
-const linkedUserForSelected = computed(() =>
-  selectedPersonId.value
-    ? userStore.users.find((u) => u.personId === selectedPersonId.value) ?? null
-    : null,
-)
+function formatRelativeDate(dateStr: string): string {
+  const date = new Date(dateStr)
+  const now = new Date()
+  const diffMs = now.getTime() - date.getTime()
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24))
+  if (diffDays === 0) return 'today'
+  if (diffDays === 1) return 'yesterday'
+  if (diffDays < 30) return `${diffDays} days ago`
+  if (diffDays < 365) {
+    const months = Math.floor(diffDays / 30)
+    return `${months} ${months === 1 ? 'month' : 'months'} ago`
+  }
+  const years = Math.floor(diffDays / 365)
+  return `${years} ${years === 1 ? 'year' : 'years'} ago`
+}
 
 const roleOptions = [
   { label: 'Viewer', value: UserRole.VIEWER },
@@ -291,54 +195,6 @@ const roleOptions = [
   { label: 'Admin', value: UserRole.ADMIN },
 ]
 
-const canSaveDirectoryRole = computed(
-  () => !!selectedPersonId.value && directoryRole.value != null,
-)
-
-function onDirectoryPersonSelected(id: string | null) {
-  selectedPersonId.value = id
-  if (!id) {
-    assignRolesBaseline.value = ''
-    directoryRole.value = UserRole.VIEWER
-    return
-  }
-  const u = userStore.users.find((x) => x.personId === id)
-  directoryRole.value = u?.role ?? UserRole.VIEWER
-  assignRolesBaseline.value = JSON.stringify({ pid: id, role: directoryRole.value })
-}
-
-function isAssignRolesDirty(): boolean {
-  if (!assignRolesFormOpen.value || !selectedPersonId.value || !assignRolesBaseline.value) return false
-  try {
-    const b = JSON.parse(assignRolesBaseline.value) as { pid: string; role: UserRole }
-    return b.pid !== selectedPersonId.value || b.role !== directoryRole.value
-  } catch {
-    return true
-  }
-}
-
-async function handleSaveDirectoryRole() {
-  const pid = selectedPersonId.value
-  if (!pid || !canSaveDirectoryRole.value) return
-  assignRoleSaving.value = true
-  try {
-    await userStore.assignDirectoryPersonRole(pid, directoryRole.value)
-    toast.add({
-      severity: 'success',
-      summary: 'Saved',
-      detail: 'User role was updated.',
-      life: 3000,
-    })
-    assignRolesBaseline.value = JSON.stringify({ pid, role: directoryRole.value })
-  } catch (error: unknown) {
-    const ax = error as { response?: { data?: { message?: string | string[] } } }
-    const raw = ax.response?.data?.message
-    const detail = Array.isArray(raw) ? raw.join(', ') : raw || 'Could not save role'
-    toast.add({ severity: 'error', summary: 'Error', detail, life: 5000 })
-  } finally {
-    assignRoleSaving.value = false
-  }
-}
 
 const removingUserId = ref<string | null>(null)
 const editingUserId = ref<string | null>(null)
@@ -399,7 +255,7 @@ let unregisterAdminUsers: (() => void) | null = null
 
 onMounted(async () => {
   try {
-    await Promise.all([userStore.fetchUsers(), peopleStore.fetchPeople({ silent: true })])
+    await userStore.fetchUsers()
   } catch {
     toast.add({
       severity: 'error',
@@ -410,14 +266,11 @@ onMounted(async () => {
   }
   unregisterAdminUsers = registerAdminUnsaved({
     id: 'admin-users',
-    isDirty: () => isEditUserDialogDirty() || isAssignRolesDirty(),
+    isDirty: () => isEditUserDialogDirty(),
     discard: () => {
       editUserDialogVisible.value = false
       editingUserId.value = null
       editUserSummary.value = ''
-      selectedPersonId.value = null
-      directoryRole.value = UserRole.VIEWER
-      assignRolesBaseline.value = ''
     },
   })
 })

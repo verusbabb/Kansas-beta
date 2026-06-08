@@ -86,6 +86,60 @@
             </div>
           </div>
 
+          <!-- Invite action bar — admin only, shown when at least one invitable person is in the filtered view -->
+          <div
+            v-if="canEdit && invitableTotalInFiltered > 0"
+            class="flex flex-wrap items-center gap-3 p-3 rounded-lg border border-[#6F8FAF]/30 bg-[#6F8FAF]/5"
+          >
+            <span class="text-sm text-surface-700 flex-1 min-w-0">
+              <template v-if="inviteSelectedCount > 0">
+                <span class="font-semibold">{{ inviteSelectedCount }}</span>
+                {{ inviteSelectedCount === 1 ? 'person' : 'people' }} selected
+                <span class="text-surface-500">
+                  · {{ invitableTotalInFiltered }}
+                  {{ invitableTotalInFiltered === 1 ? 'person has' : 'people have' }} not received an invite
+                </span>
+              </template>
+              <template v-else>
+                <span class="text-surface-500">
+                  {{ invitableTotalInFiltered }}
+                  {{ invitableTotalInFiltered === 1 ? 'person has' : 'people have' }} not received an invite
+                </span>
+              </template>
+            </span>
+            <div class="flex gap-2 flex-wrap">
+              <Button
+                label="Select all"
+                icon="pi pi-check-square"
+                size="small"
+                severity="secondary"
+                outlined
+                :disabled="inviteSending || inviteSelectedCount === invitableTotalInFiltered"
+                @click="selectAllInvitableFiltered"
+              />
+              <Button
+                v-if="inviteSelectedCount > 0"
+                label="Clear selection"
+                icon="pi pi-times"
+                size="small"
+                severity="secondary"
+                outlined
+                :disabled="inviteSending"
+                @click="clearInviteSelection"
+              />
+              <Button
+                v-if="inviteSelectedCount > 0"
+                :label="`Send ${inviteSelectedCount} invite${inviteSelectedCount !== 1 ? 's' : ''}`"
+                icon="pi pi-envelope"
+                size="small"
+                class="bg-[#6F8FAF] hover:bg-[#5a7a9a] border-[#6F8FAF]"
+                :loading="inviteSending"
+                :disabled="inviteSending"
+                @click="sendInvites"
+              />
+            </div>
+          </div>
+
           <div v-if="filteredPeople.length > 0" class="overflow-x-auto -mx-1">
             <DataTable
               v-model:expandedRows="expandedRows"
@@ -104,19 +158,24 @@
               class="member-directory-datatable text-sm"
               :pt="memberDirectoryDataTablePt"
             >
-              <Column expander class="w-12 min-w-[2.75rem]">
-                <template #header>
-                  <span
-                    class="inline-flex w-full justify-center"
-                    v-tooltip.top="'Expand or collapse every row on this page'"
-                  >
+              <Column expander class="w-12 min-w-[2.75rem]" />
+              <!-- Invite checkbox column — admin variant only -->
+              <Column v-if="canEdit" header="Invite" class="w-16 min-w-[4rem]">
+                <template #body="{ data }">
+                  <span class="inline-flex w-full justify-center">
                     <Checkbox
-                      inputId="directory-expand-page"
+                      :inputId="`invite-${data.id}`"
                       binary
-                      :modelValue="directoryExpandHeaderChecked"
-                      :indeterminate="directoryExpandHeaderIndeterminate"
-                      aria-label="Expand or collapse every row on this page"
-                      @update:modelValue="onDirectoryExpandHeaderCheckbox"
+                      :modelValue="inviteSelectedIds.has(data.id)"
+                      :disabled="!isPersonInvitable(data) || inviteSending"
+                      v-tooltip.top="
+                        isPersonProvisioned(data)
+                          ? 'Already has an account'
+                          : !data.personalEmail
+                            ? 'No email address'
+                            : 'Select to invite'
+                      "
+                      @update:modelValue="() => toggleInviteRow(data.id)"
                     />
                   </span>
                 </template>
@@ -401,7 +460,7 @@
     <form novalidate @submit.prevent="submitEdit" class="flex flex-col gap-5">
       <div class="flex flex-col gap-2">
         <label for="edit-person-kind" class="font-semibold text-surface-700">
-          Role <span class="text-red-500">*</span>
+          Directory type <span class="text-red-500">*</span>
         </label>
         <Select
           id="edit-person-kind"
@@ -409,7 +468,7 @@
           :options="kindOptions"
           optionLabel="label"
           optionValue="value"
-          placeholder="Select role"
+          placeholder="Select type"
           :class="{ 'p-invalid': editErrors.kind }"
           class="w-full md:max-w-md"
         />
@@ -683,6 +742,7 @@ import { useConfirm } from 'primevue/useconfirm'
 import { isAxiosRejection } from '@/services/api'
 import { usePeopleStore } from '@/stores/people'
 import { useAuthStore } from '@/stores/auth'
+import { useUserStore } from '@/stores/user'
 import type { PersonResponse, PersonKind, UpdatePersonPayload } from '@/types/person'
 import type { PersonRelationshipResponse } from '@/types/personRelationship'
 import { usePersonRelationshipsStore } from '@/stores/personRelationships'
@@ -704,6 +764,7 @@ const toast = useToast()
 const confirm = useConfirm()
 const peopleStore = usePeopleStore()
 const authStore = useAuthStore()
+const userStore = useUserStore()
 const contactHiddenTooltip = computed(() =>
   directoryContactHiddenTooltip(authStore.isAuthenticated),
 )
@@ -952,8 +1013,95 @@ watch([searchQuery, yearFilter, roleFilter, showLegacyTiesOnly], () => {
 
 const canEdit = computed(() => props.variant === 'admin' && authStore.isAdmin)
 
+// ── Invite selection (admin only) ─────────────────────────────────────────────
+
+/** Returns true if the person already has a fully-provisioned app account. */
+function isPersonProvisioned(person: PersonResponse): boolean {
+  if (!person.personalEmail) return false
+  const email = person.personalEmail.toLowerCase()
+  return userStore.users.some(
+    (u) =>
+      u.auth0Id !== null &&
+      (u.personId === person.id || u.email.toLowerCase() === email),
+  )
+}
+
+/** Returns true if the person can be invited (has email, not yet provisioned). */
+function isPersonInvitable(person: PersonResponse): boolean {
+  return !!person.personalEmail && !isPersonProvisioned(person)
+}
+
+const inviteSelectedIds = ref<Set<string>>(new Set())
+
+function toggleInviteRow(personId: string) {
+  const next = new Set(inviteSelectedIds.value)
+  if (next.has(personId)) next.delete(personId)
+  else next.add(personId)
+  inviteSelectedIds.value = next
+}
+
+function selectAllInvitableFiltered() {
+  const next = new Set(inviteSelectedIds.value)
+  for (const p of filteredPeople.value) {
+    if (isPersonInvitable(p)) next.add(p.id)
+  }
+  inviteSelectedIds.value = next
+}
+
+function clearInviteSelection() {
+  inviteSelectedIds.value = new Set()
+}
+
+const inviteSelectedCount = computed(() => inviteSelectedIds.value.size)
+
+const invitableTotalInFiltered = computed(
+  () => filteredPeople.value.filter((p) => isPersonInvitable(p)).length,
+)
+
+// Reset selection when filters change
+watch([searchQuery, yearFilter, roleFilter, showLegacyTiesOnly], () => {
+  inviteSelectedIds.value = new Set()
+})
+
+const inviteSending = ref(false)
+const inviteResult = ref<{ invited: number; skipped: number; failed: number } | null>(null)
+
+async function sendInvites() {
+  const ids = [...inviteSelectedIds.value]
+  if (ids.length === 0) return
+
+  inviteSending.value = true
+  inviteResult.value = null
+  try {
+    const result = await userStore.bulkInvite({ personIds: ids })
+    inviteResult.value = { invited: result.invited, skipped: result.skipped, failed: result.failed }
+    const parts: string[] = []
+    if (result.invited > 0) parts.push(`${result.invited} invite${result.invited !== 1 ? 's' : ''} sent`)
+    if (result.skipped > 0) parts.push(`${result.skipped} already had accounts`)
+    if (result.failed > 0) parts.push(`${result.failed} failed`)
+    toast.add({
+      severity: result.failed > 0 ? 'warn' : 'success',
+      summary: result.failed > 0 ? 'Invites sent with errors' : 'Invites sent',
+      detail: parts.join(' · '),
+      life: 6000,
+    })
+    inviteSelectedIds.value = new Set()
+    // Refresh the users list so provisioned checkboxes update immediately
+    await userStore.fetchUsers()
+  } catch (error: unknown) {
+    const ax = error as { response?: { data?: { message?: string | string[] } } }
+    const raw = ax.response?.data?.message
+    const detail = Array.isArray(raw) ? raw.join(', ') : raw || 'Could not send invites'
+    toast.add({ severity: 'error', summary: 'Error', detail, life: 6000 })
+  } finally {
+    inviteSending.value = false
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+
 const tableMinWidthClass = computed(() => {
-  if (props.variant === 'admin' && canEdit.value) return 'min-w-[860px]'
+  if (props.variant === 'admin' && canEdit.value) return 'min-w-[900px]'
   return 'min-w-[780px]'
 })
 
@@ -1125,47 +1273,6 @@ const filteredPeople = computed(() => {
   return rows
 })
 
-/** Rows on the current directory table page (for expand-all checkbox). */
-const visibleDirectoryPage = computed(() => {
-  const list = filteredPeople.value
-  const first = directoryTableFirst.value
-  const perPage = directoryTableRows.value
-  return list.slice(first, Math.min(first + perPage, list.length))
-})
-
-const directoryExpandHeaderChecked = computed(() => {
-  const vis = visibleDirectoryPage.value
-  if (vis.length === 0) return false
-  return vis.every((p) => expandedRows.value[p.id])
-})
-
-const directoryExpandHeaderIndeterminate = computed(() => {
-  const vis = visibleDirectoryPage.value
-  if (vis.length === 0) return false
-  const n = vis.filter((p) => expandedRows.value[p.id]).length
-  return n > 0 && n < vis.length
-})
-
-function expandDirectoryPageRows() {
-  const next = { ...expandedRows.value }
-  for (const p of visibleDirectoryPage.value) {
-    next[p.id] = true
-  }
-  expandedRows.value = next
-}
-
-function collapseDirectoryVisiblePage() {
-  const ids = visibleDirectoryPage.value.map((p) => p.id)
-  if (ids.length === 0) return
-  const next = { ...expandedRows.value }
-  for (const id of ids) delete next[id]
-  expandedRows.value = next
-}
-
-function onDirectoryExpandHeaderCheckbox(checked: boolean) {
-  if (checked) expandDirectoryPageRows()
-  else collapseDirectoryVisiblePage()
-}
 
 function clearEditErrors() {
   editErrors.value = {
@@ -1495,6 +1602,9 @@ onMounted(async () => {
   void peopleStore.fetchPeople()
   if (authStore.isAuthenticated) {
     await authStore.fetchUserProfile()
+  }
+  if (props.variant === 'admin') {
+    void userStore.fetchUsers()
   }
 })
 

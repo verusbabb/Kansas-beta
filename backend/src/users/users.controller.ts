@@ -22,7 +22,10 @@ import { UpdateUserDto } from './dto/update-user.dto'
 import { UpdateMyEmailDto } from './dto/update-my-email.dto'
 import { AssignDirectoryUserRoleDto } from './dto/assign-directory-user-role.dto'
 import { UserResponseDto } from './dto/user-response.dto'
+import { BulkInviteDto, BulkInviteResultDto } from './dto/bulk-invite.dto'
+import { RecordLoginDto } from './dto/record-login.dto'
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard'
+import { ActionSecretGuard } from '../auth/guards/action-secret.guard'
 import { RolesGuard } from '../auth/guards/roles.guard'
 import { UserLookupGuard } from '../auth/guards/user-lookup.guard'
 import { Roles } from '../auth/decorators/roles.decorator'
@@ -39,6 +42,26 @@ export class UsersController {
     private readonly logger: PinoLogger,
   ) {
     this.logger.setContext(UsersController.name)
+  }
+
+  /**
+   * Called by the Auth0 Post-Login Action after every successful login.
+   * Secured by a shared secret header — no JWT involved.
+   */
+  @Post('record-login')
+  @UseGuards(ActionSecretGuard)
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({
+    summary: 'Record a login event (Auth0 Post-Login Action only)',
+    description:
+      'Updates lastLoginAt and loginCount for the user. ' +
+      'Secured by x-action-secret header, not JWT. Never returns an error status ' +
+      'that would block authentication.',
+  })
+  @ApiResponse({ status: HttpStatus.NO_CONTENT, description: 'Login recorded' })
+  @ApiResponse({ status: HttpStatus.FORBIDDEN, description: 'Invalid action secret' })
+  async recordLogin(@Body() dto: RecordLoginDto): Promise<void> {
+    await this.usersService.recordLogin(dto.auth0Id, dto.email, dto.loginsCount)
   }
 
   @Post()
@@ -140,6 +163,24 @@ export class UsersController {
     @Body() dto: UpdateMyEmailDto,
   ): Promise<UserResponseDto> {
     return this.usersService.updateMyEmail(user, dto.email)
+  }
+
+  @Post('bulk-invite')
+  @UseGuards(JwtAuthGuard, UserLookupGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Invite a selected list of directory people (admin only)',
+    description:
+      'Provisions user accounts and sends password-set emails for the provided personIds. ' +
+      'People who already have a fully-provisioned account are skipped. ' +
+      'Processing is rate-limited to respect Auth0 free-tier limits (~1 s per person). ' +
+      'Use dryRun: true to validate without sending any emails.',
+  })
+  @ApiResponse({ status: HttpStatus.OK, type: BulkInviteResultDto })
+  @ApiResponse({ status: HttpStatus.FORBIDDEN, description: 'Admin role required' })
+  async bulkInvite(@Body() dto: BulkInviteDto): Promise<BulkInviteResultDto> {
+    return this.usersService.bulkInvite(dto)
   }
 
   @Get()

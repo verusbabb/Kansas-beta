@@ -14,6 +14,7 @@ import { Auth0ManagementService } from '../auth0/auth0-management.service'
 import { CreateUserDto } from './dto/create-user.dto'
 import { UpdateUserDto } from './dto/update-user.dto'
 import { UserResponseDto } from './dto/user-response.dto'
+import { BulkInviteDto, BulkInviteResultDto } from './dto/bulk-invite.dto'
 
 @Injectable()
 export class UsersService {
@@ -419,6 +420,85 @@ export class UsersService {
   }
 
   /**
+   * Invite a specific list of directory people selected by the admin.
+   *
+   * People who already have a fully-provisioned account (auth0Id set) are
+   * skipped so their existing role is never overwritten and no duplicate
+   * emails are sent. Everyone else is created as a Viewer and sent a
+   * password-set invite.
+   *
+   * Auth0 free tier: 2 Management API req/sec (burst 10). Each provisionUser()
+   * makes 2 calls, so we sleep 1000ms between people to stay within limits.
+   */
+  async bulkInvite(dto: BulkInviteDto): Promise<BulkInviteResultDto> {
+    const { personIds, dryRun } = dto
+    const total = personIds.length
+
+    if (dryRun) {
+      return { total, skipped: 0, invited: 0, failed: 0 }
+    }
+
+    // Build provisioned sets to avoid overwriting existing accounts
+    const provisionedUsers = await this.userModel.findAll({
+      where: { auth0Id: { [Op.ne]: null } },
+      paranoid: false,
+      attributes: ['email', 'personId'],
+    })
+    const provisionedPersonIds = new Set<string>(
+      provisionedUsers.map((u) => u.personId).filter((id): id is string => id !== null),
+    )
+    const provisionedEmails = new Set<string>(provisionedUsers.map((u) => u.email.toLowerCase()))
+
+    // Load only the requested people
+    const people = await this.personModel.findAll({
+      where: { id: { [Op.in]: personIds } },
+      attributes: ['id', 'personalEmail', 'firstName', 'lastName'],
+    })
+
+    let skipped = 0
+    let invited = 0
+    let failed = 0
+
+    for (let i = 0; i < people.length; i++) {
+      const person = people[i]
+
+      // Skip already-provisioned people
+      if (
+        provisionedPersonIds.has(person.id) ||
+        (person.personalEmail && provisionedEmails.has(person.personalEmail.toLowerCase()))
+      ) {
+        skipped++
+        continue
+      }
+
+      try {
+        const result = await this.assignRoleForDirectoryPerson(person.id, UserRole.VIEWER)
+        if (result.auth0Id) {
+          invited++
+        } else {
+          failed++
+        }
+      } catch (error) {
+        this.logger.warn('bulkInvite: failed for person', {
+          personId: person.id,
+          email: person.personalEmail,
+          error: error instanceof Error ? error.message : String(error),
+        })
+        failed++
+      }
+
+      // Sleep between people to stay within Auth0's 2 req/sec Management API limit
+      if (i < people.length - 1) {
+        await new Promise((resolve) => setTimeout(resolve, 1000))
+      }
+    }
+
+    this.logger.info('bulkInvite complete', { total, skipped, invited, failed })
+
+    return { total, skipped, invited, failed }
+  }
+
+  /**
    * If the user has no auth0Id yet, provision them now (e.g. users created before this feature).
    */
   private async syncAuth0OnProvision(user: User): Promise<void> {
@@ -446,6 +526,50 @@ export class UsersService {
   }
 
   /**
+   * Record a successful login from the Auth0 Post-Login Action.
+   *
+   * Looks up the user by auth0Id first, then falls back to email (handles the
+   * first-ever Google login where linking has just happened mid-pipeline and
+   * the JWT sub hasn't switched to the primary auth0| ID yet).
+   *
+   * Self-heals the stored auth0Id if the fallback email match finds a mismatch.
+   * Never throws — login must not be blocked by a recording failure.
+   */
+  async recordLogin(auth0Id: string, email: string, loginsCount: number): Promise<void> {
+    try {
+      let user = await this.userModel.findOne({ where: { auth0Id } })
+
+      if (!user) {
+        user = await this.userModel.findOne({ where: { email } })
+        if (!user) {
+          this.logger.warn('recordLogin: no user found', { auth0Id, email })
+          return
+        }
+        if (user.auth0Id !== auth0Id) {
+          this.logger.info('recordLogin: updating auth0Id via email fallback', {
+            email,
+            oldAuth0Id: user.auth0Id,
+            newAuth0Id: auth0Id,
+          })
+          user.auth0Id = auth0Id
+        }
+      }
+
+      user.lastLoginAt = new Date()
+      user.loginCount = loginsCount
+      await user.save()
+
+      this.logger.info('recordLogin: updated login stats', { userId: user.id, loginsCount })
+    } catch (error) {
+      this.logger.error('recordLogin: failed to update login stats', {
+        auth0Id,
+        email,
+        error: error instanceof Error ? error.message : String(error),
+      })
+    }
+  }
+
+  /**
    * Convert User entity to response DTO
    */
   private toResponseDto(user: User): UserResponseDto {
@@ -460,6 +584,8 @@ export class UsersService {
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,
       isProtected: this.isProtectedUser(user),
+      lastLoginAt: user.lastLoginAt,
+      loginCount: user.loginCount,
     }
   }
 }
