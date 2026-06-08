@@ -13,6 +13,7 @@ import PersonProfile from '../views/PersonProfile.vue'
 import Admin from '../views/Admin.vue'
 import History from '../views/History.vue'
 import Ask from '../views/Ask.vue'
+import Resources from '../views/Resources.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -47,6 +48,11 @@ const router = createRouter({
       path: '/admin', 
       component: Admin,
       meta: { requiresAuth: true, requiredRole: ['admin', 'editor'] }
+    },
+    {
+      path: '/resources',
+      component: Resources,
+      meta: { requiresAuth: true, requiredRole: ['admin', 'editor'] },
     },
   ],
 })

@@ -29,7 +29,7 @@
               <span v-if="hasSubmenu" class="pi pi-angle-down ml-2" />
             </a>
           </router-link>
-          <a v-else v-ripple v-bind="props.action">
+          <a v-else v-ripple v-bind="props.action" @click="item.command?.()">
             <span :class="item.icon"></span>
             <span>{{ item.label }}</span>
             <Badge v-if="item.badge" class="ml-auto" :value="item.badge" />
@@ -45,12 +45,15 @@
   import { computed, ref, onMounted, onUnmounted } from "vue";
   import { env } from '@/config/env';
   import { useAuth0 } from '@auth0/auth0-vue';
+  import { useRouter } from 'vue-router';
   import Badge from 'primevue/badge';
   import Menubar from 'primevue/menubar';
   import Toast from 'primevue/toast';
   import LoginButton from './LoginButton.vue';
   import UserProfile from './UserProfile.vue';
   import { useAuthStore } from '@/stores/auth';
+
+  const router = useRouter();
 
   // Check if Auth0 is configured
   const isAuth0Configured = env.auth0Domain && env.auth0ClientId;
@@ -82,14 +85,32 @@
   // Menu items - computed to reactively include/exclude items based on role + screen width
   const items = computed(() => {
     const canAsk = authStore.canAccessAdminPanel
-    const useFlat = windowWidth.value >= 1500
+    const useFlat   = windowWidth.value >= 1650
+    const useMedium = windowWidth.value >= 1200
 
-    const moreItems = [
-      { label: "News",    icon: "pi pi-book",     route: "/newsletters" },
-      { label: "History", icon: "pi pi-clock",    route: "/history" },
+    // Helper: create a submenu item that navigates via router.push (avoids slot routing issues)
+    const cmd = (label, icon, path) => ({ label, icon, command: () => router.push(path) })
+
+    // More items for medium layout (1200–1649): collapse Donate, Contact, Resources, Admin
+    const mediumMoreItems = [
+      cmd("Donate",    "pi pi-heart",        "/donate"),
+      cmd("Contact",   "pi pi-envelope",     "/contact"),
+      ...(canAsk ? [{ separator: true }] : []),
+      ...(canAsk ? [cmd("Resources", "pi pi-folder-open", "/resources")] : []),
+      ...(canAsk ? [cmd("Admin",     "pi pi-cog",         "/admin")]     : []),
+    ]
+
+    // More items for compact layout (960–1199): collapse everything except core 4
+    const compactMoreItems = [
+      cmd("News",    "pi pi-book",  "/newsletters"),
+      cmd("History", "pi pi-clock", "/history"),
       { separator: true },
-      { label: "Donate",  icon: "pi pi-heart",    route: "/donate" },
-      { label: "Contact", icon: "pi pi-envelope", route: "/contact" },
+      cmd("Donate",  "pi pi-heart",    "/donate"),
+      cmd("Contact", "pi pi-envelope", "/contact"),
+      ...(canAsk ? [{ separator: true }] : []),
+      ...(canAsk ? [cmd("Woogle",    "pi pi-sparkles",    "/ask")]       : []),
+      ...(canAsk ? [cmd("Resources", "pi pi-folder-open", "/resources")] : []),
+      ...(canAsk ? [cmd("Admin",     "pi pi-cog",         "/admin")]     : []),
     ]
 
     const flatItems = [
@@ -97,31 +118,38 @@
       { label: "Rush",     icon: "pi pi-users",     route: "/rush" },
       { label: "Calendar", icon: "pi pi-calendar",  route: "/events" },
       { label: "People",   icon: "pi pi-id-card",   route: "/members" },
-      ...(canAsk ? [{ label: "Woogle", icon: "pi pi-sparkles", route: "/ask" }] : []),
+      ...(canAsk ? [{ label: "Woogle",    icon: "pi pi-sparkles",    route: "/ask" }] : []),
+      ...(canAsk ? [{ label: "Resources", icon: "pi pi-folder-open", route: "/resources" }] : []),
       { label: "News",     icon: "pi pi-book",      route: "/newsletters" },
       { label: "History",  icon: "pi pi-clock",     route: "/history" },
       { label: "Donate",   icon: "pi pi-heart",     route: "/donate" },
       { label: "Contact",  icon: "pi pi-envelope",  route: "/contact" },
     ]
 
-    const groupedItems = [
-      { label: "Home",     icon: "pi pi-home",      route: "/" },
-      { label: "Rush",     icon: "pi pi-users",     route: "/rush" },
-      { label: "Calendar", icon: "pi pi-calendar",  route: "/events" },
-      { label: "People",   icon: "pi pi-id-card",   route: "/members" },
+    const mediumItems = [
+      { label: "Home",     icon: "pi pi-home",     route: "/" },
+      { label: "Rush",     icon: "pi pi-users",    route: "/rush" },
+      { label: "Calendar", icon: "pi pi-calendar", route: "/events" },
+      { label: "People",   icon: "pi pi-id-card",  route: "/members" },
       ...(canAsk ? [{ label: "Woogle", icon: "pi pi-sparkles", route: "/ask" }] : []),
-      { label: "More", icon: "pi pi-ellipsis-h", items: moreItems },
+      { label: "News",    icon: "pi pi-book",  route: "/newsletters" },
+      { label: "History", icon: "pi pi-clock", route: "/history" },
+      { label: "More", icon: "pi pi-ellipsis-h", items: mediumMoreItems },
     ]
 
-    const baseItems = useFlat ? flatItems : groupedItems
+    const compactItems = [
+      { label: "Home",     icon: "pi pi-home",     route: "/" },
+      { label: "Rush",     icon: "pi pi-users",    route: "/rush" },
+      { label: "Calendar", icon: "pi pi-calendar", route: "/events" },
+      { label: "People",   icon: "pi pi-id-card",  route: "/members" },
+      { label: "More", icon: "pi pi-ellipsis-h", items: compactMoreItems },
+    ]
 
-    // Admins and site editors (settings-only in /admin); viewers never see this link
-    if (authStore.canAccessAdminPanel) {
-      baseItems.push({
-        label: "Admin",
-        icon: "pi pi-cog",
-        route: "/admin",
-      });
+    const baseItems = useFlat ? flatItems : useMedium ? mediumItems : compactItems
+
+    // Admin appended at top level only in flat layout — other layouts inject it via More
+    if (useFlat && authStore.canAccessAdminPanel) {
+      baseItems.push({ label: "Admin", icon: "pi pi-cog", route: "/admin" })
     }
 
     return baseItems;

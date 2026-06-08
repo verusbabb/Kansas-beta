@@ -20,6 +20,8 @@ import { RushPhoto } from './entities/rush-photo.entity'
 import { HistoryImage } from './entities/history-image.entity'
 import { PersonEnrichment } from './entities/person-enrichment.entity'
 import { KnowledgeChunk } from './entities/knowledge-chunk.entity'
+import { Resource } from './entities/resource.entity'
+import { ResourceVersion } from './entities/resource-version.entity'
 
 @Module({
   imports: [
@@ -97,6 +99,8 @@ import { KnowledgeChunk } from './entities/knowledge-chunk.entity'
           HouseMom,
           PersonEnrichment,
           KnowledgeChunk,
+          Resource,
+          ResourceVersion,
         ]
 
         return sequelizeConfig
@@ -121,6 +125,8 @@ import { KnowledgeChunk } from './entities/knowledge-chunk.entity'
       HouseMom,
       PersonEnrichment,
       KnowledgeChunk,
+      Resource,
+      ResourceVersion,
     ]),
   ],
   exports: [SequelizeModule],

@@ -111,6 +111,47 @@ export class StorageService {
   }
 
   /**
+   * Generate a signed URL that forces the browser to download the file with a given filename.
+   */
+  async getDownloadSignedUrl(
+    fileName: string,
+    originalFilename: string,
+    expirationMinutes = 60,
+  ): Promise<string> {
+    if (!this.bucketName) {
+      throw new InternalServerErrorException('Storage bucket not configured')
+    }
+
+    try {
+      const bucket = this.storage.bucket(this.bucketName)
+      const fileHandle = bucket.file(fileName)
+
+      const [exists] = await fileHandle.exists()
+      if (!exists) {
+        throw new InternalServerErrorException('File not found in storage')
+      }
+
+      const [signedUrl] = await fileHandle.getSignedUrl({
+        version: 'v4',
+        action: 'read',
+        expires: Date.now() + expirationMinutes * 60 * 1000,
+        responseDisposition: `attachment; filename="${encodeURIComponent(originalFilename)}"`,
+      })
+
+      return signedUrl
+    } catch (error) {
+      if (error instanceof InternalServerErrorException) {
+        throw error
+      }
+      this.logger.error('Failed to generate download signed URL', {
+        fileName,
+        error: error instanceof Error ? error.message : String(error),
+      })
+      throw new InternalServerErrorException('Failed to generate download URL')
+    }
+  }
+
+  /**
    * Download a file from Cloud Storage and return its contents as a Buffer.
    * Returns null if the file does not exist.
    */
