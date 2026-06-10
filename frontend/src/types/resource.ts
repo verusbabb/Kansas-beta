@@ -45,6 +45,6 @@ export interface UpdateResourceDto {
 export const RESOURCE_TAG_LABELS: Record<ResourceTag, string> = {
   [ResourceTag.LEGAL]: 'Legal',
   [ResourceTag.INSURANCE]: 'Insurance',
-  [ResourceTag.NATIONAL]: 'National',
+  [ResourceTag.NATIONAL]: 'General Fraternity',
   [ResourceTag.OTHER]: 'Other',
 }

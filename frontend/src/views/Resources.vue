@@ -1,19 +1,54 @@
 <template>
+  <div class="bg-surface-0 min-h-screen">
+
+    <!-- Hero banner -->
+    <div class="bg-gradient-to-r from-[#5A7A9F] via-[#6F8FAF] to-[#5A7A9F] text-white py-16 px-6">
+      <div class="max-w-5xl mx-auto text-center">
+        <h1 class="text-4xl md:text-5xl font-bold mb-4">Chapter Resources</h1>
+        <p class="text-xl md:text-2xl text-gray-300 mb-6">
+          Documents, policies, and reference materials for chapter leadership
+        </p>
+        <div class="w-32 h-1 bg-gray-400 mx-auto"></div>
+      </div>
+    </div>
+
   <div class="max-w-5xl mx-auto px-4 py-8 flex flex-col gap-6">
 
-    <!-- Header -->
+    <!-- Stat / filter strip -->
+    <div class="flex gap-3 overflow-x-auto pb-1 sm:grid sm:grid-cols-5 sm:overflow-visible">
+      <div
+        v-for="opt in tagFilterOptions"
+        :key="opt.value"
+        class="flex items-center gap-3 p-4 bg-white border rounded-xl shadow-sm cursor-pointer transition-all select-none shrink-0 sm:shrink"
+        :class="activeTagFilter === opt.value
+          ? 'border-[#6F8FAF] ring-1 ring-[#6F8FAF]'
+          : 'border-surface-200 hover:border-surface-300'"
+        @click="activeTagFilter = opt.value"
+      >
+        <div class="flex items-center justify-center w-9 h-9 rounded-full shrink-0" :class="opt.iconBg">
+          <i :class="[opt.icon, opt.iconColor, 'text-base']"></i>
+        </div>
+        <div>
+          <div class="text-lg font-bold text-surface-900 leading-tight">{{ tagCount(opt.value) }}</div>
+          <div class="text-xs text-surface-500 leading-tight">{{ opt.label }}</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main content card -->
     <Card>
       <template #title>
         <div class="flex items-center justify-between flex-wrap gap-3">
           <div class="flex items-center gap-2">
             <i class="pi pi-folder-open text-[#6F8FAF]"></i>
-            <span>Chapter Resources</span>
+            <span>
+              Documents
+              <span v-if="activeTagFilter !== 'all'" class="text-sm font-normal text-surface-500 ml-1">
+                — {{ tagLabel(activeTagFilter) }}
+              </span>
+            </span>
           </div>
-          <Button
-            label="Add Document"
-            icon="pi pi-upload"
-            @click="showAddDialog = true"
-          />
+          <Button label="Add Document" icon="pi pi-upload" @click="showAddDialog = true" />
         </div>
       </template>
       <template #content>
@@ -21,20 +56,6 @@
           Store and manage chapter documents — contracts, policies, insurance forms, and national
           materials. Only editors and admins can view or manage resources.
         </p>
-
-        <!-- Tag filter -->
-        <div class="flex flex-wrap gap-2 mb-5">
-          <Button
-            v-for="opt in tagFilterOptions"
-            :key="opt.value"
-            :label="opt.label"
-            :severity="activeTagFilter === opt.value ? 'primary' : 'secondary'"
-            :outlined="activeTagFilter !== opt.value"
-            size="small"
-            rounded
-            @click="activeTagFilter = opt.value"
-          />
-        </div>
 
         <!-- Loading -->
         <div v-if="resourceStore.loading" class="text-center py-10">
@@ -46,7 +67,7 @@
         <div v-else-if="filteredResources.length === 0" class="text-center py-10">
           <i class="pi pi-inbox text-6xl text-surface-400 mb-4 block"></i>
           <div class="text-surface-600">
-            {{ activeTagFilter === 'all' ? 'No documents uploaded yet.' : `No documents tagged "${tagLabel(activeTagFilter)}".` }}
+            {{ activeTagFilter === 'all' ? 'No documents uploaded yet.' : `No ${tagLabel(activeTagFilter).toLowerCase()} documents yet.` }}
           </div>
         </div>
 
@@ -55,31 +76,47 @@
           <div
             v-for="resource in filteredResources"
             :key="resource.id"
-            class="flex items-start justify-between gap-4 p-4 border border-surface-200 rounded-lg hover:bg-surface-50 transition-colors"
+            class="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 p-4 border border-surface-200 rounded-xl hover:bg-surface-50 transition-colors"
           >
-            <div class="flex-1 min-w-0">
-              <div class="flex items-center gap-2 flex-wrap mb-1">
-                <span class="font-semibold text-surface-900 truncate">{{ resource.title }}</span>
-                <span :class="tagBadgeClass(resource.tag)">{{ tagLabel(resource.tag) }}</span>
+            <!-- Icon + content grouped so they stay together on mobile -->
+            <div class="flex items-start sm:items-center gap-3 sm:gap-4 flex-1 min-w-0">
+              <!-- File type icon -->
+              <div
+                class="flex items-center justify-center w-11 h-11 rounded-xl shrink-0 mt-0.5 sm:mt-0"
+                :class="fileTypeInfo(resource.currentVersion?.originalFilename).bg"
+              >
+                <i :class="[fileTypeInfo(resource.currentVersion?.originalFilename).icon, fileTypeInfo(resource.currentVersion?.originalFilename).color, 'text-xl']"></i>
               </div>
-              <div v-if="resource.description" class="text-sm text-surface-600 mb-1">
-                {{ resource.description }}
+
+              <!-- Content -->
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-2 flex-wrap mb-0.5">
+                  <span class="font-semibold text-surface-900">{{ resource.title }}</span>
+                  <span :class="tagBadgeClass(resource.tag)">{{ tagLabel(resource.tag) }}</span>
+                  <span
+                    v-if="resource.currentVersion && resource.currentVersion.versionNumber > 1"
+                    class="px-1.5 py-0.5 text-xs font-medium bg-surface-100 text-surface-600 rounded"
+                  >
+                    v{{ resource.currentVersion.versionNumber }}
+                  </span>
+                </div>
+                <div v-if="resource.description" class="text-sm text-surface-600 truncate">
+                  {{ resource.description }}
+                </div>
+              <div class="text-xs text-surface-400 mt-0.5 space-y-0.5">
+                <div v-if="resource.currentVersion">
+                  {{ resource.currentVersion.originalFilename }} · {{ formatFileSize(resource.currentVersion.fileSize) }}
+                </div>
+                <div class="flex flex-wrap gap-x-3">
+                  <span>Added {{ formatDate(resource.createdAt) }}</span>
+                  <span><i class="pi pi-user mr-1"></i>{{ resource.uploadedBy }}</span>
+                </div>
               </div>
-              <div class="text-xs text-surface-500 flex flex-wrap gap-x-3 gap-y-1">
-                <span v-if="resource.currentVersion">
-                  <i class="pi pi-file mr-1"></i>{{ resource.currentVersion.originalFilename }}
-                  ({{ formatFileSize(resource.currentVersion.fileSize) }})
-                </span>
-                <span>
-                  <i class="pi pi-calendar mr-1"></i>Added {{ formatDate(resource.createdAt) }}
-                </span>
-                <span v-if="resource.currentVersion && resource.currentVersion.versionNumber > 1">
-                  <i class="pi pi-history mr-1"></i>v{{ resource.currentVersion.versionNumber }}
-                </span>
               </div>
             </div>
 
-            <div class="flex items-center gap-1 shrink-0">
+            <!-- Actions: below content on mobile (indented past the icon), inline on desktop -->
+            <div class="flex items-center gap-1 shrink-0 pl-14 sm:pl-0">
               <Button
                 icon="pi pi-download"
                 severity="primary"
@@ -320,6 +357,7 @@
     </Dialog>
 
   </div>
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -346,17 +384,22 @@ const authStore = useAuthStore()
 const activeTagFilter = ref<string>('all')
 
 const tagFilterOptions = [
-  { label: 'All', value: 'all' },
-  { label: 'Legal', value: ResourceTag.LEGAL },
-  { label: 'Insurance', value: ResourceTag.INSURANCE },
-  { label: 'National', value: ResourceTag.NATIONAL },
-  { label: 'Other', value: ResourceTag.OTHER },
+  { label: 'All',       value: 'all',                  icon: 'pi pi-folder-open', iconBg: 'bg-blue-50',   iconColor: 'text-blue-500'   },
+  { label: 'Legal',     value: ResourceTag.LEGAL,       icon: 'pi pi-file',        iconBg: 'bg-indigo-50', iconColor: 'text-indigo-500' },
+  { label: 'Insurance', value: ResourceTag.INSURANCE,   icon: 'pi pi-shield',      iconBg: 'bg-purple-50', iconColor: 'text-purple-500' },
+  { label: 'General Fraternity', value: ResourceTag.NATIONAL, icon: 'pi pi-flag', iconBg: 'bg-amber-50', iconColor: 'text-amber-500' },
+  { label: 'Other',     value: ResourceTag.OTHER,       icon: 'pi pi-tag',         iconBg: 'bg-slate-50',  iconColor: 'text-slate-500'  },
 ]
+
+function tagCount(value: string): number {
+  if (value === 'all') return resourceStore.resources.length
+  return resourceStore.resources.filter((r) => r.tag === value).length
+}
 
 const tagOptions = [
   { label: 'Legal', value: ResourceTag.LEGAL },
   { label: 'Insurance', value: ResourceTag.INSURANCE },
-  { label: 'National', value: ResourceTag.NATIONAL },
+  { label: 'General Fraternity', value: ResourceTag.NATIONAL },
   { label: 'Other', value: ResourceTag.OTHER },
 ]
 
@@ -539,6 +582,16 @@ async function handleDelete() {
 
 function tagLabel(tag: string): string {
   return RESOURCE_TAG_LABELS[tag as ResourceTag] ?? tag
+}
+
+function fileTypeInfo(filename?: string): { icon: string; color: string; bg: string } {
+  const ext = filename?.split('.').pop()?.toLowerCase() ?? ''
+  if (ext === 'pdf')                          return { icon: 'pi pi-file-pdf',   color: 'text-red-500',    bg: 'bg-red-50'    }
+  if (ext === 'doc' || ext === 'docx')        return { icon: 'pi pi-file-word',  color: 'text-blue-600',   bg: 'bg-blue-50'   }
+  if (ext === 'xls' || ext === 'xlsx')        return { icon: 'pi pi-file-excel', color: 'text-green-600',  bg: 'bg-green-50'  }
+  if (ext === 'ppt' || ext === 'pptx')        return { icon: 'pi pi-file',       color: 'text-orange-500', bg: 'bg-orange-50' }
+  if (ext === 'txt' || ext === 'csv')         return { icon: 'pi pi-file',       color: 'text-slate-500',  bg: 'bg-slate-50'  }
+  return                                             { icon: 'pi pi-file',       color: 'text-[#6F8FAF]',  bg: 'bg-blue-50'   }
 }
 
 function tagBadgeClass(tag: ResourceTag): string {

@@ -1,8 +1,10 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common'
 import { InjectModel } from '@nestjs/sequelize'
+import { Op } from 'sequelize'
 import { PinoLogger } from 'nestjs-pino'
 import { Resource } from '../database/entities/resource.entity'
 import { ResourceVersion } from '../database/entities/resource-version.entity'
+import { User } from '../database/entities/user.entity'
 import { StorageService } from '../storage/storage.service'
 import { CreateResourceDto } from './dto/create-resource.dto'
 import { UpdateResourceDto } from './dto/update-resource.dto'
@@ -38,6 +40,8 @@ export class ResourcesService {
     private resourceModel: typeof Resource,
     @InjectModel(ResourceVersion)
     private resourceVersionModel: typeof ResourceVersion,
+    @InjectModel(User)
+    private userModel: typeof User,
     private readonly storageService: StorageService,
     private readonly logger: PinoLogger,
   ) {
@@ -59,8 +63,8 @@ export class ResourcesService {
     })
 
     const version = await this.uploadVersion(resource.id, file, 1, uploadedBy)
-
-    return this.toResponseDto(resource, version)
+    const nameMap = await this.buildNameMap([uploadedBy])
+    return this.toResponseDto(resource, version, nameMap)
   }
 
   async findAll(): Promise<ResourceResponseDto[]> {
@@ -68,10 +72,12 @@ export class ResourcesService {
       order: [['createdAt', 'DESC']],
     })
 
+    const nameMap = await this.buildNameMap(resources.map((r) => r.uploadedBy))
+
     const results: ResourceResponseDto[] = []
     for (const resource of resources) {
       const currentVersion = await this.getCurrentVersion(resource.id)
-      results.push(this.toResponseDto(resource, currentVersion))
+      results.push(this.toResponseDto(resource, currentVersion, nameMap))
     }
     return results
   }
@@ -81,7 +87,8 @@ export class ResourcesService {
     if (!resource) throw new NotFoundException(`Resource ${id} not found`)
 
     const currentVersion = await this.getCurrentVersion(id)
-    return this.toResponseDto(resource, currentVersion)
+    const nameMap = await this.buildNameMap([resource.uploadedBy])
+    return this.toResponseDto(resource, currentVersion, nameMap)
   }
 
   async update(id: string, dto: UpdateResourceDto): Promise<ResourceResponseDto> {
@@ -94,7 +101,8 @@ export class ResourcesService {
     await resource.save()
 
     const currentVersion = await this.getCurrentVersion(id)
-    return this.toResponseDto(resource, currentVersion)
+    const nameMap = await this.buildNameMap([resource.uploadedBy])
+    return this.toResponseDto(resource, currentVersion, nameMap)
   }
 
   async replaceFile(
@@ -111,7 +119,8 @@ export class ResourcesService {
     const nextVersionNumber = latestVersion ? latestVersion.versionNumber + 1 : 1
 
     const newVersion = await this.uploadVersion(id, file, nextVersionNumber, uploadedBy)
-    return this.toResponseDto(resource, newVersion)
+    const nameMap = await this.buildNameMap([resource.uploadedBy, uploadedBy])
+    return this.toResponseDto(resource, newVersion, nameMap)
   }
 
   async getVersions(id: string): Promise<ResourceVersionDto[]> {
@@ -123,7 +132,8 @@ export class ResourcesService {
       order: [['versionNumber', 'DESC']],
     })
 
-    return versions.map(this.toVersionDto)
+    const nameMap = await this.buildNameMap(versions.map((v) => v.uploadedBy))
+    return versions.map((v) => this.toVersionDto(v, nameMap))
   }
 
   async getDownloadUrl(id: string, versionId?: string): Promise<string> {
@@ -197,7 +207,22 @@ export class ResourcesService {
     })
   }
 
-  private toVersionDto(version: ResourceVersion): ResourceVersionDto {
+  /** Resolve a list of emails to a displayName map in a single DB query. */
+  private async buildNameMap(emails: string[]): Promise<Map<string, string>> {
+    const unique = [...new Set(emails.filter(Boolean))]
+    if (!unique.length) return new Map()
+    const users = await this.userModel.findAll({ where: { email: { [Op.in]: unique } } })
+    const map = new Map<string, string>()
+    for (const u of users) {
+      map.set(u.email, `${u.firstName} ${u.lastName}`)
+    }
+    return map
+  }
+
+  private toVersionDto(
+    version: ResourceVersion,
+    nameMap: Map<string, string> = new Map(),
+  ): ResourceVersionDto {
     return {
       id: version.id,
       resourceId: version.resourceId,
@@ -206,7 +231,7 @@ export class ResourcesService {
       contentType: version.contentType,
       fileSize: version.fileSize,
       versionNumber: version.versionNumber,
-      uploadedBy: version.uploadedBy,
+      uploadedBy: nameMap.get(version.uploadedBy) ?? version.uploadedBy,
       createdAt: version.createdAt,
       updatedAt: version.updatedAt,
     }
@@ -215,16 +240,17 @@ export class ResourcesService {
   private toResponseDto(
     resource: Resource,
     currentVersion: ResourceVersion | null,
+    nameMap: Map<string, string> = new Map(),
   ): ResourceResponseDto {
     return {
       id: resource.id,
       title: resource.title,
       description: resource.description,
       tag: resource.tag,
-      uploadedBy: resource.uploadedBy,
+      uploadedBy: nameMap.get(resource.uploadedBy) ?? resource.uploadedBy,
       createdAt: resource.createdAt,
       updatedAt: resource.updatedAt,
-      currentVersion: currentVersion ? this.toVersionDto(currentVersion) : null,
+      currentVersion: currentVersion ? this.toVersionDto(currentVersion, nameMap) : null,
     }
   }
 }
