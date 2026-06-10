@@ -93,9 +93,7 @@ deploy_backend() {
   echo -e "${BLUE}📦 Building backend Docker image...${NC}"
   gcloud builds submit --tag gcr.io/${PROJECT_ID}/${SERVICE_BACKEND} --project=${PROJECT_ID}
   
-  # Build env vars
-  local action_secret=$(gcloud secrets versions access latest --secret="auth0-action-secret" --project=${PROJECT_ID} 2>/dev/null || echo "")
-  local env_vars="NODE_ENV=production,GCP_SECRET_MANAGER_ENABLED=true,GCP_PROJECT_ID=${PROJECT_ID},DATABASE_HOST=/cloudsql/${PROJECT_ID}:${REGION}:${DATABASE_INSTANCE},DATABASE_NAME=${DATABASE_NAME},DATABASE_USER=postgres,FRONTEND_URL=https://kansasbeta.org,AUTH0_ACTION_SECRET=${action_secret}"
+  local env_vars="NODE_ENV=production,GCP_SECRET_MANAGER_ENABLED=true,GCP_PROJECT_ID=${PROJECT_ID},DATABASE_HOST=/cloudsql/${PROJECT_ID}:${REGION}:${DATABASE_INSTANCE},DATABASE_NAME=${DATABASE_NAME},DATABASE_USER=postgres,FRONTEND_URL=https://kansasbeta.org"
   
   echo -e "${BLUE}🚀 Deploying backend to Cloud Run...${NC}"
   gcloud run deploy ${SERVICE_BACKEND} \
@@ -110,7 +108,8 @@ deploy_backend() {
     --max-instances 10 \
     --no-cpu-throttling \
     --timeout 300 \
-    --set-env-vars ${env_vars} \
+    --set-env-vars "${env_vars}" \
+    --set-secrets "AUTH0_ACTION_SECRET=auth0-action-secret:latest" \
     --add-cloudsql-instances ${PROJECT_ID}:${REGION}:${DATABASE_INSTANCE} \
     --project=${PROJECT_ID}
   

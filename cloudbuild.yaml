@@ -192,12 +192,13 @@ steps:
       - '10'
       - '--no-cpu-throttling'
       - '--set-env-vars'
-      - 'NODE_ENV=production,GCP_SECRET_MANAGER_ENABLED=true,GCP_PROJECT_ID=$PROJECT_ID,DATABASE_HOST=/cloudsql/$PROJECT_ID:us-central1:${_DATABASE_INSTANCE},DATABASE_NAME=${_DATABASE_NAME},DATABASE_USER=${_DATABASE_USER},FRONTEND_URL=https://kansasbeta.org,AUTH0_ACTION_SECRET=$$AUTH0_ACTION_SECRET'
+      - 'NODE_ENV=production,GCP_SECRET_MANAGER_ENABLED=true,GCP_PROJECT_ID=$PROJECT_ID,DATABASE_HOST=/cloudsql/$PROJECT_ID:us-central1:${_DATABASE_INSTANCE},DATABASE_NAME=${_DATABASE_NAME},DATABASE_USER=${_DATABASE_USER},FRONTEND_URL=https://kansasbeta.org'
+      - '--set-secrets'
+      - 'AUTH0_ACTION_SECRET=auth0-action-secret:latest'
       - '--add-cloudsql-instances'
       - '$PROJECT_ID:us-central1:${_DATABASE_INSTANCE}'
     id: 'deploy-backend'
     waitFor: ['run-seeders']
-    secretEnv: ['AUTH0_ACTION_SECRET']
 
   # Deploy frontend to Cloud Run
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
