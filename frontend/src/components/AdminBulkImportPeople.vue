@@ -1,34 +1,13 @@
 <template>
-  <Card class="mb-6" :pt="cardPassThrough">
+  <Card class="mb-6">
     <template #title>
-      <button
-        id="bulk-import-trigger"
-        type="button"
-        class="flex flex-wrap items-center justify-between gap-3 w-full text-left text-xl font-semibold leading-normal rounded-md border-0 bg-transparent p-1 -m-1 cursor-pointer text-surface-900 transition-colors hover:bg-surface-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6F8FAF]"
-        :aria-expanded="panelOpen"
-        aria-controls="bulk-import-panel"
-        :aria-label="panelOpen ? 'Hide Pennington bulk import' : 'Show Pennington bulk import'"
-        v-tooltip.top="panelOpen ? 'Hide bulk import' : 'Show bulk import'"
-        @click="panelOpen = !panelOpen"
-      >
-        <span class="flex items-center gap-2 min-w-0">
-          <i class="pi pi-upload ml-3 text-xl text-[#6F8FAF] shrink-0" aria-hidden="true" />
-          <span>Bulk import (Pennington CSV)</span>
-        </span>
-        <i
-          :class="['pi shrink-0 text-xl text-[#6F8FAF]', panelOpen ? 'pi-minus' : 'pi-plus']"
-          aria-hidden="true"
-        />
-      </button>
+      <span class="flex items-center gap-2">
+        <i class="pi pi-upload ml-3 text-xl text-[#6F8FAF] shrink-0" aria-hidden="true" />
+        <span>Pennington CSV Import</span>
+      </span>
     </template>
     <template #content>
-      <div
-        id="bulk-import-panel"
-        v-show="panelOpen"
-        class="flex flex-col gap-6"
-        role="region"
-        aria-labelledby="bulk-import-trigger"
-      >
+      <div class="flex flex-col gap-6">
         <div
           class="rounded-lg border border-amber-200 bg-amber-50/80 px-4 py-3 text-sm text-surface-800 leading-relaxed"
         >
@@ -143,17 +122,6 @@ import { usePeopleStore } from '@/stores/people'
 
 const toast = useToast()
 const peopleStore = usePeopleStore()
-
-const panelOpen = ref(false)
-
-const cardPassThrough = computed(() =>
-  panelOpen.value
-    ? {}
-    : {
-        body: { class: '!p-0' },
-        content: { class: '!p-0' },
-      },
-)
 
 const selectedFile = ref<File | null>(null)
 const loading = ref(false)

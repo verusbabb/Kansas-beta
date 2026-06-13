@@ -10,6 +10,7 @@ import {
   Patch,
   Post,
   Delete,
+  Query,
   Req,
   UseGuards,
   UseInterceptors,
@@ -28,6 +29,7 @@ import { UpdatePersonDto } from './dto/update-person.dto'
 import { PersonResponseDto } from './dto/person-response.dto'
 import { PersonProfileResponseDto } from './dto/person-profile-response.dto'
 import { BulkImportResponseDto } from './dto/bulk-import-response.dto'
+import { MemberFamilyImportResponseDto } from './dto/member-family-import-response.dto'
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard'
 import { RolesGuard } from '../auth/guards/roles.guard'
 import { UserLookupGuard } from '../auth/guards/user-lookup.guard'
@@ -83,6 +85,33 @@ export class PeopleController {
     file: PersonHeadshotFile,
   ): Promise<BulkImportResponseDto> {
     return this.peopleService.bulkImportFromFile(file.buffer)
+  }
+
+  @Post('member-family-import')
+  @UseGuards(JwtAuthGuard, UserLookupGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  @UseInterceptors(FileInterceptor('file'))
+  @HttpCode(HttpStatus.OK)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Import members with optional mom/dad columns (admin only)',
+    description:
+      'Each CSV row represents one member plus optional parent columns. Required member fields: First Name, Last Name, Email, Pledge Class Year. Optional: Phone, Street Address, City, State, Zip, LinkedIn, Mom/Dad name+email+phone+address. Upserts by email; creates person_relationships. Pass ?sendInvites=true to Auth0-provision all newly-created or never-logged-in people.',
+  })
+  @ApiResponse({ status: HttpStatus.OK, type: MemberFamilyImportResponseDto })
+  @ApiResponse({ status: HttpStatus.FORBIDDEN, description: 'Admin required' })
+  async memberFamilyImport(
+    @UploadedFile(
+      new ParseFilePipe({
+        validators: [new MaxFileSizeValidator({ maxSize: 15 * 1024 * 1024 })],
+        fileIsRequired: true,
+      }),
+    )
+    file: PersonHeadshotFile,
+    @Query('sendInvites') sendInvitesParam?: string,
+  ): Promise<MemberFamilyImportResponseDto> {
+    const sendInvites = sendInvitesParam === 'true'
+    return this.peopleService.memberFamilyImportFromFile(file.buffer, sendInvites)
   }
 
   @Get('export')

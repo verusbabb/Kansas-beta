@@ -107,9 +107,12 @@
           <!-- Member Section: add new people + full directory management -->
           <div v-if="activeSection === 'member'" class="flex flex-col gap-8">
             <AdminAddPerson />
-            <AdminBulkImportPeople />
+            <AdminMemberFamilyImport />
             <MemberSearch variant="admin" />
           </div>
+
+          <!-- Pennington Upload Section -->
+          <AdminBulkImportPeople v-if="activeSection === 'pennington'" />
 
           <AdminExecTeam v-if="activeSection === 'exec-team'" />
 
@@ -178,6 +181,7 @@ import AdminHomePageImages from '@/components/AdminHomePageImages.vue'
 import AdminHistoryImages from '@/components/AdminHistoryImages.vue'
 import AdminAddPerson from '@/components/AdminAddPerson.vue'
 import AdminBulkImportPeople from '@/components/AdminBulkImportPeople.vue'
+import AdminMemberFamilyImport from '@/components/AdminMemberFamilyImport.vue'
 import MemberSearch from '@/components/MemberSearch.vue'
 import { useAuthStore } from '@/stores/auth'
 
@@ -208,6 +212,7 @@ const validSectionIds = [
   'settings-home-images',
   'history-images',
   'woogle-index',
+  'pennington',
 ] as const
 
 /** Editor-accessible content sections (home images, calendar, newsletters). */
@@ -468,6 +473,11 @@ const fullNavItems: NavItem[] = [
     id: 'house-mom',
     label: 'Edit House Mom',
     icon: 'pi pi-heart',
+  },
+  {
+    id: 'pennington',
+    label: 'Pennington Upload',
+    icon: 'pi pi-upload',
   },
   {
     id: 'woogle-index',

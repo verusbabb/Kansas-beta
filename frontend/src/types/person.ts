@@ -99,6 +99,28 @@ export interface PersonResponse {
   updatedAt: string
 }
 
+/** POST /people/member-family-import — one skipped row */
+export interface FamilyImportSkippedRow {
+  sourceRow: number
+  firstName: string
+  lastName: string
+  email: string
+  reason: string
+}
+
+/** POST /people/member-family-import */
+export interface PeopleMemberFamilyImportResponse {
+  membersAdded: number
+  membersUpdated: number
+  parentsAdded: number
+  parentsUpdated: number
+  relationshipsCreated: number
+  invitesSent: number
+  skippedCount: number
+  skipped: FamilyImportSkippedRow[]
+  warnings: string[]
+}
+
 /** POST /people/import */
 export interface PeopleBulkImportResponse {
   importedCount: number

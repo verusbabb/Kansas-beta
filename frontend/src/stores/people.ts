@@ -3,6 +3,7 @@ import apiClient from '@/services/api'
 import type {
   PersonResponse,
   PeopleBulkImportResponse,
+  PeopleMemberFamilyImportResponse,
   UpdatePersonPayload,
 } from '@/types/person'
 import type { PersonProfileResponse } from '@/types/personProfile'
@@ -93,6 +94,21 @@ export const usePeopleStore = defineStore('people', {
       const { data } = await apiClient.delete<PersonResponse>(`/people/${id}/exec-roster-headshot`)
       const idx = this.list.findIndex((p) => p.id === id)
       if (idx >= 0) this.list[idx] = data
+      return data
+    },
+
+    async memberFamilyImport(
+      file: File,
+      sendInvites: boolean,
+    ): Promise<PeopleMemberFamilyImportResponse> {
+      const fd = new FormData()
+      fd.append('file', file)
+      const { data } = await apiClient.post<PeopleMemberFamilyImportResponse>(
+        `/people/member-family-import?sendInvites=${sendInvites}`,
+        fd,
+        { headers: { 'Content-Type': 'multipart/form-data' } },
+      )
+      await this.fetchPeople({ silent: true })
       return data
     },
 

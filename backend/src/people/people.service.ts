@@ -17,11 +17,17 @@ import { normalizeUsPhoneForStorage } from '../common/utils/us-phone'
 import { PersonResponseDto } from './dto/person-response.dto'
 import { PersonProfileResponseDto } from './dto/person-profile-response.dto'
 import { BulkImportResponseDto } from './dto/bulk-import-response.dto'
+import { MemberFamilyImportResponseDto } from './dto/member-family-import-response.dto'
 import {
   formatSkippedImportRows,
   parsePeopleImportBuffer,
   type PeopleImportCreatePayload,
 } from './people-import'
+import {
+  parseMemberFamilyImportBuffer,
+  type FamilyImportPersonPayload,
+  type FamilyImportMemberPayload,
+} from './people-member-family-import'
 import { StorageService } from '../storage/storage.service'
 import { PersonRelationshipsService } from '../person-relationships/person-relationships.service'
 import { ExecTeamService } from '../exec-team/exec-team.service'
@@ -948,6 +954,315 @@ export class PeopleService {
     this.assertCanMutatePersonPhotos(person, currentUser)
     await this.clearPersonHeadshotAt(person, 'execRosterHeadshotFilePath')
     return this.headshotMutationResponse(person, currentUser)
+  }
+
+  /**
+   * Member + family import. Each CSV row represents one member with optional mom/dad columns.
+   * Upserts member and parents by email (additive flags). Creates person_relationships between
+   * each present parent and the member. Optionally provisions Auth0 accounts for never-logged-in people.
+   */
+  async memberFamilyImportFromFile(
+    buffer: Buffer,
+    sendInvites: boolean,
+  ): Promise<MemberFamilyImportResponseDto> {
+    const { rows, skips } = parseMemberFamilyImportBuffer(buffer)
+
+    let membersAdded = 0
+    let membersUpdated = 0
+    let parentsAdded = 0
+    let parentsUpdated = 0
+    let relationshipsCreated = 0
+    let invitesSent = 0
+    const allSkips = [...skips]
+    const allWarnings: string[] = []
+
+    if (rows.length === 0) {
+      return {
+        membersAdded,
+        membersUpdated,
+        parentsAdded,
+        parentsUpdated,
+        relationshipsCreated,
+        invitesSent,
+        skippedCount: allSkips.length,
+        skipped: allSkips,
+        warnings: allWarnings,
+      }
+    }
+
+    // Collect all emails to prefetch existing people
+    const memberEmails = rows.map((r) => r.member.email)
+    const parentEmails = rows.flatMap((r) => [r.mom?.email, r.dad?.email].filter(Boolean) as string[])
+    const allEmails = [...new Set([...memberEmails, ...parentEmails])]
+
+    const existing = await this.personModel.findAll({
+      where: { personalEmail: { [Op.in]: allEmails } },
+      paranoid: false,
+    })
+    const emailToPerson = new Map<string, Person>()
+    for (const p of existing) {
+      emailToPerson.set(p.personalEmail, p)
+    }
+
+    const sequelize = this.personModel.sequelize
+    if (!sequelize) throw new BadRequestException('Database unavailable')
+
+    // People to potentially invite after transaction completes
+    const toInvite: Person[] = []
+
+    await sequelize.transaction(async (transaction) => {
+      for (const row of rows) {
+        // Accumulate parent warnings for this row
+        for (const w of row.parentWarnings) {
+          allWarnings.push(`Row ${row.sourceRow}: ${w}`)
+        }
+
+        // --- Upsert member ---
+        let memberPerson: Person
+        try {
+          const existing = emailToPerson.get(row.member.email)
+          if (existing) {
+            if (existing.deletedAt) await existing.restore({ transaction })
+            this.applyFamilyMemberPayload(existing, row.member)
+            await existing.save({ transaction })
+            memberPerson = existing
+            membersUpdated++
+          } else {
+            memberPerson = await this.personModel.create(
+              {
+                firstName: row.member.firstName,
+                lastName: row.member.lastName,
+                personalEmail: row.member.email,
+                homePhone: normalizeUsPhoneForStorage(row.member.phone),
+                addressLine1: row.member.addressLine1,
+                city: row.member.city,
+                state: row.member.state,
+                zip: row.member.zip,
+                pledgeClassYear: row.member.pledgeClassYear,
+                linkedinProfileUrl: row.member.linkedinProfileUrl,
+                isMember: true,
+                isParent: false,
+              },
+              { transaction },
+            )
+            emailToPerson.set(row.member.email, memberPerson)
+            membersAdded++
+          }
+        } catch (err) {
+          this.logger.warn('Family import: member row error', {
+            sourceRow: row.sourceRow,
+            email: row.member.email,
+            error: err instanceof Error ? err.message : String(err),
+          })
+          allSkips.push({
+            sourceRow: row.sourceRow,
+            firstName: row.member.firstName,
+            lastName: row.member.lastName,
+            email: row.member.email,
+            reason: 'Database error saving member — row skipped',
+          })
+          continue
+        }
+
+        if (sendInvites) toInvite.push(memberPerson)
+
+        // --- Upsert each parent and create relationship ---
+        const parentsToLink: Array<{ payload: FamilyImportPersonPayload; label: string }> = []
+        if (row.mom) parentsToLink.push({ payload: row.mom, label: 'mom' })
+        if (row.dad) parentsToLink.push({ payload: row.dad, label: 'dad' })
+
+        for (const { payload: p } of parentsToLink) {
+          let parentPerson: Person
+          try {
+            const existingParent = emailToPerson.get(p.email)
+            if (existingParent) {
+              if (existingParent.deletedAt) await existingParent.restore({ transaction })
+              this.applyFamilyParentPayload(existingParent, p)
+              await existingParent.save({ transaction })
+              parentPerson = existingParent
+              parentsUpdated++
+            } else {
+              parentPerson = await this.personModel.create(
+                {
+                  firstName: p.firstName,
+                  lastName: p.lastName,
+                  personalEmail: p.email,
+                  homePhone: normalizeUsPhoneForStorage(p.phone),
+                  addressLine1: p.addressLine1,
+                  city: p.city,
+                  state: p.state,
+                  zip: p.zip,
+                  isMember: false,
+                  isParent: true,
+                },
+                { transaction },
+              )
+              emailToPerson.set(p.email, parentPerson)
+              parentsAdded++
+            }
+          } catch (err) {
+            this.logger.warn('Family import: parent upsert error', {
+              sourceRow: row.sourceRow,
+              parentEmail: p.email,
+              error: err instanceof Error ? err.message : String(err),
+            })
+            allWarnings.push(
+              `Row ${row.sourceRow}: parent ${p.firstName} ${p.lastName} (${p.email}) could not be saved — skipped`,
+            )
+            continue
+          }
+
+          if (sendInvites) toInvite.push(parentPerson)
+
+          // Create relationship if it doesn't already exist
+          try {
+            const existingRel = await this.personRelationshipModel.findOne({
+              where: {
+                fromPersonId: parentPerson.id,
+                toPersonId: memberPerson.id,
+              },
+              paranoid: false,
+              transaction,
+            })
+            if (existingRel) {
+              if (existingRel.deletedAt) {
+                await existingRel.restore({ transaction })
+                relationshipsCreated++
+              }
+            } else {
+              await this.personRelationshipModel.create(
+                {
+                  fromPersonId: parentPerson.id,
+                  toPersonId: memberPerson.id,
+                  relationshipType: 'parent',
+                },
+                { transaction },
+              )
+              relationshipsCreated++
+            }
+          } catch (err) {
+            this.logger.warn('Family import: relationship create error', {
+              sourceRow: row.sourceRow,
+              parentId: parentPerson.id,
+              memberId: memberPerson.id,
+              error: err instanceof Error ? err.message : String(err),
+            })
+            allWarnings.push(
+              `Row ${row.sourceRow}: relationship for ${p.firstName} ${p.lastName} could not be created`,
+            )
+          }
+        }
+      }
+    })
+
+    // Send invites outside the transaction (Auth0 calls are external)
+    if (sendInvites && toInvite.length > 0) {
+      for (const person of toInvite) {
+        try {
+          const sent = await this.invitePersonIfEligible(person)
+          if (sent) invitesSent++
+        } catch (err) {
+          this.logger.warn('Family import: invite failed', {
+            personId: person.id,
+            error: err instanceof Error ? err.message : String(err),
+          })
+        }
+      }
+    }
+
+    this.logger.info('Member family import completed', {
+      membersAdded,
+      membersUpdated,
+      parentsAdded,
+      parentsUpdated,
+      relationshipsCreated,
+      invitesSent,
+      skipped: allSkips.length,
+      warnings: allWarnings.length,
+    })
+
+    return {
+      membersAdded,
+      membersUpdated,
+      parentsAdded,
+      parentsUpdated,
+      relationshipsCreated,
+      invitesSent,
+      skippedCount: allSkips.length,
+      skipped: allSkips,
+      warnings: allWarnings,
+    }
+  }
+
+  private applyFamilyMemberPayload(person: Person, m: FamilyImportMemberPayload): void {
+    person.firstName = m.firstName
+    person.lastName = m.lastName
+    if (m.phone !== null) person.homePhone = normalizeUsPhoneForStorage(m.phone)
+    if (m.addressLine1 !== null) person.addressLine1 = m.addressLine1
+    if (m.city !== null) person.city = m.city
+    if (m.state !== null) person.state = m.state
+    if (m.zip !== null) person.zip = m.zip
+    if (m.linkedinProfileUrl !== null) person.linkedinProfileUrl = m.linkedinProfileUrl
+    person.pledgeClassYear = m.pledgeClassYear
+    person.isMember = true
+  }
+
+  private applyFamilyParentPayload(person: Person, p: FamilyImportPersonPayload): void {
+    person.firstName = p.firstName
+    person.lastName = p.lastName
+    if (p.phone !== null) person.homePhone = normalizeUsPhoneForStorage(p.phone)
+    if (p.addressLine1 !== null) person.addressLine1 = p.addressLine1
+    if (p.city !== null) person.city = p.city
+    if (p.state !== null) person.state = p.state
+    if (p.zip !== null) person.zip = p.zip
+    person.isParent = true
+  }
+
+  /**
+   * Provision an Auth0 account (and send invite) for a directory person if they have
+   * never successfully logged in (login_count === 0 or no user record exists).
+   * Returns true if an invite was sent.
+   */
+  private async invitePersonIfEligible(person: Person): Promise<boolean> {
+    const email = person.personalEmail.trim().toLowerCase()
+
+    const existingUser = await this.userModel.findOne({
+      where: { email },
+      paranoid: false,
+    })
+
+    if (existingUser) {
+      // Already logged in — skip
+      if ((existingUser.loginCount ?? 0) > 0) return false
+      // Already provisioned in Auth0 — skip (avoid duplicate accounts)
+      if (existingUser.auth0Id) return false
+      // User exists, never provisioned, never logged in — provision now
+      if (existingUser.deletedAt) await existingUser.restore()
+      existingUser.personId = existingUser.personId ?? person.id
+      await existingUser.save()
+      const auth0Id = await this.auth0.provisionUser(email, person.firstName, person.lastName)
+      if (auth0Id) {
+        existingUser.auth0Id = auth0Id
+        await existingUser.save()
+      }
+      return true
+    }
+
+    // No user account — create one and provision
+    const user = await this.userModel.create({
+      email,
+      firstName: person.firstName,
+      lastName: person.lastName,
+      role: UserRole.VIEWER,
+      personId: person.id,
+      auth0Id: null,
+    })
+    const auth0Id = await this.auth0.provisionUser(email, person.firstName, person.lastName)
+    if (auth0Id) {
+      user.auth0Id = auth0Id
+      await user.save()
+    }
+    return true
   }
 
   /**
