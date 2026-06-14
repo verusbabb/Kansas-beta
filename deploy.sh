@@ -46,10 +46,35 @@ get_backend_url() {
 
 # Get Auth0 secrets from Secret Manager
 get_auth0_secrets() {
-  local domain=$(gcloud secrets versions access latest --secret="auth0-domain" --project=${PROJECT_ID} 2>/dev/null || echo "")
-  local client_id=$(gcloud secrets versions access latest --secret="auth0-client-id" --project=${PROJECT_ID} 2>/dev/null || echo "")
-  local audience=$(gcloud secrets versions access latest --secret="auth0-audience" --project=${PROJECT_ID} 2>/dev/null || echo "")
-  
+  local domain
+  local client_id
+  local audience
+  local output
+
+  output=$(gcloud secrets versions access latest --secret="auth0-domain" --project=${PROJECT_ID} 2>&1)
+  if [ $? -ne 0 ]; then
+    echo -e "${RED}ERROR: Failed to fetch auth0-domain from Secret Manager:${NC}" >&2
+    echo -e "${RED}${output}${NC}" >&2
+    exit 1
+  fi
+  domain="${output}"
+
+  output=$(gcloud secrets versions access latest --secret="auth0-client-id" --project=${PROJECT_ID} 2>&1)
+  if [ $? -ne 0 ]; then
+    echo -e "${RED}ERROR: Failed to fetch auth0-client-id from Secret Manager:${NC}" >&2
+    echo -e "${RED}${output}${NC}" >&2
+    exit 1
+  fi
+  client_id="${output}"
+
+  output=$(gcloud secrets versions access latest --secret="auth0-audience" --project=${PROJECT_ID} 2>&1)
+  if [ $? -ne 0 ]; then
+    echo -e "${RED}ERROR: Failed to fetch auth0-audience from Secret Manager:${NC}" >&2
+    echo -e "${RED}${output}${NC}" >&2
+    exit 1
+  fi
+  audience="${output}"
+
   echo "${domain}|${client_id}|${audience}"
 }
 
