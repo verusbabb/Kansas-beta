@@ -57,7 +57,9 @@
                 />
               </div>
               <div class="w-full sm:w-40">
-                <label class="block text-xs font-medium text-surface-600 mb-1.5">Class year</label>
+                <label class="block text-xs font-medium text-surface-600 mb-1.5">
+                  {{ roleFilter === 'parents' ? 'Member class year' : 'Class year' }}
+                </label>
                 <Select
                   v-model="yearFilter"
                   :options="yearOptions"
@@ -140,7 +142,34 @@
             </div>
           </div>
 
-          <div v-if="filteredPeople.length > 0" class="overflow-x-auto -mx-1">
+          <!-- Spinner while async parent-of-class-year relationships are loading -->
+          <div v-if="loadingParentFilter" class="text-center py-8">
+            <i class="pi pi-spin pi-spinner text-2xl text-[#6F8FAF]"></i>
+            <p class="mt-2 text-surface-600 text-sm">
+              Finding parents of class {{ yearFilter }}…
+            </p>
+          </div>
+
+          <!-- Count row + CSV download (shown above the table) -->
+          <div
+            v-else-if="filteredPeople.length > 0"
+            class="flex items-center justify-between mb-2"
+          >
+            <span class="text-sm text-surface-500">
+              {{ filteredPeople.length }} {{ filteredPeople.length === 1 ? 'record' : 'records' }}
+            </span>
+            <Button
+              v-if="canEdit"
+              icon="pi pi-download"
+              label="Download CSV"
+              size="small"
+              severity="secondary"
+              outlined
+              @click="downloadCsv"
+            />
+          </div>
+
+          <div v-if="!loadingParentFilter && filteredPeople.length > 0" class="overflow-x-auto -mx-1">
             <DataTable
               v-model:expandedRows="expandedRows"
               v-model:first="directoryTableFirst"
@@ -1011,6 +1040,52 @@ watch([searchQuery, yearFilter, roleFilter, showLegacyTiesOnly], () => {
   directoryTableFirst.value = 0
 })
 
+/**
+ * When filtering "Parents only" + a class year, resolve which parents are
+ * related to members of that class year via family relationships.
+ * null = not applicable (filter combination doesn't need it).
+ */
+const parentIdsForYearFilter = ref<Set<string> | null>(null)
+const loadingParentFilter = ref(false)
+
+watch(
+  [roleFilter, yearFilter, () => peopleStore.list.length],
+  async ([newRole, newYear]) => {
+    if (newRole !== 'parents' || newYear === null) {
+      parentIdsForYearFilter.value = null
+      loadingParentFilter.value = false
+      return
+    }
+    loadingParentFilter.value = true
+    try {
+      const membersOfYear = peopleStore.list.filter(
+        (p) => p.isMember && p.pledgeClassYear === newYear,
+      )
+      if (membersOfYear.length === 0) {
+        parentIdsForYearFilter.value = new Set()
+        return
+      }
+      const allRels = await Promise.all(
+        membersOfYear.map((m) => personRelStore.fetchForPerson(m.id)),
+      )
+      const ids = new Set<string>()
+      for (const rels of allRels) {
+        for (const rel of rels) {
+          if (rel.connectionTags.includes('family') && rel.counterpart.isParent) {
+            ids.add(rel.counterpart.id)
+          }
+        }
+      }
+      parentIdsForYearFilter.value = ids
+    } catch {
+      parentIdsForYearFilter.value = new Set()
+    } finally {
+      loadingParentFilter.value = false
+    }
+  },
+  { immediate: true },
+)
+
 const canEdit = computed(() => props.variant === 'admin' && authStore.isAdmin)
 
 // ── Invite selection (admin only) ─────────────────────────────────────────────
@@ -1255,17 +1330,35 @@ function matchesSearch(person: PersonResponse, q: string): boolean {
 
 const filteredPeople = computed(() => {
   let rows = peopleStore.list
+
   if (roleFilter.value === 'members') {
     rows = rows.filter((p) => p.isMember)
+    if (yearFilter.value != null) {
+      rows = rows.filter((p) => p.pledgeClassYear === yearFilter.value)
+    }
   } else if (roleFilter.value === 'parents') {
     rows = rows.filter((p) => p.isParent)
+    if (yearFilter.value != null) {
+      // "parents of class X" — use the async-resolved ID set
+      const ids = parentIdsForYearFilter.value
+      if (ids !== null) {
+        rows = rows.filter((p) => ids.has(p.id))
+      } else {
+        // still loading — return empty so we show the spinner instead
+        rows = []
+      }
+    }
+  } else {
+    // 'all' — year filter matches pledge class year directly
+    if (yearFilter.value != null) {
+      rows = rows.filter((p) => p.pledgeClassYear === yearFilter.value)
+    }
   }
+
   if (showLegacyTiesOnly.value) {
     rows = rows.filter((p) => p.hasLegacyMemberLink)
   }
-  if (yearFilter.value != null) {
-    rows = rows.filter((p) => p.pledgeClassYear === yearFilter.value)
-  }
+
   const q = searchQuery.value
   if (q.trim()) {
     rows = rows.filter((p) => matchesSearch(p, q))
@@ -1273,6 +1366,45 @@ const filteredPeople = computed(() => {
   return rows
 })
 
+function downloadCsv() {
+  const rows = filteredPeople.value
+  const headers = ['First Name', 'Last Name', 'Email', 'Mobile Phone', 'Pledge Class Year', 'Address']
+
+  const escape = (v: string) => `"${v.replace(/"/g, '""')}"`
+
+  const csvRows = rows.map((p) => {
+    const address = [p.addressLine1 ?? '', p.city ?? '', p.state ?? '', p.zip ?? '']
+      .filter((s) => String(s).trim())
+      .join(', ')
+    return [
+      p.firstName,
+      p.lastName,
+      p.personalEmail ?? '',
+      formatUsPhoneForDisplay(p.mobilePhone ?? ''),
+      p.pledgeClassYear != null ? String(p.pledgeClassYear) : '',
+      address,
+    ]
+      .map(escape)
+      .join(',')
+  })
+
+  const csv = [headers.map(escape).join(','), ...csvRows].join('\n')
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  const label =
+    roleFilter.value === 'parents' && yearFilter.value != null
+      ? `parents-class-${yearFilter.value}`
+      : roleFilter.value === 'members' && yearFilter.value != null
+        ? `members-class-${yearFilter.value}`
+        : roleFilter.value !== 'all'
+          ? roleFilter.value
+          : 'directory'
+  link.download = `${label}-${new Date().toISOString().slice(0, 10)}.csv`
+  link.click()
+  URL.revokeObjectURL(url)
+}
 
 function clearEditErrors() {
   editErrors.value = {

@@ -8,14 +8,6 @@
       </h2>
       <div class="flex items-center gap-2">
         <Button
-          label="Download CSV"
-          icon="pi pi-download"
-          severity="secondary"
-          outlined
-          :loading="csvDownloading"
-          @click="downloadCsv"
-        />
-        <Button
           v-if="!formOpen"
           label="Add A Member or Parent"
           icon="pi pi-plus"
@@ -342,24 +334,6 @@ const peopleStore = usePeopleStore()
 const userStore = useUserStore()
 
 const formOpen = ref(false)
-const csvDownloading = ref(false)
-
-async function downloadCsv() {
-  csvDownloading.value = true
-  try {
-    const response = await apiClient.get('/people/export', { responseType: 'blob' })
-    const url = URL.createObjectURL(new Blob([response.data], { type: 'text/csv' }))
-    const a = document.createElement('a')
-    a.href = url
-    a.download = 'members.csv'
-    a.click()
-    URL.revokeObjectURL(url)
-  } catch {
-    toast.add({ severity: 'error', summary: 'Export failed', detail: 'Could not download CSV.', life: 4000 })
-  } finally {
-    csvDownloading.value = false
-  }
-}
 
 /** Avoid an empty padded body when the form is collapsed. */
 const cardPassThrough = computed(() =>

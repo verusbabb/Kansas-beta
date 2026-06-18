@@ -1033,7 +1033,7 @@ export class PeopleService {
                 firstName: row.member.firstName,
                 lastName: row.member.lastName,
                 personalEmail: row.member.email,
-                homePhone: normalizeUsPhoneForStorage(row.member.phone),
+                mobilePhone: normalizeUsPhoneForStorage(row.member.phone),
                 addressLine1: row.member.addressLine1,
                 city: row.member.city,
                 state: row.member.state,
@@ -1087,7 +1087,7 @@ export class PeopleService {
                   firstName: p.firstName,
                   lastName: p.lastName,
                   personalEmail: p.email,
-                  homePhone: normalizeUsPhoneForStorage(p.phone),
+                  mobilePhone: normalizeUsPhoneForStorage(p.phone),
                   addressLine1: p.addressLine1,
                   city: p.city,
                   state: p.state,
@@ -1197,7 +1197,7 @@ export class PeopleService {
   private applyFamilyMemberPayload(person: Person, m: FamilyImportMemberPayload): void {
     person.firstName = m.firstName
     person.lastName = m.lastName
-    if (m.phone !== null) person.homePhone = normalizeUsPhoneForStorage(m.phone)
+    if (m.phone !== null) person.mobilePhone = normalizeUsPhoneForStorage(m.phone)
     if (m.addressLine1 !== null) person.addressLine1 = m.addressLine1
     if (m.city !== null) person.city = m.city
     if (m.state !== null) person.state = m.state
@@ -1210,7 +1210,7 @@ export class PeopleService {
   private applyFamilyParentPayload(person: Person, p: FamilyImportPersonPayload): void {
     person.firstName = p.firstName
     person.lastName = p.lastName
-    if (p.phone !== null) person.homePhone = normalizeUsPhoneForStorage(p.phone)
+    if (p.phone !== null) person.mobilePhone = normalizeUsPhoneForStorage(p.phone)
     if (p.addressLine1 !== null) person.addressLine1 = p.addressLine1
     if (p.city !== null) person.city = p.city
     if (p.state !== null) person.state = p.state

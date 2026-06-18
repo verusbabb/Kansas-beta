@@ -4,7 +4,11 @@
       <template #title>
         <div class="flex items-center gap-2">
           <i class="pi pi-users text-[#6F8FAF]"></i>
-          <span>App users ({{ userStore.activeUsers.length }})</span>
+          <span>
+            App users
+            <span v-if="isFiltered">({{ filteredUsers.length }} of {{ userStore.activeUsers.length }})</span>
+            <span v-else>({{ userStore.activeUsers.length }})</span>
+          </span>
         </div>
       </template>
       <template #content>
@@ -19,16 +23,50 @@
           <div class="mt-4 text-surface-600">Loading users...</div>
         </div>
 
-        <div v-else-if="userStore.activeUsers.length === 0" class="text-center py-8">
-          <i class="pi pi-inbox text-6xl text-surface-400 mb-4"></i>
-          <div class="text-surface-600">
-            No app users yet. Go to <strong>Admin / Members</strong> to invite people from the directory.
+        <template v-else>
+          <!-- Search + filter row -->
+          <div class="flex flex-col sm:flex-row gap-3 mb-5">
+            <div class="relative flex-1">
+              <i class="pi pi-search absolute left-3 top-1/2 -translate-y-1/2 text-surface-400 pointer-events-none" />
+              <InputText
+                v-model="searchQuery"
+                placeholder="Search by name or email…"
+                class="w-full pl-9"
+              />
+            </div>
+            <Select
+              v-model="roleFilter"
+              :options="roleFilterOptions"
+              option-label="label"
+              option-value="value"
+              placeholder="All roles"
+              class="w-full sm:w-44"
+            />
+            <Button
+              v-if="isFiltered"
+              icon="pi pi-times"
+              label="Clear"
+              severity="secondary"
+              outlined
+              @click="clearFilters"
+            />
           </div>
-        </div>
 
-        <div v-else class="space-y-3">
+          <div v-if="userStore.activeUsers.length === 0" class="text-center py-8">
+            <i class="pi pi-inbox text-6xl text-surface-400 mb-4"></i>
+            <div class="text-surface-600">
+              No app users yet. Go to <strong>Admin / Members</strong> to invite people from the directory.
+            </div>
+          </div>
+
+          <div v-else-if="filteredUsers.length === 0" class="text-center py-8">
+            <i class="pi pi-search text-4xl text-surface-400 mb-4"></i>
+            <div class="text-surface-600">No users match your search.</div>
+          </div>
+
+          <div v-else class="space-y-3">
           <div
-            v-for="user in userStore.activeUsers"
+            v-for="user in filteredUsers"
             :key="user.id"
             class="flex items-center justify-between p-4 border border-surface-200 rounded-lg hover:bg-surface-50 transition-colors"
           >
@@ -107,6 +145,7 @@
             </div>
           </div>
         </div>
+        </template>
       </template>
     </Card>
 
@@ -162,6 +201,7 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import Card from 'primevue/card'
 import Button from 'primevue/button'
 import Select from 'primevue/select'
+import InputText from 'primevue/inputtext'
 import Dialog from 'primevue/dialog'
 import { useToast } from 'primevue/usetoast'
 import { useConfirm } from 'primevue/useconfirm'
@@ -195,6 +235,34 @@ const roleOptions = [
   { label: 'Admin', value: UserRole.ADMIN },
 ]
 
+const roleFilterOptions = [
+  { label: 'All roles', value: null },
+  { label: 'Viewer', value: UserRole.VIEWER },
+  { label: 'Editor', value: UserRole.EDITOR },
+  { label: 'Admin', value: UserRole.ADMIN },
+]
+
+const searchQuery = ref('')
+const roleFilter = ref<UserRole | null>(null)
+
+const isFiltered = computed(() => searchQuery.value.trim() !== '' || roleFilter.value !== null)
+
+const filteredUsers = computed(() => {
+  const q = searchQuery.value.trim().toLowerCase()
+  return userStore.activeUsers.filter((u) => {
+    const matchesRole = roleFilter.value === null || u.role === roleFilter.value
+    const matchesSearch =
+      !q ||
+      `${u.firstName} ${u.lastName}`.toLowerCase().includes(q) ||
+      u.email.toLowerCase().includes(q)
+    return matchesRole && matchesSearch
+  })
+})
+
+function clearFilters() {
+  searchQuery.value = ''
+  roleFilter.value = null
+}
 
 const removingUserId = ref<string | null>(null)
 const editingUserId = ref<string | null>(null)
