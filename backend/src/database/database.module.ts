@@ -22,6 +22,8 @@ import { PersonEnrichment } from './entities/person-enrichment.entity'
 import { KnowledgeChunk } from './entities/knowledge-chunk.entity'
 import { Resource } from './entities/resource.entity'
 import { ResourceVersion } from './entities/resource-version.entity'
+import { RushProspect } from './entities/rush-prospect.entity'
+import { RushProspectActivity } from './entities/rush-prospect-activity.entity'
 
 @Module({
   imports: [
@@ -101,6 +103,8 @@ import { ResourceVersion } from './entities/resource-version.entity'
           KnowledgeChunk,
           Resource,
           ResourceVersion,
+          RushProspect,
+          RushProspectActivity,
         ]
 
         return sequelizeConfig
@@ -127,6 +131,8 @@ import { ResourceVersion } from './entities/resource-version.entity'
       KnowledgeChunk,
       Resource,
       ResourceVersion,
+      RushProspect,
+      RushProspectActivity,
     ]),
   ],
   exports: [SequelizeModule],

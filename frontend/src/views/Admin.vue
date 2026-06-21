@@ -135,6 +135,9 @@
           <!-- Rush photos gallery -->
           <AdminRushPhotos v-if="activeSection === 'rush-photos'" />
 
+          <!-- Rush CRM — prospect pipeline -->
+          <AdminRushCrm v-if="activeSection === 'rush-crm'" />
+
           <!-- History page images -->
           <AdminHistoryImages v-if="activeSection === 'history-images'" />
 
@@ -182,6 +185,7 @@ import AdminHistoryImages from '@/components/AdminHistoryImages.vue'
 import AdminAddPerson from '@/components/AdminAddPerson.vue'
 import AdminBulkImportPeople from '@/components/AdminBulkImportPeople.vue'
 import AdminMemberFamilyImport from '@/components/AdminMemberFamilyImport.vue'
+import AdminRushCrm from '@/components/AdminRushCrm.vue'
 import MemberSearch from '@/components/MemberSearch.vue'
 import { useAuthStore } from '@/stores/auth'
 
@@ -213,13 +217,14 @@ const validSectionIds = [
   'history-images',
   'woogle-index',
   'pennington',
+  'rush-crm',
 ] as const
 
 /** Editor-accessible content sections (home images, calendar, newsletters). */
 const siteContentSectionIds = ['settings-home-images', 'alumni', 'newsletter'] as const
 
 /** Rush page tooling — collapsible nav group. */
-const rushPageSectionIds = ['rush-widgets', 'rush', 'rush-photos'] as const
+const rushPageSectionIds = ['rush-widgets', 'rush', 'rush-photos', 'rush-crm'] as const
 
 /** History page tooling — collapsible nav group. */
 const historyPageSectionIds = ['history-images'] as const
@@ -421,7 +426,7 @@ const manageNewslettersNavItem = {
 
 const manageRushPageNav = {
   id: 'rush-page',
-  label: 'Manage Rush Page',
+  label: 'Manage Rush',
   icon: 'pi pi-flag',
   items: [
     {
@@ -438,6 +443,11 @@ const manageRushPageNav = {
       id: 'rush-photos',
       label: 'Rush Photos',
       icon: 'pi pi-images',
+    },
+    {
+      id: 'rush-crm',
+      label: 'Rush CRM',
+      icon: 'pi pi-users',
     },
   ],
 } as const

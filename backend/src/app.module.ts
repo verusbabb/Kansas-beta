@@ -22,6 +22,7 @@ import { HouseMomModule } from './house-mom/house-mom.module'
 import { AskModule } from './ask/ask.module'
 import { KnowledgeModule } from './knowledge/knowledge.module'
 import { ResourcesModule } from './resources/resources.module'
+import { RushProspectsModule } from './rush-prospects/rush-prospects.module'
 import { Auth0ManagementModule } from './auth0/auth0-management.module'
 import { createLoggerConfig } from './config/logger.config'
 import { HttpExceptionFilter } from './common/filters/http-exception.filter'
@@ -48,6 +49,7 @@ import { AppConfig } from './config/configuration'
     AskModule, // Natural-language alumni search + RAG
     KnowledgeModule, // Site knowledge vector store (pgvector + Gemini embeddings)
     ResourcesModule, // Chapter documents / resources
+    RushProspectsModule, // Rush CRM — prospect pipeline and application form
     LoggerModule.forRootAsync({
       inject: [ConfigService],
       useFactory: (configService: ConfigService<AppConfig>) => {

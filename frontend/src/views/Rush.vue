@@ -143,18 +143,18 @@
         />
       </Dialog>
 
-      <!-- Contact for Rush -->
+      <!-- Interested in Rushing CTA -->
       <div class="bg-gray-50 rounded-lg p-8 text-center">
         <h2 class="text-2xl font-bold text-surface-900 mb-4">Interested in Rushing?</h2>
         <p class="text-surface-700 mb-6">
-          Reach out to our rush chair to learn more about upcoming events and how to get involved.
+          Fill out a short application and a rush chair will be in touch about upcoming events.
         </p>
-        <Button 
-          label="Contact Rush Chair" 
-          icon="pi pi-envelope"
-          @click="$router.push('/contact')"
+        <Button
+          label="Click here to apply now"
+          icon="pi pi-send"
           size="large"
-          class="bg-gray-500 hover:bg-gray-600"
+          @click="$router.push('/rush/apply')"
+          class="bg-[#6F8FAF] hover:bg-[#5a7a9a] border-[#6F8FAF]"
         />
       </div>
     </div>

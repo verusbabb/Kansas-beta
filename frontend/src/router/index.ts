@@ -14,6 +14,7 @@ import Admin from '../views/Admin.vue'
 import History from '../views/History.vue'
 import Ask from '../views/Ask.vue'
 import Resources from '../views/Resources.vue'
+import RushApply from '../views/RushApply.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -27,6 +28,7 @@ const router = createRouter({
   routes: [
     { path: '/', component: Home },
     { path: '/rush', component: Rush },
+    { path: '/rush/apply', component: RushApply },
     { path: '/newsletters', component: NewsLetters },
     { path: '/events', component: Events },
     { path: '/members', component: MembersAndAlumni },
