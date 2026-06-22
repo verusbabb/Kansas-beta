@@ -123,7 +123,13 @@
           <p>No upcoming events scheduled. Check back soon.</p>
         </div>
         <div v-else class="events-grid">
-          <div v-for="ev in nextEvents" :key="ev.id" class="event-card">
+          <button
+            v-for="ev in nextEvents"
+            :key="ev.id"
+            type="button"
+            class="event-card text-left"
+            @click="$router.push({ path: '/events', query: { event: ev.id } })"
+          >
             <div class="event-date-badge">
               <span class="event-month">{{ eventMonth(ev.startDate) }}</span>
               <span class="event-day">{{ eventDay(ev.startDate) }}</span>
@@ -138,7 +144,7 @@
               <span v-if="isMultiDay(ev)" class="event-multiday-badge">Multi-day</span>
               <p v-if="ev.description" class="event-desc">{{ plainText(ev.description) }}</p>
             </div>
-          </div>
+          </button>
         </div>
       </div>
     </div>
@@ -808,6 +814,9 @@
     padding: 1.25rem 1.25rem 1.25rem 1rem;
     box-shadow: 0 2px 8px rgba(0,0,0,0.04);
     transition: box-shadow 0.2s, transform 0.2s, border-color 0.2s;
+    cursor: pointer;
+    font: inherit;
+    width: 100%;
   }
 
   .event-card:hover {

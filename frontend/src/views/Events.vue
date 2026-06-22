@@ -275,12 +275,14 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import { useRoute } from 'vue-router'
 import Card from 'primevue/card'
 import Button from 'primevue/button'
 import Dialog from 'primevue/dialog'
 import { useCalendarEventStore, type CalendarEvent } from '@/stores/calendarEvent'
 
 const calendarEventStore = useCalendarEventStore()
+const route = useRoute()
 
 const view = ref<'month' | 'week' | 'list'>('list')
 const currentDate = ref(new Date())
@@ -479,6 +481,13 @@ const showEventDetails = (event: CalendarEvent) => {
 
 onMounted(async () => {
   await calendarEventStore.fetchUpcoming()
+
+  // Auto-open a specific event when linked from another page via ?event={id}
+  const targetId = route.query.event
+  if (targetId && typeof targetId === 'string') {
+    const match = calendarEventStore.events.find((e) => e.id === targetId)
+    if (match) showEventDetails(match)
+  }
 })
 </script>
 

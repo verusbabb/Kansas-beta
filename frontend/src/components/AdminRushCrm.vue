@@ -54,14 +54,14 @@
 
     <!-- Filter bar -->
     <div class="flex flex-col sm:flex-row gap-3">
-      <div class="relative flex-1">
-        <i class="pi pi-search absolute left-3 top-1/2 -translate-y-1/2 text-surface-400 pointer-events-none" />
+      <IconField class="flex-1">
+        <InputIcon class="pi pi-search" />
         <InputText
           v-model="searchQuery"
           placeholder="Search by name or email…"
-          class="w-full pl-9"
+          class="w-full"
         />
-      </div>
+      </IconField>
       <Select
         v-model="stageFilter"
         :options="stageFilterOptions"
@@ -483,6 +483,8 @@ import { useToast } from 'primevue/usetoast'
 import Card from 'primevue/card'
 import Button from 'primevue/button'
 import InputText from 'primevue/inputtext'
+import IconField from 'primevue/iconfield'
+import InputIcon from 'primevue/inputicon'
 import Textarea from 'primevue/textarea'
 import Select from 'primevue/select'
 import DataTable from 'primevue/datatable'

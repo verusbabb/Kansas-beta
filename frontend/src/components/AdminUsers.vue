@@ -26,14 +26,14 @@
         <template v-else>
           <!-- Search + filter row -->
           <div class="flex flex-col sm:flex-row gap-3 mb-5">
-            <div class="relative flex-1">
-              <i class="pi pi-search absolute left-3 top-1/2 -translate-y-1/2 text-surface-400 pointer-events-none" />
+            <IconField class="flex-1">
+              <InputIcon class="pi pi-search" />
               <InputText
                 v-model="searchQuery"
                 placeholder="Search by name or email…"
-                class="w-full pl-9"
+                class="w-full"
               />
-            </div>
+            </IconField>
             <Select
               v-model="roleFilter"
               :options="roleFilterOptions"
@@ -202,6 +202,8 @@ import Card from 'primevue/card'
 import Button from 'primevue/button'
 import Select from 'primevue/select'
 import InputText from 'primevue/inputtext'
+import IconField from 'primevue/iconfield'
+import InputIcon from 'primevue/inputicon'
 import Dialog from 'primevue/dialog'
 import { useToast } from 'primevue/usetoast'
 import { useConfirm } from 'primevue/useconfirm'
