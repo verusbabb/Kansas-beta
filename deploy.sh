@@ -78,6 +78,26 @@ get_auth0_secrets() {
   echo "${domain}|${client_id}|${audience}"
 }
 
+# Get SendGrid config from Secret Manager (optional - degrades gracefully if missing)
+get_sendgrid_config() {
+  local api_key
+  local template_id
+  local from_email
+  local output
+
+  # These are optional, so we don't exit on failure
+  output=$(gcloud secrets versions access latest --secret="sendgrid-api-key" --project=${PROJECT_ID} 2>/dev/null || echo "")
+  api_key="${output}"
+
+  output=$(gcloud secrets versions access latest --secret="sendgrid-rush-confirmation-template-id" --project=${PROJECT_ID} 2>/dev/null || echo "")
+  template_id="${output}"
+
+  output=$(gcloud secrets versions access latest --secret="sendgrid-from-email" --project=${PROJECT_ID} 2>/dev/null || echo "")
+  from_email="${output}"
+
+  echo "${api_key}|${template_id}|${from_email}"
+}
+
 # Build substitution string
 build_substitutions() {
   local backend_url=$1

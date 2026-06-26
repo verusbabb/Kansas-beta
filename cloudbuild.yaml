@@ -194,7 +194,7 @@ steps:
       - '--set-env-vars'
       - 'NODE_ENV=production,GCP_SECRET_MANAGER_ENABLED=true,GCP_PROJECT_ID=$PROJECT_ID,DATABASE_HOST=/cloudsql/$PROJECT_ID:us-central1:${_DATABASE_INSTANCE},DATABASE_NAME=${_DATABASE_NAME},DATABASE_USER=${_DATABASE_USER},FRONTEND_URL=https://kansasbeta.org'
       - '--set-secrets'
-      - 'AUTH0_ACTION_SECRET=auth0-action-secret:latest'
+      - 'AUTH0_ACTION_SECRET=auth0-action-secret:latest,SENDGRID_API_KEY=sendgrid-api-key:latest,SENDGRID_RUSH_CONFIRMATION_TEMPLATE_ID=sendgrid-rush-confirmation-template-id:latest,SENDGRID_FROM_EMAIL=sendgrid-from-email:latest,SENDGRID_RUSH_NOTIFICATION_EMAIL=sendgrid-rush-notification-email:latest'
       - '--add-cloudsql-instances'
       - '$PROJECT_ID:us-central1:${_DATABASE_INSTANCE}'
     id: 'deploy-backend'

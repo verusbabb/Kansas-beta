@@ -7,6 +7,7 @@ import { RushProspectActivity } from '../database/entities/rush-prospect-activit
 import { RushEvent } from '../database/entities/rush-event.entity'
 import { Person } from '../database/entities/person.entity'
 import { User } from '../database/entities/user.entity'
+import { SendGridService } from '../sendgrid/sendgrid.service'
 import { CreateRushProspectDto } from './dto/create-rush-prospect.dto'
 import { UpdateRushProspectDto } from './dto/update-rush-prospect.dto'
 import { CreateRushProspectActivityDto } from './dto/create-rush-prospect-activity.dto'
@@ -24,6 +25,7 @@ export class RushProspectsService {
     @InjectModel(RushProspectActivity) private activityModel: typeof RushProspectActivity,
     @InjectModel(Person) private personModel: typeof Person,
     @InjectModel(User) private userModel: typeof User,
+    private readonly sendGridService: SendGridService,
     private readonly logger: PinoLogger,
   ) {
     this.logger.setContext(RushProspectsService.name)
@@ -102,7 +104,12 @@ export class RushProspectsService {
       })
     }
 
-    // TODO: send confirmation email via SendGrid (Phase 2)
+    // Send rush confirmation email (doesn't block — failures are logged but don't error)
+    await this.sendGridService.sendRushConfirmation({
+      to: prospect.email,
+      firstName: prospect.firstName,
+      lastName: prospect.lastName,
+    })
 
     this.logger.info({ prospectId: prospect.id, created }, 'Rush application submitted')
     return this.toSummaryDto(prospect)

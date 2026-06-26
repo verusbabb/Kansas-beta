@@ -24,6 +24,7 @@ import { KnowledgeModule } from './knowledge/knowledge.module'
 import { ResourcesModule } from './resources/resources.module'
 import { RushProspectsModule } from './rush-prospects/rush-prospects.module'
 import { Auth0ManagementModule } from './auth0/auth0-management.module'
+import { SendGridModule } from './sendgrid/sendgrid.module'
 import { createLoggerConfig } from './config/logger.config'
 import { HttpExceptionFilter } from './common/filters/http-exception.filter'
 import { AppConfig } from './config/configuration'
@@ -32,6 +33,7 @@ import { AppConfig } from './config/configuration'
   imports: [
     ConfigModule, // Load configuration (must be first)
     Auth0ManagementModule, // Auth0 Management API (global — injected wherever needed)
+    SendGridModule, // SendGrid email service (global — injected wherever needed)
     DatabaseModule, // Database connection (requires ConfigModule)
     AuthModule, // Authentication and authorization
     NewslettersModule, // Newsletters API

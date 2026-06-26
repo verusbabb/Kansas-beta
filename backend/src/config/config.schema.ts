@@ -105,4 +105,25 @@ export class EnvironmentVariables {
   @IsString()
   @IsOptional()
   GEMINI_API_KEY?: string
+
+  // SendGrid
+  @IsString()
+  @IsOptional()
+  SENDGRID_API_KEY?: string
+
+  @IsString()
+  @IsOptional()
+  SENDGRID_RUSH_CONFIRMATION_TEMPLATE_ID?: string
+
+  @IsString()
+  @IsOptional()
+  SENDGRID_FROM_EMAIL?: string
+
+  @IsString()
+  @IsOptional()
+  SENDGRID_FROM_NAME?: string
+
+  @IsString()
+  @IsOptional()
+  SENDGRID_RUSH_NOTIFICATION_EMAIL?: string
 }

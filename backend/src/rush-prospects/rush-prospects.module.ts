@@ -8,11 +8,13 @@ import { RushEvent } from '../database/entities/rush-event.entity'
 import { Person } from '../database/entities/person.entity'
 import { User } from '../database/entities/user.entity'
 import { AuthModule } from '../auth/auth.module'
+import { SendGridModule } from '../sendgrid/sendgrid.module'
 
 @Module({
   imports: [
     SequelizeModule.forFeature([RushProspect, RushProspectActivity, RushEvent, Person, User]),
     AuthModule,
+    SendGridModule,
   ],
   controllers: [RushProspectsController],
   providers: [RushProspectsService],

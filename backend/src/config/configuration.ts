@@ -41,6 +41,13 @@ export interface AppConfig {
     mgmtClientSecret?: string
     dbConnection: string
   }
+  sendgrid: {
+    apiKey?: string
+    rushConfirmationTemplateId?: string
+    fromEmail?: string
+    fromName?: string
+    rushNotificationEmail?: string
+  }
 }
 
 export default registerAs('config', (): AppConfig => {
@@ -85,6 +92,13 @@ export default registerAs('config', (): AppConfig => {
       pdlApiKey: env.PDL_API_KEY,
       fullcontactApiKey: env.FULLCONTACT_API_KEY,
       datagmaApiKey: env.DATAGMA_API_KEY,
+    },
+    sendgrid: {
+      apiKey: env.SENDGRID_API_KEY,
+      rushConfirmationTemplateId: env.SENDGRID_RUSH_CONFIRMATION_TEMPLATE_ID,
+      fromEmail: env.SENDGRID_FROM_EMAIL,
+      fromName: env.SENDGRID_FROM_NAME || 'Kansas Beta',
+      rushNotificationEmail: env.SENDGRID_RUSH_NOTIFICATION_EMAIL,
     },
   }
 })
