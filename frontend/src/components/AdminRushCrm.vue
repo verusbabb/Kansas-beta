@@ -79,6 +79,14 @@
           </div>
         </template>
       </Select>
+      <Select
+        v-model="assignedChairFilter"
+        :options="chairFilterOptions"
+        option-label="label"
+        option-value="value"
+        placeholder="All chairs"
+        class="w-full sm:w-48"
+      />
       <Button
         v-if="isFiltered"
         icon="pi pi-times"
@@ -180,6 +188,13 @@
               :class="['pi text-sm', n <= data.internalRating ? 'pi-star-fill text-yellow-400' : 'pi-star text-surface-300']"
             />
           </span>
+          <span v-else class="text-surface-400">—</span>
+        </template>
+      </Column>
+
+      <Column field="assignedToPersonName" header="Assigned To" sortable>
+        <template #body="{ data }">
+          <span v-if="data.assignedToPersonName" class="text-sm">{{ data.assignedToPersonName }}</span>
           <span v-else class="text-surface-400">—</span>
         </template>
       </Column>
@@ -345,6 +360,27 @@
                   <span class="text-xs text-surface-500 leading-snug max-w-xs">
                     {{ option.description }}
                   </span>
+                </div>
+              </template>
+            </Select>
+          </div>
+
+          <!-- Assigned Rush Chair -->
+          <div class="flex flex-col gap-1">
+            <label class="text-xs font-semibold text-surface-500 uppercase tracking-wide">Assigned Rush Chair</label>
+            <Select
+              v-model="editForm.assignedToPersonId"
+              :options="rushChairOptions"
+              option-label="label"
+              option-value="value"
+              placeholder="Unassigned"
+              show-clear
+              class="w-full"
+            >
+              <template #option="{ option }">
+                <div class="flex flex-col py-0.5">
+                  <span class="font-medium">{{ option.label }}</span>
+                  <span class="text-xs text-surface-500 leading-snug">{{ option.termLabel }}</span>
                 </div>
               </template>
             </Select>
@@ -543,7 +579,10 @@ function onYearChange() {
   store.fetchProspects(selectedYear.value)
 }
 
-onMounted(() => store.fetchProspects(selectedYear.value))
+onMounted(() => {
+  store.fetchProspects(selectedYear.value)
+  store.fetchRushChairs()
+})
 
 // ── Label/severity maps ──────────────────────────────────────────────────────
 
@@ -559,12 +598,25 @@ const activityTypeIcons: Record<string, string> = ACTIVITY_TYPE_ICONS
 
 const searchQuery = ref('')
 const stageFilter = ref<PipelineStage | null>(null)
+const assignedChairFilter = ref<string | null>(null)
 
-const isFiltered = computed(() => searchQuery.value.trim() !== '' || stageFilter.value !== null)
+const isFiltered = computed(
+  () =>
+    searchQuery.value.trim() !== '' ||
+    stageFilter.value !== null ||
+    assignedChairFilter.value !== null,
+)
 
 const filteredProspects = computed(() => {
   let rows = store.list
   if (stageFilter.value) rows = rows.filter((p) => p.pipelineStage === stageFilter.value)
+  if (assignedChairFilter.value) {
+    if (assignedChairFilter.value === '__unassigned__') {
+      rows = rows.filter((p) => !p.assignedToPersonId)
+    } else {
+      rows = rows.filter((p) => p.assignedToPersonId === assignedChairFilter.value)
+    }
+  }
   if (searchQuery.value.trim()) {
     const q = searchQuery.value.trim().toLowerCase()
     rows = rows.filter(
@@ -582,6 +634,15 @@ const stageFilterOptions = computed(() => [
   ...ALL_PIPELINE_STAGES.map((s) => ({
     label: PIPELINE_STAGE_LABELS[s],
     value: s,
+  })),
+])
+
+const chairFilterOptions = computed(() => [
+  { label: 'All chairs', value: null },
+  { label: 'Unassigned', value: '__unassigned__' },
+  ...store.rushChairs.map((rc) => ({
+    label: `${rc.firstName} ${rc.lastName}`,
+    value: rc.id,
   })),
 ])
 
@@ -604,6 +665,7 @@ function toggleStageFilter(stage: PipelineStage) {
 function clearFilters() {
   searchQuery.value = ''
   stageFilter.value = null
+  assignedChairFilter.value = null
 }
 
 // ── Utilities ────────────────────────────────────────────────────────────────
@@ -647,6 +709,7 @@ const editForm = ref({
   satScoreStr: '',
   pipelineStage: 'inquiry' as PipelineStage,
   internalRating: null as number | null,
+  assignedToPersonId: null as string | null,
 })
 
 async function openDetail(prospect: RushProspectSummary) {
@@ -677,6 +740,7 @@ function populateEditForm(p: RushProspectResponse) {
     satScoreStr: p.satScore != null ? String(p.satScore) : '',
     pipelineStage: p.pipelineStage,
     internalRating: p.internalRating,
+    assignedToPersonId: p.assignedToPersonId,
   }
 }
 
@@ -706,6 +770,7 @@ async function saveProspect() {
       satScore: ef.satScoreStr ? parseInt(ef.satScoreStr, 10) : null,
       pipelineStage: ef.pipelineStage,
       internalRating: ef.internalRating,
+      assignedToPersonId: ef.assignedToPersonId,
     })
     fullProspect.value = store.current!
     toast.add({ severity: 'success', summary: 'Saved', detail: 'Prospect updated', life: 3000 })
@@ -792,4 +857,12 @@ const pipelineStageOptions = ALL_PIPELINE_STAGES.map((s) => ({
   description: PIPELINE_STAGE_DESCRIPTIONS[s],
   value: s,
 }))
+
+const rushChairOptions = computed(() =>
+  store.rushChairs.map((rc) => ({
+    label: `${rc.firstName} ${rc.lastName}`,
+    value: rc.id,
+    termLabel: rc.isCurrent ? `${rc.termLabel} (Current)` : `${rc.termLabel} (Upcoming)`,
+  })),
+)
 </script>

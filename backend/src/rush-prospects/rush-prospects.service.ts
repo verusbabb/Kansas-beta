@@ -160,6 +160,12 @@ export class RushProspectsService {
           order: [['createdAt', 'DESC']],
           limit: 1,
         },
+        {
+          model: Person,
+          as: 'assignedToPerson',
+          attributes: ['id', 'firstName', 'lastName'],
+          required: false,
+        },
       ],
       order: [['createdAt', 'DESC']],
     })
@@ -185,6 +191,12 @@ export class RushProspectsService {
         {
           model: Person,
           as: 'legacyRelativePerson',
+          attributes: ['id', 'firstName', 'lastName'],
+          required: false,
+        },
+        {
+          model: Person,
+          as: 'assignedToPerson',
           attributes: ['id', 'firstName', 'lastName'],
           required: false,
         },
@@ -225,7 +237,7 @@ export class RushProspectsService {
       ...(dto.legacyRelationship !== undefined && { legacyRelationship: dto.legacyRelationship }),
       ...(dto.referralSource !== undefined && { referralSource: dto.referralSource?.trim() ?? null }),
       ...(dto.pipelineStage !== undefined && { pipelineStage: dto.pipelineStage }),
-      ...(dto.assignedToUserId !== undefined && { assignedToUserId: dto.assignedToUserId }),
+      ...(dto.assignedToPersonId !== undefined && { assignedToPersonId: dto.assignedToPersonId }),
       ...(dto.internalRating !== undefined && { internalRating: dto.internalRating }),
     })
 
@@ -284,6 +296,7 @@ export class RushProspectsService {
 
   private toSummaryDto(p: RushProspect): RushProspectSummaryDto {
     const lastStageChange = (p.activities ?? []).find((a) => a.activityType === 'stage_change')
+    const assignedPerson = p.assignedToPerson as (Person & { firstName: string; lastName: string }) | null
     return {
       id: p.id,
       rushYear: p.rushYear,
@@ -296,7 +309,10 @@ export class RushProspectsService {
       enrollmentYear: p.enrollmentYear ?? null,
       pipelineStage: p.pipelineStage,
       internalRating: p.internalRating ?? null,
-      assignedToUserId: p.assignedToUserId ?? null,
+      assignedToPersonId: p.assignedToPersonId ?? null,
+      assignedToPersonName: assignedPerson
+        ? `${assignedPerson.firstName} ${assignedPerson.lastName}`
+        : null,
       applicationSubmittedAt: p.applicationSubmittedAt?.toISOString() ?? null,
       lastStageChangedAt: lastStageChange?.createdAt?.toISOString() ?? null,
       createdAt: p.createdAt.toISOString(),
@@ -305,6 +321,7 @@ export class RushProspectsService {
 
   private toResponseDto(p: RushProspect): RushProspectResponseDto {
     const legacyPerson = p.legacyRelativePerson as (Person & { firstName: string; lastName: string }) | null
+    // assignedToPerson is already resolved in toSummaryDto via p.assignedToPerson
     return {
       ...this.toSummaryDto(p),
       hometown: p.hometown ?? null,

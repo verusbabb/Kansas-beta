@@ -75,7 +75,7 @@ export interface UpdateRushProspectPayload {
   legacyRelationship?: LegacyRelationship | null
   referralSource?: string
   pipelineStage?: PipelineStage
-  assignedToUserId?: string | null
+  assignedToPersonId?: string | null
   internalRating?: number | null
 }
 
@@ -119,7 +119,8 @@ export interface RushProspectSummary {
   enrollmentYear: number | null
   pipelineStage: PipelineStage
   internalRating: number | null
-  assignedToUserId: string | null
+  assignedToPersonId: string | null
+  assignedToPersonName: string | null
   applicationSubmittedAt: string | null
   lastStageChangedAt: string | null
   createdAt: string
@@ -220,6 +221,14 @@ export const PIPELINE_STAGE_DESCRIPTIONS: Record<PipelineStage, string> = {
   bid_declined: 'Candidate received a bid but chose not to accept.',
   no_bid: 'The chapter decided not to extend a bid to this candidate.',
   withdrawn: 'Candidate withdrew from the process at any stage.',
+}
+
+export interface RushChair {
+  id: string
+  firstName: string
+  lastName: string
+  termLabel: string
+  isCurrent: boolean
 }
 
 export const ALL_PIPELINE_STAGES: PipelineStage[] = [

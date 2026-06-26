@@ -136,7 +136,7 @@ export class UpdateRushProspectDto {
   @ApiProperty({ required: false })
   @IsOptional()
   @IsUUID()
-  assignedToUserId?: string | null
+  assignedToPersonId?: string | null
 
   @ApiProperty({ required: false, minimum: 1, maximum: 5 })
   @IsOptional()

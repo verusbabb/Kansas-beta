@@ -12,7 +12,8 @@ export class RushProspectSummaryDto {
   @ApiProperty({ nullable: true }) enrollmentYear!: number | null
   @ApiProperty() pipelineStage!: string
   @ApiProperty({ nullable: true }) internalRating!: number | null
-  @ApiProperty({ nullable: true }) assignedToUserId!: string | null
+  @ApiProperty({ nullable: true }) assignedToPersonId!: string | null
+  @ApiProperty({ nullable: true }) assignedToPersonName!: string | null
   @ApiProperty({ nullable: true }) applicationSubmittedAt!: string | null
   @ApiProperty({ nullable: true }) lastStageChangedAt!: string | null
   @ApiProperty() createdAt!: string

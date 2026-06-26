@@ -6,7 +6,7 @@ import {
   NotFoundException,
 } from '@nestjs/common'
 import { InjectModel } from '@nestjs/sequelize'
-import { Op, Transaction, UniqueConstraintError } from 'sequelize'
+import { Op, Transaction, UniqueConstraintError, literal } from 'sequelize'
 import { PinoLogger } from 'nestjs-pino'
 import { ExecPosition } from '../database/entities/exec-position.entity'
 import { ExecTerm } from '../database/entities/exec-term.entity'
@@ -81,6 +81,94 @@ export class ExecTeamService {
       ],
     })
     return rows.map((t) => this.toTermDto(t))
+  }
+
+  /**
+   * Returns Person records assigned to a rush chair position
+   * (rush_chair, rush_chair_2, rush_chair_3) in the academically-current term
+   * and the next upcoming term (if any elected chairs exist for it).
+   *
+   * "Current" and "upcoming" are determined from today's date — not from the
+   * isCurrent DB flag — because admins often set up future terms ahead of time.
+   * Season boundaries: Fall = Aug–Dec, Spring = Jan–Jul.
+   * A term's chronological ordinal = year * 2 + (fall ? 1 : 0).
+   */
+  async getRushChairs(): Promise<
+    { id: string; firstName: string; lastName: string; termLabel: string; isCurrent: boolean }[]
+  > {
+    const RUSH_CHAIR_CODES = ['rush_chair', 'rush_chair_2', 'rush_chair_3']
+
+    // Compute today's academic ordinal
+    const now = new Date()
+    const todayYear = now.getFullYear()
+    const todaySeason: ExecSeason = now.getMonth() + 1 >= 8 ? 'fall' : 'spring'
+    const todayOrdinal = todayYear * 2 + (todaySeason === 'fall' ? 1 : 0)
+
+    const termOrdinal = (t: ExecTerm) => t.year * 2 + (t.season === 'fall' ? 1 : 0)
+
+    // Load all terms and sort chronologically
+    const allTerms = await this.execTermModel.findAll()
+    const sorted = [...allTerms].sort((a, b) => termOrdinal(a) - termOrdinal(b))
+
+    // Current = most recent term that has started (ordinal <= today)
+    const currentTerm = [...sorted].reverse().find((t) => termOrdinal(t) <= todayOrdinal) ?? null
+
+    // Upcoming = the next term after the current one
+    const upcomingTerm = sorted.find((t) => termOrdinal(t) > todayOrdinal) ?? null
+
+    const termIds = [currentTerm?.id, upcomingTerm?.id].filter(Boolean) as string[]
+    if (termIds.length === 0) return []
+
+    // Look up rush chair position IDs
+    const positions = await this.execPositionModel.findAll({
+      where: { code: RUSH_CHAIR_CODES },
+      attributes: ['id', 'code'],
+    })
+    const positionIds = positions.map((p) => p.id)
+    if (positionIds.length === 0) return []
+
+    // Fetch assignments with joined Person + Term data
+    const assignments = await this.execAssignmentModel.findAll({
+      where: {
+        execTermId: termIds,
+        execPositionId: positionIds,
+        personId: { [Op.ne]: null },
+      },
+      include: [
+        { model: Person, attributes: ['id', 'firstName', 'lastName'], required: true },
+        { model: ExecTerm, attributes: ['id', 'year', 'season', 'label'], required: true },
+      ],
+    })
+
+    // Deduplicate by personId, prefer the current-term entry when the same
+    // person appears in both terms
+    const seenPersonIds = new Set<string>()
+    const results: { id: string; firstName: string; lastName: string; termLabel: string; isCurrent: boolean }[] = []
+
+    // Process current-term assignments first so dedup retains them
+    const currentFirst = [...assignments].sort((a, b) => {
+      const aOrd = termOrdinal(a.execTerm as ExecTerm)
+      const bOrd = termOrdinal(b.execTerm as ExecTerm)
+      return aOrd - bOrd // ascending → current term (lower ordinal) first
+    })
+
+    for (const a of currentFirst) {
+      const person = a.person as Person
+      if (!person || seenPersonIds.has(person.id)) continue
+      seenPersonIds.add(person.id)
+      const term = a.execTerm as ExecTerm
+      const termLabel = term.label ?? `${term.season.charAt(0).toUpperCase() + term.season.slice(1)} ${term.year}`
+      const isCurrentTerm = currentTerm ? term.id === currentTerm.id : false
+      results.push({
+        id: person.id,
+        firstName: person.firstName,
+        lastName: person.lastName,
+        termLabel,
+        isCurrent: isCurrentTerm,
+      })
+    }
+
+    return results.sort((a, b) => a.lastName.localeCompare(b.lastName))
   }
 
   async resolveDisplayTerm(termId?: string): Promise<ExecTerm | null> {

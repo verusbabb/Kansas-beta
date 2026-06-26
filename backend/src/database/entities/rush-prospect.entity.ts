@@ -12,7 +12,6 @@ import {
 import { v4 as uuidv4 } from 'uuid'
 import { BaseEntity } from './base.entity'
 import { Person } from './person.entity'
-import { User } from './user.entity'
 import { RushProspectActivity } from './rush-prospect-activity.entity'
 
 export type PipelineStage =
@@ -186,15 +185,15 @@ export class RushProspect extends BaseEntity {
   })
   pipelineStage!: PipelineStage
 
-  @ForeignKey(() => User)
+  @ForeignKey(() => Person)
   @Column({
     type: DataType.UUID,
     allowNull: true,
   })
-  assignedToUserId?: string | null
+  assignedToPersonId?: string | null
 
-  @BelongsTo(() => User, { foreignKey: 'assignedToUserId', as: 'assignedTo' })
-  assignedTo?: User | null
+  @BelongsTo(() => Person, { foreignKey: 'assignedToPersonId', as: 'assignedToPerson' })
+  assignedToPerson?: Person | null
 
   @Column({
     type: DataType.INTEGER,

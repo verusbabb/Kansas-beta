@@ -8,18 +8,30 @@ import type {
   CreateRushProspectPayload,
   UpdateRushProspectPayload,
   CreateActivityPayload,
+  RushChair,
 } from '@/types/rushProspect'
 
 export const useRushProspectStore = defineStore('rushProspect', {
   state: () => ({
     list: [] as RushProspectSummary[],
     current: null as RushProspectResponse | null,
+    rushChairs: [] as RushChair[],
     loading: false,
     submitting: false,
     error: null as string | null,
   }),
 
   actions: {
+    /** Admin: fetch rush chairs for the assigned-to dropdown */
+    async fetchRushChairs(): Promise<void> {
+      try {
+        const res = await apiClient.get<RushChair[]>('/exec-team/rush-chairs')
+        this.rushChairs = res.data
+      } catch {
+        this.rushChairs = []
+      }
+    },
+
     /** Public: submit an application (no auth token needed) */
     async submitApplication(payload: CreateRushProspectPayload): Promise<RushProspectSummary> {
       this.submitting = true

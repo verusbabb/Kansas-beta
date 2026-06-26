@@ -64,6 +64,21 @@ export class ExecTeamController {
     return this.execTeamService.findAllTerms()
   }
 
+  @Get('rush-chairs')
+  @UseGuards(JwtAuthGuard, UserLookupGuard, RolesGuard)
+  @Roles(UserRole.EDITOR, UserRole.ADMIN)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Rush chairs for current and upcoming term (editor/admin)',
+    description:
+      'Returns people assigned to rush_chair, rush_chair_2, or rush_chair_3 in the current term and the most-recent non-current term. Used to populate the assigned-to dropdown in the Rush CRM.',
+  })
+  async rushChairs(): Promise<
+    { id: string; firstName: string; lastName: string; termLabel: string; isCurrent: boolean }[]
+  > {
+    return this.execTeamService.getRushChairs()
+  }
+
   @Get('roster')
   @ApiOperation({
     summary: 'Executive roster for display (public)',
