@@ -209,14 +209,15 @@
         <template #body="{ data }">
           <div class="flex items-center gap-1" @click.stop>
             <Button
-              icon="pi pi-pencil"
+              :icon="canEditProspects ? 'pi pi-pencil' : 'pi pi-eye'"
               size="small"
               text
               severity="secondary"
-              v-tooltip.top="'Edit prospect'"
+              v-tooltip.top="canEditProspects ? 'Edit prospect' : 'View prospect'"
               @click="openDetail(data)"
             />
             <Button
+              v-if="canEditProspects"
               icon="pi pi-trash"
               size="small"
               text
@@ -250,11 +251,11 @@
           <div class="grid grid-cols-2 gap-4">
             <div class="flex flex-col gap-1">
               <label class="text-xs font-semibold text-surface-500 uppercase tracking-wide">First Name</label>
-              <InputText v-model="editForm.firstName" class="w-full" />
+              <InputText v-model="editForm.firstName" :disabled="!canEditProspects" class="w-full" />
             </div>
             <div class="flex flex-col gap-1">
               <label class="text-xs font-semibold text-surface-500 uppercase tracking-wide">Last Name</label>
-              <InputText v-model="editForm.lastName" class="w-full" />
+              <InputText v-model="editForm.lastName" :disabled="!canEditProspects" class="w-full" />
             </div>
           </div>
 
@@ -273,7 +274,7 @@
           <div class="grid grid-cols-2 gap-4">
             <div class="flex flex-col gap-1">
               <label class="text-xs font-semibold text-surface-500 uppercase tracking-wide">Phone</label>
-              <InputText v-model="editForm.phone" class="w-full" />
+              <InputText v-model="editForm.phone" :disabled="!canEditProspects" class="w-full" />
             </div>
             <div class="flex flex-col gap-1">
               <label class="text-xs font-semibold text-surface-500 uppercase tracking-wide">Class Year</label>
@@ -283,6 +284,7 @@
                 option-label="label"
                 option-value="value"
                 placeholder="Select"
+                :disabled="!canEditProspects"
                 class="w-full"
               />
             </div>
@@ -297,6 +299,7 @@
                 option-label="label"
                 option-value="value"
                 placeholder="Semester"
+                :disabled="!canEditProspects"
                 class="w-full"
               />
             </div>
@@ -308,6 +311,7 @@
                 option-label="label"
                 option-value="value"
                 placeholder="Year"
+                :disabled="!canEditProspects"
                 class="w-full"
               />
             </div>
@@ -316,32 +320,32 @@
           <div class="grid grid-cols-2 gap-4">
             <div class="flex flex-col gap-1">
               <label class="text-xs font-semibold text-surface-500 uppercase tracking-wide">Hometown</label>
-              <InputText v-model="editForm.hometown" class="w-full" />
+              <InputText v-model="editForm.hometown" :disabled="!canEditProspects" class="w-full" />
             </div>
             <div class="flex flex-col gap-1">
               <label class="text-xs font-semibold text-surface-500 uppercase tracking-wide">High School</label>
-              <InputText v-model="editForm.highSchool" class="w-full" />
+              <InputText v-model="editForm.highSchool" :disabled="!canEditProspects" class="w-full" />
             </div>
           </div>
 
           <div class="grid grid-cols-3 gap-4">
             <div class="flex flex-col gap-1">
               <label class="text-xs font-semibold text-surface-500 uppercase tracking-wide">GPA</label>
-              <InputText v-model="editForm.gpaStr" placeholder="3.85" class="w-full" />
+              <InputText v-model="editForm.gpaStr" placeholder="3.85" :disabled="!canEditProspects" class="w-full" />
             </div>
             <div class="flex flex-col gap-1">
               <label class="text-xs font-semibold text-surface-500 uppercase tracking-wide">ACT</label>
-              <InputText v-model="editForm.actScoreStr" placeholder="32" class="w-full" />
+              <InputText v-model="editForm.actScoreStr" placeholder="32" :disabled="!canEditProspects" class="w-full" />
             </div>
             <div class="flex flex-col gap-1">
               <label class="text-xs font-semibold text-surface-500 uppercase tracking-wide">SAT</label>
-              <InputText v-model="editForm.satScoreStr" placeholder="1420" class="w-full" />
+              <InputText v-model="editForm.satScoreStr" placeholder="1420" :disabled="!canEditProspects" class="w-full" />
             </div>
           </div>
 
           <div class="flex flex-col gap-1">
             <label class="text-xs font-semibold text-surface-500 uppercase tracking-wide">Major</label>
-            <InputText v-model="editForm.major" class="w-full" />
+            <InputText v-model="editForm.major" :disabled="!canEditProspects" class="w-full" />
           </div>
 
           <!-- Pipeline stage -->
@@ -352,6 +356,7 @@
               :options="pipelineStageOptions"
               option-label="label"
               option-value="value"
+              :disabled="!canEditProspects"
               class="w-full"
             >
               <template #option="{ option }">
@@ -369,6 +374,7 @@
           <div class="flex flex-col gap-1">
             <label class="text-xs font-semibold text-surface-500 uppercase tracking-wide">Assigned Rush Chair</label>
             <Select
+              v-if="canEditProspects"
               v-model="editForm.assignedToPersonId"
               :options="rushChairOptions"
               option-label="label"
@@ -384,6 +390,9 @@
                 </div>
               </template>
             </Select>
+            <p v-else class="text-sm text-surface-700">
+              {{ fullProspect.assignedToPersonName ?? 'Unassigned' }}
+            </p>
           </div>
 
           <!-- Internal rating -->
@@ -395,7 +404,9 @@
                 :key="n"
                 type="button"
                 class="text-2xl transition-colors"
-                @click="editForm.internalRating = editForm.internalRating === n ? null : n"
+                :class="canEditProspects ? '' : 'cursor-default'"
+                :disabled="!canEditProspects"
+                @click="canEditProspects && (editForm.internalRating = editForm.internalRating === n ? null : n)"
               >
                 <i :class="['pi', (editForm.internalRating ?? 0) >= n ? 'pi-star-fill text-yellow-400' : 'pi-star text-surface-300']" />
               </button>
@@ -420,7 +431,7 @@
           </div>
 
           <!-- Save button -->
-          <div class="flex justify-end pt-2 border-t border-surface-100">
+          <div v-if="canEditProspects" class="flex justify-end pt-2 border-t border-surface-100">
             <Button
               label="Save Changes"
               icon="pi pi-check"
@@ -436,7 +447,7 @@
           <h3 class="font-semibold text-surface-700 border-b border-surface-100 pb-2">Activity Log</h3>
 
           <!-- Add note -->
-          <div class="flex flex-col gap-2 p-3 bg-surface-50 rounded-lg">
+          <div v-if="canLogActivities" class="flex flex-col gap-2 p-3 bg-surface-50 rounded-lg">
             <Textarea
               v-model="newNote"
               placeholder="Add a note, call log, or activity…"
@@ -529,6 +540,7 @@ import Dialog from 'primevue/dialog'
 import ProgressSpinner from 'primevue/progressspinner'
 import ConfirmDialog from 'primevue/confirmdialog'
 import { useRushProspectStore } from '@/stores/rushProspect'
+import { useAuthStore } from '@/stores/auth'
 import type { RushProspectSummary, RushProspectResponse, PipelineStage, ClassYear } from '@/types/rushProspect'
 import {
   PIPELINE_STAGE_LABELS,
@@ -542,8 +554,22 @@ import {
 } from '@/types/rushProspect'
 
 const store = useRushProspectStore()
+const authStore = useAuthStore()
 const confirm = useConfirm()
 const toast = useToast()
+
+/**
+ * Full Rush CRM editing (edit details, change stage, assign chairs, rate, delete):
+ * admins, editors, and rush chairs. Members are read-only here.
+ */
+const canEditProspects = computed(
+  () => authStore.isEditor || authStore.isRushChair,
+)
+
+/** Logging notes/activities: everyone who can reach the CRM, including members. */
+const canLogActivities = computed(
+  () => canEditProspects.value || authStore.isMember,
+)
 
 // ── Year selector ────────────────────────────────────────────────────────────
 
@@ -580,7 +606,9 @@ function onYearChange() {
 
 onMounted(() => {
   store.fetchProspects(selectedYear.value)
-  store.fetchRushChairs()
+  if (canEditProspects.value) {
+    store.fetchRushChairs()
+  }
 })
 
 // ── Label/severity maps ──────────────────────────────────────────────────────

@@ -325,6 +325,7 @@ import apiClient from '@/services/api'
 import { usePeopleStore } from '@/stores/people'
 import { useUserStore } from '@/stores/user'
 import { UserRole } from '@/types/user'
+import { ROLE_OPTIONS_WITH_SUMMARY } from '@/constants/roles'
 import type { CreatePersonPayload, PersonKind, PersonResponse } from '@/types/person'
 import { US_STATE_CODE_SET, US_STATE_OPTIONS } from '@/constants/usStates'
 
@@ -351,11 +352,7 @@ const kindOptions = [
   { label: 'Member and parent', value: 'both' as PersonKind },
 ]
 
-const appRoleOptions = [
-  { label: 'Viewer — can browse the directory', value: UserRole.VIEWER },
-  { label: 'Editor — has partial admin access', value: UserRole.EDITOR },
-  { label: 'Admin — full access', value: UserRole.ADMIN },
-]
+const appRoleOptions = ROLE_OPTIONS_WITH_SUMMARY
 
 const form = ref({
   kind: 'member' as PersonKind,

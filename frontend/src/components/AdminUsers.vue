@@ -1,5 +1,57 @@
 <template>
   <div class="flex flex-col gap-6">
+    <!-- Role reference: helps admins understand what they grant when changing a role -->
+    <Card>
+      <template #content>
+        <button
+          type="button"
+          class="flex items-center justify-between w-full text-left"
+          @click="showRoleGuide = !showRoleGuide"
+        >
+          <span class="flex items-center gap-2 font-semibold text-surface-800">
+            <i class="pi pi-info-circle text-[#6F8FAF]"></i>
+            What can each role do?
+          </span>
+          <i
+            :class="['pi text-surface-500', showRoleGuide ? 'pi-chevron-up' : 'pi-chevron-down']"
+          ></i>
+        </button>
+
+        <div v-show="showRoleGuide" class="mt-4 flex flex-col gap-4">
+          <p class="text-surface-600 text-sm m-0">{{ PUBLIC_ACCESS_SUMMARY }}</p>
+
+          <div class="grid gap-4 md:grid-cols-3">
+            <div
+              v-for="role in roleGuide"
+              :key="role.value"
+              class="border border-surface-200 rounded-lg p-4 flex flex-col gap-2"
+            >
+              <span :class="['self-start px-2 py-1 text-xs font-semibold rounded capitalize', roleBadgeClass(role.value)]">
+                {{ role.label }}
+              </span>
+              <p class="text-sm text-surface-600 m-0">{{ role.summary }}</p>
+
+              <div>
+                <div class="text-xs font-semibold text-surface-500 uppercase tracking-wide mb-1">Can</div>
+                <ul class="list-disc pl-5 text-sm text-surface-700 space-y-1 m-0">
+                  <li v-for="(item, i) in role.can" :key="i">{{ item }}</li>
+                </ul>
+              </div>
+
+              <div v-if="role.cannot && role.cannot.length">
+                <div class="text-xs font-semibold text-surface-500 uppercase tracking-wide mb-1 mt-2">Cannot</div>
+                <ul class="list-disc pl-5 text-sm text-surface-500 space-y-1 m-0">
+                  <li v-for="(item, i) in role.cannot" :key="i">{{ item }}</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <Message severity="warn" :closable="false" class="text-sm">{{ ADMIN_CAUTION }}</Message>
+        </div>
+      </template>
+    </Card>
+
     <Card class="mb-6">
       <template #title>
         <div class="flex items-center gap-2">
@@ -80,15 +132,11 @@
                   <div class="flex items-center gap-2 mt-1">
                     <span
                       :class="[
-                        'px-2 py-1 text-xs font-semibold rounded capitalize',
-                        user.role === 'admin'
-                          ? 'bg-blue-100 text-blue-800'
-                          : user.role === 'editor'
-                            ? 'bg-green-100 text-green-800'
-                            : 'bg-slate-100 text-slate-800',
+                        'px-2 py-1 text-xs font-semibold rounded',
+                        roleBadgeClass(user.role),
                       ]"
                     >
-                      {{ user.role }}
+                      {{ roleLabel(user.role) }}
                     </span>
                     <span class="text-xs text-surface-500">
                       <template v-if="user.lastLoginAt">
@@ -171,6 +219,7 @@
             :class="{ 'p-invalid': editUserErrors.role }"
             class="w-full"
           />
+          <small v-if="selectedRoleSummary" class="text-surface-500">{{ selectedRoleSummary }}</small>
           <small v-if="editUserErrors.role" class="p-error">{{ editUserErrors.role }}</small>
         </div>
         <div class="flex justify-end gap-3 pt-2">
@@ -205,10 +254,19 @@ import InputText from 'primevue/inputtext'
 import IconField from 'primevue/iconfield'
 import InputIcon from 'primevue/inputicon'
 import Dialog from 'primevue/dialog'
+import Message from 'primevue/message'
 import { useToast } from 'primevue/usetoast'
 import { useConfirm } from 'primevue/useconfirm'
 import { useUserStore } from '@/stores/user'
 import { UserRole, type UserResponseDto } from '@/types/user'
+import {
+  ROLE_INFO,
+  ROLE_ORDER,
+  ROLE_OPTIONS,
+  ROLE_FILTER_OPTIONS,
+  PUBLIC_ACCESS_SUMMARY,
+  ADMIN_CAUTION,
+} from '@/constants/roles'
 import { registerAdminUnsaved } from '@/utils/adminUnsavedRegistry'
 
 const toast = useToast()
@@ -231,18 +289,23 @@ function formatRelativeDate(dateStr: string): string {
   return `${years} ${years === 1 ? 'year' : 'years'} ago`
 }
 
-const roleOptions = [
-  { label: 'Viewer', value: UserRole.VIEWER },
-  { label: 'Editor', value: UserRole.EDITOR },
-  { label: 'Admin', value: UserRole.ADMIN },
-]
+const roleOptions = ROLE_OPTIONS
+const roleFilterOptions = ROLE_FILTER_OPTIONS
 
-const roleFilterOptions = [
-  { label: 'All roles', value: null },
-  { label: 'Viewer', value: UserRole.VIEWER },
-  { label: 'Editor', value: UserRole.EDITOR },
-  { label: 'Admin', value: UserRole.ADMIN },
-]
+const showRoleGuide = ref(false)
+const roleGuide = ROLE_ORDER.map((value) => ROLE_INFO[value])
+
+function roleLabel(role: UserRole): string {
+  return ROLE_INFO[role]?.label ?? role
+}
+
+function roleBadgeClass(role: UserRole): string {
+  if (role === UserRole.ADMIN) return 'bg-blue-100 text-blue-800'
+  if (role === UserRole.EDITOR) return 'bg-green-100 text-green-800'
+  if (role === UserRole.RUSH_CHAIR) return 'bg-amber-100 text-amber-800'
+  if (role === UserRole.MEMBER) return 'bg-purple-100 text-purple-800'
+  return 'bg-slate-100 text-slate-800'
+}
 
 const searchQuery = ref('')
 const roleFilter = ref<UserRole | null>(null)
@@ -320,6 +383,10 @@ function onEditUserDialogVisible(next: boolean) {
 }
 
 const isEditUserFormValid = computed(() => editUserForm.value.role != null)
+
+const selectedRoleSummary = computed(() =>
+  editUserForm.value.role ? ROLE_INFO[editUserForm.value.role].summary : '',
+)
 
 let unregisterAdminUsers: (() => void) | null = null
 

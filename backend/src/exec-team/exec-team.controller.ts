@@ -66,10 +66,10 @@ export class ExecTeamController {
 
   @Get('rush-chairs')
   @UseGuards(JwtAuthGuard, UserLookupGuard, RolesGuard)
-  @Roles(UserRole.EDITOR, UserRole.ADMIN)
+  @Roles(UserRole.RUSH_CHAIR, UserRole.EDITOR, UserRole.ADMIN)
   @ApiBearerAuth()
   @ApiOperation({
-    summary: 'Rush chairs for current and upcoming term (editor/admin)',
+    summary: 'Rush chairs for current and upcoming term (rush chair/editor/admin)',
     description:
       'Returns people assigned to rush_chair, rush_chair_2, or rush_chair_3 in the current term and the most-recent non-current term. Used to populate the assigned-to dropdown in the Rush CRM.',
   })
@@ -93,10 +93,10 @@ export class ExecTeamController {
 
   @Post('terms')
   @UseGuards(JwtAuthGuard, UserLookupGuard, RolesGuard)
-  @Roles(UserRole.ADMIN)
+  @Roles(UserRole.EDITOR, UserRole.ADMIN)
   @ApiBearerAuth()
   @HttpCode(HttpStatus.CREATED)
-  @ApiOperation({ summary: 'Create a fall/spring term (admin only)' })
+  @ApiOperation({ summary: 'Create a fall/spring term (editor/admin)' })
   @ApiResponse({ status: HttpStatus.CREATED, type: ExecTermPublicDto })
   async createTerm(@Body() dto: CreateExecTermDto): Promise<ExecTermPublicDto> {
     return this.execTeamService.createTerm(dto)
@@ -104,10 +104,10 @@ export class ExecTeamController {
 
   @Patch('terms/:id')
   @UseGuards(JwtAuthGuard, UserLookupGuard, RolesGuard)
-  @Roles(UserRole.ADMIN)
+  @Roles(UserRole.EDITOR, UserRole.ADMIN)
   @ApiBearerAuth()
   @ApiParam({ name: 'id', description: 'Exec term UUID' })
-  @ApiOperation({ summary: 'Update term label or current flag (admin only)' })
+  @ApiOperation({ summary: 'Update term label or current flag (editor/admin)' })
   @ApiResponse({ status: HttpStatus.OK, type: ExecTermPublicDto })
   async updateTerm(
     @Param('id', ParseUUIDPipe) id: string,
@@ -118,21 +118,21 @@ export class ExecTeamController {
 
   @Delete('terms/:id')
   @UseGuards(JwtAuthGuard, UserLookupGuard, RolesGuard)
-  @Roles(UserRole.ADMIN)
+  @Roles(UserRole.EDITOR, UserRole.ADMIN)
   @ApiBearerAuth()
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiParam({ name: 'id', description: 'Exec term UUID' })
-  @ApiOperation({ summary: 'Delete term and its assignments (admin only)' })
+  @ApiOperation({ summary: 'Delete term and its assignments (editor/admin)' })
   async deleteTerm(@Param('id', ParseUUIDPipe) id: string): Promise<void> {
     return this.execTeamService.deleteTerm(id)
   }
 
   @Get('terms/:id/roster')
   @UseGuards(JwtAuthGuard, UserLookupGuard, RolesGuard)
-  @Roles(UserRole.ADMIN)
+  @Roles(UserRole.EDITOR, UserRole.ADMIN)
   @ApiBearerAuth()
   @ApiParam({ name: 'id', description: 'Exec term UUID' })
-  @ApiOperation({ summary: 'Roster for a specific term (admin only)' })
+  @ApiOperation({ summary: 'Roster for a specific term (editor/admin)' })
   @ApiResponse({ status: HttpStatus.OK, type: ExecRosterResponseDto })
   async rosterForTerm(@Param('id', ParseUUIDPipe) id: string): Promise<ExecRosterResponseDto> {
     return this.execTeamService.getRosterForTerm(id)
@@ -140,10 +140,10 @@ export class ExecTeamController {
 
   @Put('terms/:id/roster')
   @UseGuards(JwtAuthGuard, UserLookupGuard, RolesGuard)
-  @Roles(UserRole.ADMIN)
+  @Roles(UserRole.EDITOR, UserRole.ADMIN)
   @ApiBearerAuth()
   @ApiParam({ name: 'id', description: 'Exec term UUID' })
-  @ApiOperation({ summary: 'Replace all assignments for a term (admin only)' })
+  @ApiOperation({ summary: 'Replace all assignments for a term (editor/admin)' })
   @ApiResponse({ status: HttpStatus.OK, type: ExecRosterResponseDto })
   async replaceRoster(
     @Param('id', ParseUUIDPipe) id: string,

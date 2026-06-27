@@ -18,6 +18,8 @@ import { Person } from './person.entity'
  */
 export enum UserRole {
   VIEWER = 'viewer',
+  MEMBER = 'member',
+  RUSH_CHAIR = 'rush_chair',
   EDITOR = 'editor',
   ADMIN = 'admin',
 }
@@ -64,7 +66,13 @@ export class User extends BaseEntity {
 
   @Index
   @Column({
-    type: DataType.ENUM(UserRole.VIEWER, UserRole.EDITOR, UserRole.ADMIN),
+    type: DataType.ENUM(
+      UserRole.VIEWER,
+      UserRole.MEMBER,
+      UserRole.RUSH_CHAIR,
+      UserRole.EDITOR,
+      UserRole.ADMIN,
+    ),
     allowNull: false,
     defaultValue: UserRole.VIEWER,
   })

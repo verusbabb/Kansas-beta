@@ -4,6 +4,8 @@
 
 export enum UserRole {
   VIEWER = 'viewer',
+  MEMBER = 'member',
+  RUSH_CHAIR = 'rush_chair',
   EDITOR = 'editor',
   ADMIN = 'admin',
 }

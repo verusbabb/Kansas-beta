@@ -28,6 +28,9 @@ export interface SendGridWebhookEvent {
   event?: string
   reason?: string
   type?: string
+  // Set by SendGrid when an open came from automated prefetching (e.g. Apple
+  // Mail Privacy Protection, corporate security scanners) rather than a human.
+  sg_machine_open?: boolean
   // Custom args we attach at send time
   campaignId?: string
   recipientId?: string
@@ -366,6 +369,10 @@ export class EmailCampaignsService {
           if (recipient.status === 'sent') changes.status = 'delivered'
           break
         case 'open':
+          // Ignore machine-generated opens (Apple MPP, security scanners, image
+          // proxies). These fire on delivery and would otherwise show every
+          // recipient as having "opened" the email immediately after sending.
+          if (event.sg_machine_open) continue
           changes.openCount = (recipient.openCount ?? 0) + 1
           changes.openedAt = recipient.openedAt ?? eventAt
           // Don't overwrite a terminal failure status with "opened".

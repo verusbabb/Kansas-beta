@@ -40,7 +40,7 @@ export class UpdateUserDto {
   })
   @IsOptional()
   @IsEnum(UserRole, {
-    message: 'Role must be one of: viewer, editor, admin',
+    message: 'Role must be one of: viewer, member, rush_chair, editor, admin',
   })
   role?: UserRole
 }

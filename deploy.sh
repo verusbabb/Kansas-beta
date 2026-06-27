@@ -154,7 +154,7 @@ deploy_backend() {
     --no-cpu-throttling \
     --timeout 300 \
     --set-env-vars "${env_vars}" \
-    --set-secrets "AUTH0_ACTION_SECRET=auth0-action-secret:latest" \
+    --set-secrets "AUTH0_ACTION_SECRET=auth0-action-secret:latest,SENDGRID_API_KEY=sendgrid-api-key:latest,SENDGRID_RUSH_CONFIRMATION_TEMPLATE_ID=sendgrid-rush-confirmation-template-id:latest,SENDGRID_FROM_EMAIL=sendgrid-from-email:latest,SENDGRID_RUSH_NOTIFICATION_EMAIL=sendgrid-rush-notification-email:latest,SENDGRID_WEBHOOK_VERIFICATION_KEY=sendgrid-webhook-verification-key:latest" \
     --add-cloudsql-instances ${PROJECT_ID}:${REGION}:${DATABASE_INSTANCE} \
     --project=${PROJECT_ID}
   

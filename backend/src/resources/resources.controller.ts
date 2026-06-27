@@ -37,7 +37,7 @@ import { UserRole, User } from '../database/entities/user.entity'
 @ApiTags('Resources')
 @Controller('resources')
 @UseGuards(JwtAuthGuard, UserLookupGuard, RolesGuard)
-@Roles(UserRole.EDITOR, UserRole.ADMIN)
+@Roles(UserRole.MEMBER, UserRole.RUSH_CHAIR, UserRole.EDITOR, UserRole.ADMIN)
 @ApiBearerAuth()
 export class ResourcesController {
   constructor(private readonly resourcesService: ResourcesService) {}

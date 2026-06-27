@@ -44,17 +44,20 @@ const router = createRouter({
     {
       path: '/ask',
       component: Ask,
-      meta: { requiresAuth: true, requiredRole: ['admin', 'editor'] },
+      meta: {
+        requiresAuth: true,
+        requiredRole: ['admin', 'editor', 'rush_chair', 'member', 'viewer'],
+      },
     },
     { 
       path: '/admin', 
       component: Admin,
-      meta: { requiresAuth: true, requiredRole: ['admin', 'editor'] }
+      meta: { requiresAuth: true, requiredRole: ['admin', 'editor', 'rush_chair', 'member'] }
     },
     {
       path: '/resources',
       component: Resources,
-      meta: { requiresAuth: true, requiredRole: ['admin', 'editor'] },
+      meta: { requiresAuth: true, requiredRole: ['admin', 'editor', 'rush_chair', 'member'] },
     },
   ],
 })

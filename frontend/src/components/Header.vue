@@ -92,39 +92,53 @@
 
   // Items for the Menu popup — uses command callbacks (reliable in Menu popup context)
   const moreMenuItems = computed(() => {
-    const canAsk = authStore.canAccessAdminPanel
+    const canAdmin = authStore.canAccessAdminPanel
+    const canResources = authStore.canAccessResources
+    const canWoogle = authStore.canUseWoogle
+    const showRushCrm = authStore.isMember || authStore.isRushChair
     const useMedium = windowWidth.value >= 1200
 
     const go = (path) => () => router.push(path)
 
     if (useMedium) {
-      // Medium layout (1200–1649): More contains Donate, Contact, and admin items
+      // Medium layout (1200–1649): More contains Donate, Contact, and authed tools
+      const extras = [
+        ...(canResources ? [{ label: "Resources", icon: "pi pi-folder-open", command: go("/resources") }] : []),
+        ...(showRushCrm ? [{ label: "Rush CRM", icon: "pi pi-id-card", command: go("/admin?section=rush-crm") }] : []),
+        ...(canAdmin ? [{ label: "Admin", icon: "pi pi-cog", command: go("/admin") }] : []),
+      ]
       return [
         { label: "Donate",    icon: "pi pi-heart",        command: go("/donate") },
         { label: "Contact",   icon: "pi pi-envelope",     command: go("/contact") },
-        ...(canAsk ? [{ separator: true }] : []),
-        ...(canAsk ? [{ label: "Resources", icon: "pi pi-folder-open", command: go("/resources") }] : []),
-        ...(canAsk ? [{ label: "Admin",     icon: "pi pi-cog",         command: go("/admin") }]     : []),
+        ...(extras.length ? [{ separator: true }] : []),
+        ...extras,
       ]
     } else {
       // Compact layout (960–1199): More contains most items
+      const extras = [
+        ...(canWoogle ? [{ label: "Woogle", icon: "pi pi-sparkles", command: go("/ask") }] : []),
+        ...(canResources ? [{ label: "Resources", icon: "pi pi-folder-open", command: go("/resources") }] : []),
+        ...(showRushCrm ? [{ label: "Rush CRM", icon: "pi pi-id-card", command: go("/admin?section=rush-crm") }] : []),
+        ...(canAdmin ? [{ label: "Admin", icon: "pi pi-cog", command: go("/admin") }] : []),
+      ]
       return [
         { label: "News",    icon: "pi pi-book",      command: go("/newsletters") },
         { label: "History", icon: "pi pi-clock",     command: go("/history") },
         { separator: true },
         { label: "Donate",  icon: "pi pi-heart",     command: go("/donate") },
         { label: "Contact", icon: "pi pi-envelope",  command: go("/contact") },
-        ...(canAsk ? [{ separator: true }] : []),
-        ...(canAsk ? [{ label: "Woogle",    icon: "pi pi-sparkles",    command: go("/ask") }]       : []),
-        ...(canAsk ? [{ label: "Resources", icon: "pi pi-folder-open", command: go("/resources") }] : []),
-        ...(canAsk ? [{ label: "Admin",     icon: "pi pi-cog",         command: go("/admin") }]     : []),
+        ...(extras.length ? [{ separator: true }] : []),
+        ...extras,
       ]
     }
   })
 
   // Top-level nav items — all use route, no submenus (Menubar never sees a submenu)
   const items = computed(() => {
-    const canAsk = authStore.canAccessAdminPanel
+    const canAdmin = authStore.canAccessAdminPanel
+    const canResources = authStore.canAccessResources
+    const canWoogle = authStore.canUseWoogle
+    const showRushCrm = authStore.isMember || authStore.isRushChair
     const useFlat   = windowWidth.value >= 1650
     const useMedium = windowWidth.value >= 1200
 
@@ -133,13 +147,14 @@
       { label: "Rush",     icon: "pi pi-users",     route: "/rush" },
       { label: "Calendar", icon: "pi pi-calendar",  route: "/events" },
       { label: "People",   icon: "pi pi-id-card",   route: "/members" },
-      ...(canAsk ? [{ label: "Woogle",    icon: "pi pi-sparkles",    route: "/ask" }] : []),
-      ...(canAsk ? [{ label: "Resources", icon: "pi pi-folder-open", route: "/resources" }] : []),
+      ...(canWoogle ? [{ label: "Woogle",    icon: "pi pi-sparkles",    route: "/ask" }] : []),
+      ...(canResources ? [{ label: "Resources", icon: "pi pi-folder-open", route: "/resources" }] : []),
+      ...(showRushCrm ? [{ label: "Rush CRM", icon: "pi pi-id-card", route: "/admin?section=rush-crm" }] : []),
       { label: "News",     icon: "pi pi-book",      route: "/newsletters" },
       { label: "History",  icon: "pi pi-clock",     route: "/history" },
       { label: "Donate",   icon: "pi pi-heart",     route: "/donate" },
       { label: "Contact",  icon: "pi pi-envelope",  route: "/contact" },
-      ...(canAsk ? [{ label: "Admin", icon: "pi pi-cog", route: "/admin" }] : []),
+      ...(canAdmin ? [{ label: "Admin", icon: "pi pi-cog", route: "/admin" }] : []),
     ]
 
     const mediumItems = [
@@ -147,7 +162,7 @@
       { label: "Rush",     icon: "pi pi-users",    route: "/rush" },
       { label: "Calendar", icon: "pi pi-calendar", route: "/events" },
       { label: "People",   icon: "pi pi-id-card",  route: "/members" },
-      ...(canAsk ? [{ label: "Woogle", icon: "pi pi-sparkles", route: "/ask" }] : []),
+      ...(canWoogle ? [{ label: "Woogle", icon: "pi pi-sparkles", route: "/ask" }] : []),
       { label: "News",    icon: "pi pi-book",  route: "/newsletters" },
       { label: "History", icon: "pi pi-clock", route: "/history" },
       { label: "More", icon: "pi pi-ellipsis-h", isMore: true },

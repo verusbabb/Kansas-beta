@@ -205,6 +205,9 @@ const router = useRouter()
 const confirm = useConfirm()
 const authStore = useAuthStore()
 
+/** Rush-only roles (member, rush_chair): the Admin panel shows just the Rush CRM. */
+const isRushOnlyRole = computed(() => authStore.isMember || authStore.isRushChair)
+
 const validSectionIds = [
   'overview',
   'newsletter',
@@ -234,6 +237,9 @@ const rushPageSectionIds = ['rush-widgets', 'rush', 'rush-photos', 'rush-crm'] a
 /** History page tooling — collapsible nav group. */
 const historyPageSectionIds = ['history-images'] as const
 
+/** Top-level sections editors may manage alongside site content. */
+const editorTopLevelSectionIds = ['exec-team', 'house-mom'] as const
+
 type SiteContentSectionId = (typeof siteContentSectionIds)[number]
 type RushPageSectionId = (typeof rushPageSectionIds)[number]
 type HistoryPageSectionId = (typeof historyPageSectionIds)[number]
@@ -250,9 +256,14 @@ function isHistoryPageSection(section: string): section is HistoryPageSectionId 
   return historyPageSectionIds.includes(section as HistoryPageSectionId)
 }
 
-/** Sections editors may open in /admin (home page, calendar, newsletters, rush, history). */
+/** Sections editors may open in /admin (home page, calendar, newsletters, rush, history, exec team, house mom). */
 function isEditorAllowedSection(section: string): boolean {
-  return isSiteContentSection(section) || isRushPageSection(section) || isHistoryPageSection(section)
+  return (
+    isSiteContentSection(section) ||
+    isRushPageSection(section) ||
+    isHistoryPageSection(section) ||
+    editorTopLevelSectionIds.includes(section as (typeof editorTopLevelSectionIds)[number])
+  )
 }
 
 function normalizedQuerySection(): string | undefined {
@@ -265,12 +276,20 @@ function clampSectionForRole(section: string): string {
   if (authStore.isAdmin) {
     return validSectionIds.includes(section as (typeof validSectionIds)[number]) ? section : 'overview'
   }
+  if (isRushOnlyRole.value) {
+    return 'rush-crm'
+  }
   return isEditorAllowedSection(section) ? section : 'settings-home-images'
 }
 
-const activeSection = ref(
-  authStore.isAdmin ? 'overview' : 'settings-home-images',
-)
+/** Default landing section per role. */
+function defaultSectionForRole(): string {
+  if (authStore.isAdmin) return 'overview'
+  if (isRushOnlyRole.value) return 'rush-crm'
+  return 'settings-home-images'
+}
+
+const activeSection = ref(defaultSectionForRole())
 
 watch(
   () => [normalizedQuerySection(), authStore.user?.role] as const,
@@ -279,9 +298,7 @@ watch(
     const base =
       urlSec && validSectionIds.includes(urlSec as (typeof validSectionIds)[number])
         ? urlSec
-        : authStore.isAdmin
-          ? 'overview'
-          : 'settings-home-images'
+        : defaultSectionForRole()
     const next = clampSectionForRole(base)
     if (activeSection.value !== next) {
       activeSection.value = next
@@ -429,6 +446,25 @@ const manageNewslettersNavItem = {
   icon: 'pi pi-book',
 } as const
 
+const manageExecTeamNavItem = {
+  id: 'exec-team',
+  label: 'Add/Manage Exec Team',
+  icon: 'pi pi-briefcase',
+} as const
+
+const manageHouseMomNavItem = {
+  id: 'house-mom',
+  label: 'Edit House Mom',
+  icon: 'pi pi-heart',
+} as const
+
+/** Standalone Rush CRM entry for rush-only roles (member, rush_chair). */
+const rushCrmNavItem = {
+  id: 'rush-crm',
+  label: 'Rush CRM',
+  icon: 'pi pi-users',
+} as const
+
 const manageRushPageNav = {
   id: 'rush-page',
   label: 'Manage Rush',
@@ -479,16 +515,8 @@ const fullNavItems: NavItem[] = [
     label: 'Add/Manage User Roles',
     icon: 'pi pi-users',
   },
-  {
-    id: 'exec-team',
-    label: 'Add/Manage Exec Team',
-    icon: 'pi pi-briefcase',
-  },
-  {
-    id: 'house-mom',
-    label: 'Edit House Mom',
-    icon: 'pi pi-heart',
-  },
+  { ...manageExecTeamNavItem },
+  { ...manageHouseMomNavItem },
   {
     id: 'email-campaigns',
     label: 'Email Campaigns',
@@ -517,7 +545,16 @@ const editorNavItems: NavItem[] = [
   { ...manageNewslettersNavItem },
   { ...manageCalendarEventsNavItem },
   { ...manageHistoryPageNav },
+  { ...manageExecTeamNavItem },
+  { ...manageHouseMomNavItem },
 ]
 
-const navItems = computed(() => (authStore.isAdmin ? fullNavItems : editorNavItems))
+/** Rush-only roles (member, rush_chair) see only the Rush CRM. */
+const rushOnlyNavItems: NavItem[] = [{ ...rushCrmNavItem }]
+
+const navItems = computed(() => {
+  if (authStore.isAdmin) return fullNavItems
+  if (authStore.canAccessAdminPanel) return editorNavItems
+  return rushOnlyNavItems
+})
 </script>

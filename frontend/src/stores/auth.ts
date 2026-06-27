@@ -56,6 +56,44 @@ export const useAuthStore = defineStore('auth', () => {
     return userRole.value === 'viewer' || userRole.value === 'editor' || userRole.value === 'admin'
   })
 
+  /** True for the rush-only `member` role. */
+  const isMember = computed(() => {
+    return userRole.value === 'member'
+  })
+
+  /** True for the rush-only `rush_chair` role (full Rush CRM control). */
+  const isRushChair = computed(() => {
+    return userRole.value === 'rush_chair'
+  })
+
+  /**
+   * Resources tab access: admins, editors, members, and rush chairs.
+   * (Deletion is still admin-only, enforced by the backend.)
+   */
+  const canAccessResources = computed(() => {
+    return (
+      userRole.value === 'admin' ||
+      userRole.value === 'editor' ||
+      userRole.value === 'member' ||
+      userRole.value === 'rush_chair'
+    )
+  })
+
+  /** Woogle AI tool: any provisioned user (viewer and up). */
+  const canUseWoogle = computed(() => {
+    return userRole.value != null
+  })
+
+  /** Rush CRM access (any role that can at least log activities). */
+  const canAccessRushCrm = computed(() => {
+    return (
+      userRole.value === 'admin' ||
+      userRole.value === 'editor' ||
+      userRole.value === 'member' ||
+      userRole.value === 'rush_chair'
+    )
+  })
+
   /**
    * Fetch current user profile from backend
    * This should be called after successful authentication
@@ -247,6 +285,11 @@ export const useAuthStore = defineStore('auth', () => {
     canAccessAdminPanel,
     isEditor,
     isViewer,
+    isMember,
+    isRushChair,
+    canAccessResources,
+    canUseWoogle,
+    canAccessRushCrm,
     // Actions
     fetchUserProfile,
     clearUser,

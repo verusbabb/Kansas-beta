@@ -68,12 +68,12 @@ export class RushProspectsController {
     return this.rushProspectsService.legacySearch(q ?? '')
   }
 
-  /** Admin/editor: list prospects for a given rush year */
+  /** List prospects for a given rush year */
   @Get()
   @UseGuards(JwtAuthGuard, UserLookupGuard, RolesGuard)
-  @Roles(UserRole.EDITOR, UserRole.ADMIN)
+  @Roles(UserRole.MEMBER, UserRole.RUSH_CHAIR, UserRole.EDITOR, UserRole.ADMIN)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'List rush prospects (editor/admin)' })
+  @ApiOperation({ summary: 'List rush prospects (member/rush chair/editor/admin)' })
   @ApiQuery({ name: 'rushYear', required: false, type: Number })
   @ApiQuery({ name: 'stage', required: false })
   @ApiQuery({ name: 'search', required: false })
@@ -87,24 +87,24 @@ export class RushProspectsController {
     return this.rushProspectsService.findAll(rushYear, stage, search)
   }
 
-  /** Admin/editor: get one prospect with full activity log */
+  /** Get one prospect with full activity log */
   @Get(':id')
   @UseGuards(JwtAuthGuard, UserLookupGuard, RolesGuard)
-  @Roles(UserRole.EDITOR, UserRole.ADMIN)
+  @Roles(UserRole.MEMBER, UserRole.RUSH_CHAIR, UserRole.EDITOR, UserRole.ADMIN)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Get prospect detail with activity log (editor/admin)' })
+  @ApiOperation({ summary: 'Get prospect detail with activity log (member/rush chair/editor/admin)' })
   @ApiParam({ name: 'id', type: 'string' })
   @ApiResponse({ status: HttpStatus.OK, type: RushProspectResponseDto })
   async findOne(@Param('id') id: string): Promise<RushProspectResponseDto> {
     return this.rushProspectsService.findOne(id)
   }
 
-  /** Admin/editor: update prospect fields or pipeline stage */
+  /** Update prospect fields or pipeline stage */
   @Patch(':id')
   @UseGuards(JwtAuthGuard, UserLookupGuard, RolesGuard)
-  @Roles(UserRole.EDITOR, UserRole.ADMIN)
+  @Roles(UserRole.RUSH_CHAIR, UserRole.EDITOR, UserRole.ADMIN)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Update prospect (editor/admin). Stage changes are auto-logged.' })
+  @ApiOperation({ summary: 'Update prospect (rush chair/editor/admin). Stage changes are auto-logged.' })
   @ApiParam({ name: 'id', type: 'string' })
   @ApiResponse({ status: HttpStatus.OK, type: RushProspectResponseDto })
   async update(
@@ -115,13 +115,13 @@ export class RushProspectsController {
     return this.rushProspectsService.update(id, dto, (req as any).user)
   }
 
-  /** Admin/editor: add a manual activity (note, event attended, call logged) */
+  /** Add a manual activity (note, event attended, call logged) */
   @Post(':id/activities')
   @UseGuards(JwtAuthGuard, UserLookupGuard, RolesGuard)
-  @Roles(UserRole.EDITOR, UserRole.ADMIN)
+  @Roles(UserRole.MEMBER, UserRole.RUSH_CHAIR, UserRole.EDITOR, UserRole.ADMIN)
   @HttpCode(HttpStatus.CREATED)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Log an activity for a prospect (editor/admin)' })
+  @ApiOperation({ summary: 'Log an activity for a prospect (member/rush chair/editor/admin)' })
   @ApiParam({ name: 'id', type: 'string' })
   @ApiResponse({ status: HttpStatus.CREATED, type: RushProspectActivityResponseDto })
   async addActivity(
