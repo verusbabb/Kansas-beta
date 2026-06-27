@@ -114,6 +114,7 @@ APIS=(
   "cloudresourcemanager.googleapis.com"
   "servicenetworking.googleapis.com"
   "compute.googleapis.com"
+  "cloudscheduler.googleapis.com"
 )
 
 for api in "${APIS[@]}"; do
@@ -148,6 +149,11 @@ else
       --tier=db-f1-micro \
       --region=${REGION} \
       --root-password="" \
+      --backup-start-time=09:00 \
+      --enable-point-in-time-recovery \
+      --retained-backups-count=30 \
+      --retained-transaction-log-days=7 \
+      --deletion-protection \
       --project=${PROJECT_ID} 2>&1; then
       echo -e "${GREEN}✅ Database instance created${NC}"
       echo -e "${YELLOW}⚠️  You will need to set a root password. Run:${NC}"
@@ -156,6 +162,24 @@ else
       echo -e "${RED}❌ Failed to create database instance. Check billing status and try again.${NC}"
     fi
   fi
+fi
+echo ""
+
+# Step 4b: Ensure automated backups, PITR, and deletion protection (idempotent)
+echo -e "${BLUE}Step 4b: Ensuring backups, PITR, and deletion protection...${NC}"
+if gcloud sql instances describe ${DATABASE_INSTANCE} --project=${PROJECT_ID} &>/dev/null; then
+  # Safe to re-run: a no-op if these are already set. Note: toggling PITR on for
+  # the first time triggers a brief instance restart.
+  gcloud sql instances patch ${DATABASE_INSTANCE} --project=${PROJECT_ID} \
+    --backup-start-time=09:00 \
+    --enable-point-in-time-recovery \
+    --retained-backups-count=30 \
+    --retained-transaction-log-days=7 \
+    --deletion-protection \
+    --quiet
+  echo -e "${GREEN}✅ Backups, PITR, and deletion protection ensured${NC}"
+else
+  echo -e "${YELLOW}⚠️  Instance not found; skipping backup configuration.${NC}"
 fi
 echo ""
 
