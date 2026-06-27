@@ -30,16 +30,16 @@
                     v-if="!item.items"
                     @click="setActiveSection(item.id)"
                     :class="[
-                      'w-full justify-start !p-3',
+                      'w-full justify-start !p-3 border-l-4',
                       activeSection === item.id
-                        ? 'bg-gray-200 text-[#6F8FAF] font-semibold'
-                        : 'hover:bg-gray-100 text-surface-700'
+                        ? '!text-[#6F8FAF] font-bold border-[#6F8FAF]'
+                        : 'hover:bg-gray-100 !text-surface-800 font-medium border-transparent'
                     ]"
                     text
                     :severity="activeSection === item.id ? 'secondary' : undefined"
                   >
                     <div class="flex items-center gap-3 w-full">
-                      <i :class="[item.icon, 'text-lg flex-shrink-0']"></i>
+                      <i :class="[item.icon, 'text-lg flex-shrink-0 text-[#6F8FAF]']"></i>
                       <span class="text-left flex-1 leading-tight">{{ item.label }}</span>
                     </div>
                   </Button>
@@ -49,16 +49,16 @@
                     <Button
                       @click="toggleNavGroup(item.id)"
                       :class="[
-                        'w-full justify-start !p-3',
+                        'w-full justify-start !p-3 border-l-4',
                         navGroupIsHighlighted(item)
-                          ? 'bg-gray-200 text-[#6F8FAF] font-semibold'
-                          : 'hover:bg-gray-100 text-surface-700'
+                          ? '!text-[#6F8FAF] font-bold border-[#6F8FAF]'
+                          : 'hover:bg-gray-100 !text-surface-800 font-medium border-transparent'
                       ]"
                       text
                       :severity="navGroupIsHighlighted(item) ? 'secondary' : undefined"
                     >
                       <div class="flex items-center gap-3 w-full">
-                        <i :class="[item.icon, 'text-lg flex-shrink-0']"></i>
+                        <i :class="[item.icon, 'text-lg flex-shrink-0 text-[#6F8FAF]']"></i>
                         <span class="text-left flex-1 leading-tight">{{ item.label }}</span>
                         <i 
                           :class="[
@@ -78,16 +78,16 @@
                         :key="subItem.id"
                         @click="setActiveSection(subItem.id)"
                         :class="[
-                          'w-full justify-start !p-3',
+                          'w-full justify-start !p-3 border-l-4',
                           activeSection === subItem.id
-                            ? 'bg-gray-200 text-[#6F8FAF] font-semibold'
-                            : 'hover:bg-gray-100 text-surface-700'
+                            ? '!text-[#6F8FAF] font-bold border-[#6F8FAF]'
+                            : 'hover:bg-gray-100 !text-surface-800 font-medium border-transparent'
                         ]"
                         text
                         :severity="activeSection === subItem.id ? 'secondary' : undefined"
                       >
                         <div class="flex items-center gap-3 w-full">
-                          <i :class="[subItem.icon, 'text-lg flex-shrink-0']"></i>
+                          <i :class="[subItem.icon, 'text-lg flex-shrink-0 text-[#6F8FAF]']"></i>
                           <span class="text-left flex-1 leading-tight">{{ subItem.label }}</span>
                         </div>
                       </Button>
