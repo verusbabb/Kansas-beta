@@ -138,6 +138,9 @@
           <!-- Rush CRM — prospect pipeline -->
           <AdminRushCrm v-if="activeSection === 'rush-crm'" />
 
+          <!-- Email Campaigns — audience selection + SendGrid sends -->
+          <AdminEmailCampaigns v-if="activeSection === 'email-campaigns'" />
+
           <!-- History page images -->
           <AdminHistoryImages v-if="activeSection === 'history-images'" />
 
@@ -186,6 +189,7 @@ import AdminAddPerson from '@/components/AdminAddPerson.vue'
 import AdminBulkImportPeople from '@/components/AdminBulkImportPeople.vue'
 import AdminMemberFamilyImport from '@/components/AdminMemberFamilyImport.vue'
 import AdminRushCrm from '@/components/AdminRushCrm.vue'
+import AdminEmailCampaigns from '@/components/AdminEmailCampaigns.vue'
 import MemberSearch from '@/components/MemberSearch.vue'
 import { useAuthStore } from '@/stores/auth'
 
@@ -218,6 +222,7 @@ const validSectionIds = [
   'woogle-index',
   'pennington',
   'rush-crm',
+  'email-campaigns',
 ] as const
 
 /** Editor-accessible content sections (home images, calendar, newsletters). */
@@ -483,6 +488,11 @@ const fullNavItems: NavItem[] = [
     id: 'house-mom',
     label: 'Edit House Mom',
     icon: 'pi pi-heart',
+  },
+  {
+    id: 'email-campaigns',
+    label: 'Email Campaigns',
+    icon: 'pi pi-envelope',
   },
   {
     id: 'pennington',

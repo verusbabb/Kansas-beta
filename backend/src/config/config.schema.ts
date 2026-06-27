@@ -126,4 +126,9 @@ export class EnvironmentVariables {
   @IsString()
   @IsOptional()
   SENDGRID_RUSH_NOTIFICATION_EMAIL?: string
+
+  // SendGrid Event Webhook — ECDSA public key for signed-webhook verification
+  @IsString()
+  @IsOptional()
+  SENDGRID_WEBHOOK_VERIFICATION_KEY?: string
 }

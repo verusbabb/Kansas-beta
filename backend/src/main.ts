@@ -32,6 +32,9 @@ async function bootstrap() {
 
   const app = await NestFactory.create(AppModule, {
     bufferLogs: true,
+    // Expose req.rawBody so the SendGrid event webhook can verify the
+    // signature against the exact bytes SendGrid signed.
+    rawBody: true,
   })
 
   // Get config service

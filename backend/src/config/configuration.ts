@@ -47,6 +47,7 @@ export interface AppConfig {
     fromEmail?: string
     fromName?: string
     rushNotificationEmail?: string
+    webhookVerificationKey?: string
   }
 }
 
@@ -99,6 +100,7 @@ export default registerAs('config', (): AppConfig => {
       fromEmail: env.SENDGRID_FROM_EMAIL,
       fromName: env.SENDGRID_FROM_NAME || 'Kansas Beta',
       rushNotificationEmail: env.SENDGRID_RUSH_NOTIFICATION_EMAIL,
+      webhookVerificationKey: env.SENDGRID_WEBHOOK_VERIFICATION_KEY,
     },
   }
 })

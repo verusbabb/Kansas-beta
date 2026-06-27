@@ -23,6 +23,7 @@ import { AskModule } from './ask/ask.module'
 import { KnowledgeModule } from './knowledge/knowledge.module'
 import { ResourcesModule } from './resources/resources.module'
 import { RushProspectsModule } from './rush-prospects/rush-prospects.module'
+import { EmailCampaignsModule } from './email-campaigns/email-campaigns.module'
 import { Auth0ManagementModule } from './auth0/auth0-management.module'
 import { SendGridModule } from './sendgrid/sendgrid.module'
 import { createLoggerConfig } from './config/logger.config'
@@ -52,6 +53,7 @@ import { AppConfig } from './config/configuration'
     KnowledgeModule, // Site knowledge vector store (pgvector + Gemini embeddings)
     ResourcesModule, // Chapter documents / resources
     RushProspectsModule, // Rush CRM — prospect pipeline and application form
+    EmailCampaignsModule, // Email campaigns — audience selection + SendGrid sends
     LoggerModule.forRootAsync({
       inject: [ConfigService],
       useFactory: (configService: ConfigService<AppConfig>) => {

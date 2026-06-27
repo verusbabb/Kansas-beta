@@ -24,6 +24,8 @@ import { Resource } from './entities/resource.entity'
 import { ResourceVersion } from './entities/resource-version.entity'
 import { RushProspect } from './entities/rush-prospect.entity'
 import { RushProspectActivity } from './entities/rush-prospect-activity.entity'
+import { EmailCampaign } from './entities/email-campaign.entity'
+import { EmailCampaignRecipient } from './entities/email-campaign-recipient.entity'
 
 @Module({
   imports: [
@@ -105,6 +107,8 @@ import { RushProspectActivity } from './entities/rush-prospect-activity.entity'
           ResourceVersion,
           RushProspect,
           RushProspectActivity,
+          EmailCampaign,
+          EmailCampaignRecipient,
         ]
 
         return sequelizeConfig
@@ -133,6 +137,8 @@ import { RushProspectActivity } from './entities/rush-prospect-activity.entity'
       ResourceVersion,
       RushProspect,
       RushProspectActivity,
+      EmailCampaign,
+      EmailCampaignRecipient,
     ]),
   ],
   exports: [SequelizeModule],
