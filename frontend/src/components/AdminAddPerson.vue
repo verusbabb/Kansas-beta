@@ -67,7 +67,6 @@
               <InputText
                 id="person-first-name"
                 v-model="form.firstName"
-                placeholder="John"
                 :class="{ 'p-invalid': errors.firstName }"
                 class="w-full"
               />
@@ -80,7 +79,6 @@
               <InputText
                 id="person-last-name"
                 v-model="form.lastName"
-                placeholder="Doe"
                 :class="{ 'p-invalid': errors.lastName }"
                 class="w-full"
               />
@@ -95,7 +93,6 @@
             <InputText
               id="person-address"
               v-model="form.addressLine1"
-              placeholder="1234 Jayhawk Blvd"
               :class="{ 'p-invalid': errors.addressLine1 }"
               class="w-full"
             />
@@ -110,7 +107,6 @@
               <InputText
                 id="person-city"
                 v-model="form.city"
-                placeholder="Lawrence"
                 :class="{ 'p-invalid': errors.city }"
                 class="w-full"
               />
@@ -143,7 +139,6 @@
               <InputText
                 id="person-zip"
                 v-model="form.zip"
-                placeholder="66045"
                 :class="{ 'p-invalid': errors.zip }"
                 class="w-full"
               />
@@ -159,7 +154,6 @@
               id="person-email"
               v-model="form.personalEmail"
               type="email"
-              placeholder="name@example.com"
               :class="{ 'p-invalid': errors.personalEmail }"
               class="w-full md:max-w-xl"
             />
@@ -172,7 +166,6 @@
               id="person-work-email"
               v-model="form.workEmail"
               type="email"
-              placeholder="name@company.com"
               :class="{ 'p-invalid': errors.workEmail }"
               class="w-full md:max-w-xl"
             />
@@ -184,18 +177,16 @@
               <label for="person-employer" class="font-semibold text-surface-700">Employer</label>
               <InputText
                 id="person-employer"
-                v-model="form.employer"
-                placeholder="Acme Corp"
-                class="w-full"
+              v-model="form.employer"
+              class="w-full"
               />
             </div>
             <div class="flex flex-col gap-2">
               <label for="person-job-title" class="font-semibold text-surface-700">Job Title</label>
               <InputText
                 id="person-job-title"
-                v-model="form.jobTitle"
-                placeholder="Software Engineer"
-                class="w-full"
+              v-model="form.jobTitle"
+              class="w-full"
               />
             </div>
           </div>

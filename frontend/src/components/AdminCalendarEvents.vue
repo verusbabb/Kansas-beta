@@ -33,7 +33,7 @@
             <InputText
               id="event-name"
               v-model="eventForm.name"
-              placeholder="Chapter Meeting"
+              placeholder="e.g. Chapter Meeting"
               :class="{ 'p-invalid': eventErrors.name }"
               class="w-full"
             />

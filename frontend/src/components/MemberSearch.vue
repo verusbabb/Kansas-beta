@@ -624,7 +624,6 @@
           <InputText
             id="edit-person-employer"
             v-model="editForm.employer"
-            placeholder="Acme Corp"
             class="w-full"
           />
         </div>
@@ -633,7 +632,6 @@
           <InputText
             id="edit-person-job-title"
             v-model="editForm.jobTitle"
-            placeholder="Software Engineer"
             class="w-full"
           />
         </div>

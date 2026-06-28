@@ -39,7 +39,7 @@
               <InputText
                 id="history-img-caption"
                 v-model="form.caption"
-                placeholder="The Usher Mansion front entrance, circa 1920"
+                placeholder="e.g. The Usher Mansion front entrance, circa 1920"
                 maxlength="500"
                 class="w-full"
               />
@@ -53,7 +53,7 @@
               <InputText
                 id="history-img-alt"
                 v-model="form.altText"
-                placeholder="Black and white photo of the chapter house"
+                placeholder="e.g. Black and white photo of the chapter house"
                 maxlength="255"
                 class="w-full"
               />

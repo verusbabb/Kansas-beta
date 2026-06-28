@@ -30,6 +30,16 @@ const SteelBluePreset = definePreset(Material, {
       900: '#1e3045',
       950: '#0f1826',
     },
+    colorScheme: {
+      light: {
+        // Material's default light placeholder is {surface.600} (slate-600),
+        // dark enough that placeholders read like real entered values. Use a
+        // clearly-muted gray so hints are distinguishable from input.
+        formField: {
+          placeholderColor: '{surface.400}',
+        },
+      },
+    },
   },
 })
 

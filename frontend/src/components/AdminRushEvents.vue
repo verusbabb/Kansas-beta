@@ -32,7 +32,7 @@
                 <InputText
                   id="rush-title"
                   v-model="form.title"
-                  placeholder="Open House"
+                  placeholder="e.g. Open House"
                   :class="{ 'p-invalid': errors.title }"
                   class="w-full"
                 />
@@ -46,7 +46,7 @@
                 <InputText
                   id="rush-display-date"
                   v-model="form.displayDate"
-                  placeholder="Fall 2026, Sep 12, or TBD"
+                  placeholder="e.g. Fall 2026, Sep 12, or TBD"
                   :class="{ 'p-invalid': errors.displayDate }"
                   class="w-full"
                 />
@@ -87,7 +87,7 @@
                 <InputText
                   id="rush-location"
                   v-model="form.location"
-                  placeholder="Chapter House"
+                  placeholder="e.g. Chapter House"
                   class="w-full"
                 />
               </div>
@@ -97,7 +97,7 @@
                 <InputText
                   id="rush-time-label"
                   v-model="form.timeLabel"
-                  placeholder="6:00 PM CT"
+                  placeholder="e.g. 6:00 PM CT"
                   class="w-full"
                 />
               </div>

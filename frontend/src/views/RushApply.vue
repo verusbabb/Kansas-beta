@@ -48,7 +48,6 @@
                   <InputText
                     id="firstName"
                     v-model="form.firstName"
-                    placeholder="Connor"
                     :class="{ 'p-invalid': errors.firstName }"
                     class="w-full"
                   />
@@ -61,7 +60,6 @@
                   <InputText
                     id="lastName"
                     v-model="form.lastName"
-                    placeholder="Smith"
                     :class="{ 'p-invalid': errors.lastName }"
                     class="w-full"
                   />
@@ -78,7 +76,6 @@
                     id="email"
                     v-model="form.email"
                     type="email"
-                    placeholder="connor@ku.edu"
                     :class="{ 'p-invalid': errors.email }"
                     class="w-full"
                   />
@@ -114,7 +111,6 @@
                   <InputText
                     id="highSchool"
                     v-model="form.highSchool"
-                    placeholder="Blue Valley Northwest"
                     class="w-full"
                   />
                 </div>
@@ -179,7 +175,6 @@
                 <InputText
                   id="major"
                   v-model="form.major"
-                  placeholder="Business Finance"
                   class="w-full"
                 />
               </div>
@@ -312,7 +307,6 @@
                 <InputText
                   id="legacyRelativeName"
                   v-model="form.legacyRelativeName"
-                  placeholder="John Smith"
                   class="w-full"
                 />
                 <button

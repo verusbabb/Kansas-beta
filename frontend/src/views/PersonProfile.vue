@@ -522,7 +522,6 @@
                   <InputText
                     id="me-employer"
                     v-model="editEmployer"
-                    placeholder="Acme Corp"
                     class="w-full"
                   />
                 </div>
@@ -531,7 +530,6 @@
                   <InputText
                     id="me-job-title"
                     v-model="editJobTitle"
-                    placeholder="Software Engineer"
                     class="w-full"
                   />
                 </div>

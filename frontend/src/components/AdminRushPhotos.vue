@@ -39,7 +39,7 @@
               <InputText
                 id="rush-photo-caption"
                 v-model="form.caption"
-                placeholder="Brothers at the chapter house BBQ"
+                placeholder="e.g. Brothers at the chapter house BBQ"
                 maxlength="500"
                 class="w-full"
               />
