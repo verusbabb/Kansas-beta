@@ -352,13 +352,18 @@
                   <template v-if="rel.counterpart.pledgeClassYear != null">
                     <span class="text-surface-600">, PC {{ rel.counterpart.pledgeClassYear }}</span>
                   </template>
-                  <span class="text-surface-700">, {{ rel.viewerCounterpartRoleLabel }}</span>
                   <span class="flex flex-wrap gap-1">
                     <Tag
                       v-for="tag in rel.connectionTags"
                       :key="tag"
-                      :value="tag === 'legacy' ? 'Legacy' : 'Family'"
+                      :value="tag === 'legacy' ? 'Member' : rel.viewerCounterpartRoleLabel"
                       :severity="tag === 'legacy' ? 'secondary' : 'success'"
+                      class="text-xs"
+                    />
+                    <Tag
+                      v-if="rel.connectionTags.length === 0"
+                      value="Connection"
+                      severity="contrast"
                       class="text-xs"
                     />
                   </span>
@@ -882,13 +887,18 @@
                           <template v-if="rel.counterpart.pledgeClassYear != null">
                             <span class="text-surface-600">, PC {{ rel.counterpart.pledgeClassYear }}</span>
                           </template>
-                          <span class="text-surface-700">, {{ rel.viewerCounterpartRoleLabel }}</span>
                           <span class="flex flex-wrap gap-1">
                             <Tag
                               v-for="tag in rel.connectionTags"
                               :key="tag"
-                              :value="tag === 'legacy' ? 'Legacy' : 'Family'"
+                              :value="tag === 'legacy' ? 'Member' : rel.viewerCounterpartRoleLabel"
                               :severity="tag === 'legacy' ? 'secondary' : 'success'"
+                              class="text-xs"
+                            />
+                            <Tag
+                              v-if="rel.connectionTags.length === 0"
+                              value="Connection"
+                              severity="contrast"
                               class="text-xs"
                             />
                           </span>

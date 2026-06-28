@@ -74,7 +74,7 @@ export class PersonRelationshipResponseDto {
   viewerCounterpartRoleLabel!: string
 
   @ApiProperty({
-    description: 'Legacy = both are members; Family = kin (except peer brother when both members)',
+    description: 'Legacy = both are members; Family = any kin relationship type is set',
     enum: ['legacy', 'family'],
     isArray: true,
   })

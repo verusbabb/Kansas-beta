@@ -5,8 +5,6 @@
 
 export type ConnectionTag = 'legacy' | 'family'
 
-const PEER_MEMBER_TYPES = new Set(['brother'])
-
 /** Title for counterpart when viewer is `to` (counterpart is `from`): counterpart is [type] of viewer. */
 const ROLE_AS_FROM_TO_VIEWER: Record<string, string> = {
   parent: 'Parent',
@@ -73,7 +71,8 @@ function isFamilyKinType(type: string): boolean {
 
 /**
  * Legacy = both people are chapter members.
- * Family = kin relationship; brother + both members → legacy only (no family tag).
+ * Family = any kin relationship type is set (including brother as a biological sibling).
+ * Both tags can apply at once (e.g. a father/son who are both members).
  */
 export function computeConnectionTags(
   viewerIsMember: boolean,
@@ -86,10 +85,6 @@ export function computeConnectionTags(
 
   const t = relationshipType?.trim()
   if (!t || !isFamilyKinType(t)) {
-    return tags
-  }
-
-  if (PEER_MEMBER_TYPES.has(t) && bothMembers) {
     return tags
   }
 

@@ -353,16 +353,23 @@
                                   >, PC {{ rel.counterpart.pledgeClassYear }}</span
                                 >
                               </template>
-                              <span class="text-surface-700"
-                                >, {{ rel.viewerCounterpartRoleLabel ?? 'Connection' }}</span
-                              >
                             </span>
                             <span class="flex shrink-0 flex-wrap items-center gap-1">
                               <Tag
                                 v-for="tag in rel.connectionTags ?? []"
                                 :key="tag"
-                                :value="tag === 'legacy' ? 'Legacy' : 'Family'"
+                                :value="
+                                  tag === 'legacy'
+                                    ? 'Member'
+                                    : (rel.viewerCounterpartRoleLabel ?? 'Connection')
+                                "
                                 :severity="tag === 'legacy' ? 'secondary' : 'success'"
+                                class="text-xs"
+                              />
+                              <Tag
+                                v-if="(rel.connectionTags ?? []).length === 0"
+                                value="Connection"
+                                severity="contrast"
                                 class="text-xs"
                               />
                               <Button
