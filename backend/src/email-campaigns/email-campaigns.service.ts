@@ -36,6 +36,14 @@ export interface SendGridWebhookEvent {
   recipientId?: string
 }
 
+/**
+ * Opens that arrive within this window of delivery are almost certainly
+ * automated (corporate security scanners, link/image proxies) rather than a
+ * human. SendGrid only flags Apple Mail Privacy Protection via sg_machine_open,
+ * so this timing guard catches the scanners it doesn't label.
+ */
+const AUTOMATED_OPEN_WINDOW_MS = 10_000
+
 /** Shape of an audience definition shared by create/update/preview. */
 interface AudienceDefinition {
   audienceType: 'everyone' | 'all_members' | 'all_parents' | 'class_years' | 'custom'
@@ -368,11 +376,22 @@ export class EmailCampaignsService {
           changes.deliveredAt = recipient.deliveredAt ?? eventAt
           if (recipient.status === 'sent') changes.status = 'delivered'
           break
-        case 'open':
+        case 'open': {
           // Ignore machine-generated opens (Apple MPP, security scanners, image
           // proxies). These fire on delivery and would otherwise show every
           // recipient as having "opened" the email immediately after sending.
           if (event.sg_machine_open) continue
+
+          // Timing guard: opens that land within seconds of delivery are
+          // scanners, not humans. Anchor on delivery time, falling back to send
+          // time (row creation) when the delivered event hasn't been recorded
+          // yet — webhook events can arrive out of order. A genuine human open
+          // arriving later still registers normally.
+          const openAnchor = recipient.deliveredAt ?? recipient.createdAt
+          if (openAnchor && eventAt.getTime() - openAnchor.getTime() < AUTOMATED_OPEN_WINDOW_MS) {
+            continue
+          }
+
           changes.openCount = (recipient.openCount ?? 0) + 1
           changes.openedAt = recipient.openedAt ?? eventAt
           // Don't overwrite a terminal failure status with "opened".
@@ -380,6 +399,7 @@ export class EmailCampaignsService {
             changes.status = 'opened'
           }
           break
+        }
         case 'bounce':
           changes.status = 'bounced'
           changes.bounceReason = event.reason ?? event.type ?? 'Bounced'

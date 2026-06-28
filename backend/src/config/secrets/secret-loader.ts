@@ -29,6 +29,7 @@ const SECRET_MAPPINGS: Record<string, string> = {
   'auth0-client-id': 'AUTH0_CLIENT_ID',
   'auth0-mgmt-client-id': 'AUTH0_MGMT_CLIENT_ID',
   'auth0-mgmt-client-secret': 'AUTH0_MGMT_CLIENT_SECRET',
+  'auth0-action-secret': 'AUTH0_ACTION_SECRET',
   'pre-reg-secret': 'PRE_REG_SECRET',
 
   // User management
@@ -44,6 +45,15 @@ const SECRET_MAPPINGS: Record<string, string> = {
 
   // Gemini AI (Ask feature)
   'gemini-api-key': 'GEMINI_API_KEY',
+
+  // SendGrid (email). Loaded at runtime so a deploy that forgets to list these
+  // in --set-secrets can't silently disable email; --set-secrets stays as a
+  // belt-and-suspenders fallback.
+  'sendgrid-api-key': 'SENDGRID_API_KEY',
+  'sendgrid-rush-confirmation-template-id': 'SENDGRID_RUSH_CONFIRMATION_TEMPLATE_ID',
+  'sendgrid-from-email': 'SENDGRID_FROM_EMAIL',
+  'sendgrid-rush-notification-email': 'SENDGRID_RUSH_NOTIFICATION_EMAIL',
+  'sendgrid-webhook-verification-key': 'SENDGRID_WEBHOOK_VERIFICATION_KEY',
 }
 
 /**

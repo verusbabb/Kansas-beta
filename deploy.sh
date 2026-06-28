@@ -107,13 +107,13 @@ build_substitutions() {
   
   local subs="_APP_NAME=Kansas Beta,_APP_VERSION=1.0.0,_DATABASE_INSTANCE=${DATABASE_INSTANCE},_DATABASE_NAME=${DATABASE_NAME},_DATABASE_USER=postgres"
   
-  # Always include _FRONTEND_API_URL - use provided URL or fallback to expected Cloud Run URL pattern
-  if [ -n "${backend_url}" ]; then
-    subs="${subs},_FRONTEND_API_URL=${backend_url}"
-  else
-    # Fallback to expected Cloud Run URL pattern if backend URL not found
-    subs="${subs},_FRONTEND_API_URL=https://${SERVICE_BACKEND}-${PROJECT_ID}.a.run.app"
+  # NEVER guess the backend URL here. A fabricated URL bakes a dead API endpoint
+  # into the frontend bundle (every route 404s). Callers must validate first.
+  if [ -z "${backend_url}" ]; then
+    echo -e "${RED}ERROR: build_substitutions called without a backend URL.${NC}" >&2
+    exit 1
   fi
+  subs="${subs},_FRONTEND_API_URL=${backend_url}"
   
   if [ -n "${auth0_domain}" ]; then
     subs="${subs},_VITE_AUTH0_DOMAIN=${auth0_domain}"
@@ -167,14 +167,17 @@ deploy_frontend() {
   echo -e "${BLUE}🚀 Deploying frontend...${NC}"
   cd frontend
   
-  # Get backend URL for frontend API configuration
+  # Get backend URL for frontend API configuration.
+  # Refuse to guess: a wrong URL gets baked into the bundle and 404s every route.
   local backend_url=$(get_backend_url)
   if [ -z "${backend_url}" ]; then
-    echo -e "${YELLOW}⚠️  Backend URL not found. Using default Cloud Run URL pattern.${NC}"
-    backend_url="https://${SERVICE_BACKEND}-${PROJECT_ID}.a.run.app"
-  else
-    echo -e "${BLUE}   Using backend URL: ${backend_url}${NC}"
+    echo -e "${RED}ERROR: Could not fetch the backend URL from Cloud Run.${NC}"
+    echo -e "${RED}Refusing to build the frontend with a guessed URL (it would bake a dead API URL into the app).${NC}"
+    echo -e "${RED}Confirm the backend exists and gcloud is authenticated:${NC}"
+    echo -e "${RED}  gcloud run services describe ${SERVICE_BACKEND} --region ${REGION} --format='value(status.url)'${NC}"
+    exit 1
   fi
+  echo -e "${BLUE}   Using backend URL: ${backend_url}${NC}"
   
   # Get Auth0 secrets
   local auth0_secrets=$(get_auth0_secrets)
@@ -375,13 +378,16 @@ deploy_all() {
   echo -e "${BLUE}🚀 Deploying everything...${NC}"
   echo ""
   
-  # Get current backend URL (may not exist on first deployment, that's ok)
-  # After backend is deployed, we'll use the new URL for frontend build
+  # Fetch the live backend URL to bake into the frontend build.
+  # Refuse to guess: a wrong URL gets baked into the bundle and 404s every route.
   local backend_url=$(get_backend_url)
   if [ -z "${backend_url}" ]; then
-    # If backend doesn't exist yet, use the expected Cloud Run URL pattern
-    backend_url="https://${SERVICE_BACKEND}-${PROJECT_ID}.a.run.app"
-    echo -e "${YELLOW}⚠️  Backend not deployed yet. Will use: ${backend_url}${NC}"
+    echo -e "${RED}ERROR: Could not fetch the backend URL from Cloud Run.${NC}"
+    echo -e "${RED}Refusing to build the frontend with a guessed URL (it would bake a dead API URL into the app).${NC}"
+    echo -e "${RED}If this is a first-ever deploy, deploy the backend first (./deploy.sh backend), then run ./deploy.sh all.${NC}"
+    echo -e "${RED}Otherwise confirm gcloud is authenticated and the service exists:${NC}"
+    echo -e "${RED}  gcloud run services describe ${SERVICE_BACKEND} --region ${REGION} --format='value(status.url)'${NC}"
+    exit 1
   fi
   
   local auth0_secrets=$(get_auth0_secrets)
