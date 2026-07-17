@@ -5,6 +5,7 @@ import { RushEvent } from '../database/entities/rush-event.entity'
 import { CreateRushEventDto } from './dto/create-rush-event.dto'
 import { UpdateRushEventDto } from './dto/update-rush-event.dto'
 import { RushEventResponseDto } from './dto/rush-event-response.dto'
+import { IndexingService } from '../knowledge/indexing.service'
 
 @Injectable()
 export class RushEventsService {
@@ -12,6 +13,7 @@ export class RushEventsService {
     @InjectModel(RushEvent)
     private rushEventModel: typeof RushEvent,
     private readonly logger: PinoLogger,
+    private readonly indexingService: IndexingService,
   ) {
     this.logger.setContext(RushEventsService.name)
   }
@@ -27,6 +29,7 @@ export class RushEventsService {
         timeLabel: dto.timeLabel?.trim() || null,
         sortOrder: dto.sortOrder ?? 0,
       })
+      void this.indexingService.reindexSource('rush_event')
       return this.toDto(row)
     } catch (error) {
       this.logger.error('Failed to create rush event', error)
@@ -89,6 +92,7 @@ export class RushEventsService {
       sortOrder: dto.sortOrder !== undefined ? dto.sortOrder : row.sortOrder,
     })
 
+    void this.indexingService.reindexSource('rush_event')
     return this.toDto(row)
   }
 
@@ -98,6 +102,7 @@ export class RushEventsService {
       throw new NotFoundException(`Rush event with ID ${id} not found`)
     }
     await row.destroy()
+    void this.indexingService.reindexSource('rush_event')
   }
 
   private toDto(row: RushEvent): RushEventResponseDto {

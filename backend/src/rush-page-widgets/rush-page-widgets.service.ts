@@ -4,6 +4,7 @@ import { PinoLogger } from 'nestjs-pino'
 import { RushPageWidget } from '../database/entities/rush-page-widget.entity'
 import { UpdateRushPageWidgetDto } from './dto/update-rush-page-widget.dto'
 import { RushPageWidgetResponseDto } from './dto/rush-page-widget-response.dto'
+import { IndexingService } from '../knowledge/indexing.service'
 
 @Injectable()
 export class RushPageWidgetsService {
@@ -11,6 +12,7 @@ export class RushPageWidgetsService {
     @InjectModel(RushPageWidget)
     private widgetModel: typeof RushPageWidget,
     private readonly logger: PinoLogger,
+    private readonly indexingService: IndexingService,
   ) {
     this.logger.setContext(RushPageWidgetsService.name)
   }
@@ -42,6 +44,7 @@ export class RushPageWidgetsService {
           : row.bodyHtml,
     })
 
+    void this.indexingService.reindexSource('rush_widget')
     return this.toDto(row)
   }
 

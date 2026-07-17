@@ -13,6 +13,7 @@ import { AuthModule } from '../auth/auth.module'
 import { KnowledgeModule } from '../knowledge/knowledge.module'
 import { AskController } from './ask.controller'
 import { AskService } from './ask.service'
+import { WoogleSqlService } from './woogle-sql.service'
 import { EnrichmentService } from './enrichment/enrichment.service'
 import { PdlService } from './enrichment/pdl.service'
 import { FullContactService } from './enrichment/fullcontact.service'
@@ -35,6 +36,13 @@ import { DatagmaService } from './enrichment/datagma.service'
     KnowledgeModule,
   ],
   controllers: [AskController],
-  providers: [AskService, EnrichmentService, PdlService, FullContactService, DatagmaService],
+  providers: [
+    AskService,
+    WoogleSqlService,
+    EnrichmentService,
+    PdlService,
+    FullContactService,
+    DatagmaService,
+  ],
 })
 export class AskModule {}

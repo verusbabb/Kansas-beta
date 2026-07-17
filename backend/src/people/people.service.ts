@@ -992,7 +992,9 @@ export class PeopleService {
 
     // Collect all emails to prefetch existing people
     const memberEmails = rows.map((r) => r.member.email)
-    const parentEmails = rows.flatMap((r) => [r.mom?.email, r.dad?.email].filter(Boolean) as string[])
+    const parentEmails = rows.flatMap(
+      (r) => [r.mom?.email, r.dad?.email].filter(Boolean) as string[],
+    )
     const allEmails = [...new Set([...memberEmails, ...parentEmails])]
 
     const existing = await this.personModel.findAll({
@@ -1180,6 +1182,13 @@ export class PeopleService {
       skipped: allSkips.length,
       warnings: allWarnings.length,
     })
+
+    // Refresh the people index once after the bulk import (per-record hooks are
+    // bypassed here). Relationships changed too, so a full people reindex keeps
+    // family/legacy chunks accurate. Fire-and-forget; nightly backstop covers failures.
+    if (membersAdded + membersUpdated + parentsAdded + parentsUpdated + relationshipsCreated > 0) {
+      void this.indexingService.indexPeople()
+    }
 
     return {
       membersAdded,
@@ -1398,6 +1407,12 @@ export class PeopleService {
       processed,
       skipped: allSkips.length,
     })
+
+    // Bulk imports bypass the per-record index hooks, so refresh the whole
+    // people source once (fire-and-forget; the nightly backstop covers failures).
+    if (processed > 0) {
+      void this.indexingService.indexPeople()
+    }
 
     const skippedFileContent = formatSkippedImportRows(allSkips, outputDelimiter)
     return {

@@ -91,6 +91,17 @@ export class VectorStoreService {
   }
 
   /**
+   * Delete ALL chunks of a given source type. Used by authoritative per-source
+   * rebuilds so that records deleted from the source table are pruned from the
+   * index (which per-record upserts alone cannot do).
+   */
+  async deleteBySourceType(sourceType: KnowledgeSourceType): Promise<void> {
+    await this.chunkModel.destroy({
+      where: { sourceType },
+    })
+  }
+
+  /**
    * Hybrid search: cosine vector search + PostgreSQL full-text search merged via
    * Reciprocal Rank Fusion (RRF).
    *
@@ -110,10 +121,9 @@ export class VectorStoreService {
     const vectorLiteral = `[${queryEmbedding.join(',')}]`
     const candidates = topK * 2
 
-    const sourceFilter =
-      sourceTypes?.length
-        ? `AND source_type IN (${sourceTypes.map((_, i) => `:st${i}`).join(',')})`
-        : ''
+    const sourceFilter = sourceTypes?.length
+      ? `AND source_type IN (${sourceTypes.map((_, i) => `:st${i}`).join(',')})`
+      : ''
 
     const sourceReplacements: Record<string, string> = {}
     sourceTypes?.forEach((st, i) => {

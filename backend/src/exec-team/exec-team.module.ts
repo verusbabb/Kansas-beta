@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common'
 import { SequelizeModule } from '@nestjs/sequelize'
 import { AuthModule } from '../auth/auth.module'
 import { StorageModule } from '../storage/storage.module'
+import { KnowledgeModule } from '../knowledge/knowledge.module'
 import { ExecPosition } from '../database/entities/exec-position.entity'
 import { ExecTerm } from '../database/entities/exec-term.entity'
 import { ExecAssignment } from '../database/entities/exec-assignment.entity'
@@ -15,6 +16,7 @@ import { ExecTeamService } from './exec-team.service'
     SequelizeModule.forFeature([ExecPosition, ExecTerm, ExecAssignment, Person, User]),
     AuthModule,
     StorageModule,
+    KnowledgeModule,
   ],
   controllers: [ExecTeamController],
   providers: [ExecTeamService],

@@ -7,9 +7,15 @@ import { User } from '../database/entities/user.entity'
 import { Person } from '../database/entities/person.entity'
 import { AuthModule } from '../auth/auth.module'
 import { StorageModule } from '../storage/storage.module'
+import { KnowledgeModule } from '../knowledge/knowledge.module'
 
 @Module({
-  imports: [SequelizeModule.forFeature([HistoryImage, User, Person]), AuthModule, StorageModule],
+  imports: [
+    SequelizeModule.forFeature([HistoryImage, User, Person]),
+    AuthModule,
+    StorageModule,
+    KnowledgeModule,
+  ],
   controllers: [HistoryImagesController],
   providers: [HistoryImagesService],
   exports: [HistoryImagesService],

@@ -71,6 +71,31 @@ export class NewsletterSourceDto {
   @ApiProperty({ nullable: true }) title!: string | null
 }
 
+/**
+ * Diagnostic trace of how the agent answered a query. Surfaced so admins can
+ * see which engine ran, how many reasoning steps it took, and which tools it
+ * called — and, crucially, whether it fell back to the legacy router.
+ */
+export class AgentTraceDto {
+  /** 'agent' = function-calling agent answered; 'fallback' = legacy intent router answered. */
+  @ApiProperty({ enum: ['agent', 'fallback'] }) engine!: 'agent' | 'fallback'
+
+  /** Number of agent reasoning steps (tool round-trips). 0 for the fallback path. */
+  @ApiProperty() steps!: number
+
+  /** Names of tools the agent invoked, in call order (may repeat). */
+  @ApiProperty({ type: [String] }) toolsUsed!: string[]
+
+  /** Total server-side latency in milliseconds. */
+  @ApiProperty() latencyMs!: number
+
+  /** Reason the agent fell back, when engine === 'fallback'. Null otherwise. */
+  @ApiProperty({ nullable: true }) fallbackReason!: string | null
+
+  /** Read-only SQL the agent ran (admins only; null for non-admins). */
+  @ApiProperty({ type: [String], nullable: true }) sql!: string[] | null
+}
+
 export class AskResponseDto {
   /** Human-readable summary of what was searched for. */
   @ApiProperty() interpretation!: string
@@ -86,6 +111,9 @@ export class AskResponseDto {
 
   @ApiProperty({ type: [AlumniResultDto] }) results!: AlumniResultDto[]
   @ApiProperty() totalDbMatches!: number
+
+  /** Diagnostic trace (engine/steps/tools/latency). Always present. */
+  @ApiProperty({ type: () => AgentTraceDto }) trace!: AgentTraceDto
 }
 
 // ---------------------------------------------------------------------------

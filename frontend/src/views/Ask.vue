@@ -47,20 +47,10 @@
                   @click="submit"
                 />
               </div>
-              <div class="flex flex-wrap gap-2">
-                <span class="text-xs text-surface-500 self-center mr-1">Try:</span>
-                <Button
-                  v-for="example in examples"
-                  :key="example"
-                  :label="example"
-                  size="small"
-                  severity="secondary"
-                  outlined
-                  :disabled="loading"
-                  class="text-xs"
-                  @click="useExample(example)"
-                />
-              </div>
+              <p class="text-sm text-surface-500 flex items-start gap-2">
+                <i class="pi pi-sparkles mt-0.5 text-[#6F8FAF]"></i>
+                <span>{{ introText }}</span>
+              </p>
             </div>
           </template>
         </Card>
@@ -125,52 +115,126 @@
             <p class="text-surface-400">Try broadening your search or rephrasing the question.</p>
           </div>
 
-          <!-- Member result cards -->
-          <div v-if="response.results.length > 0" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            <div
-              v-for="person in response.results"
-              :key="person.id"
-              class="border border-surface-200 rounded-lg p-4 flex flex-col gap-3 bg-white hover:border-[#6F8FAF] transition-colors"
-            >
-              <!-- Name -->
-              <RouterLink
-                :to="{ name: 'person-profile', params: { id: person.id } }"
-                class="font-semibold text-[#6F8FAF] hover:underline leading-tight"
-              >
-                {{ person.firstName }} {{ person.lastName }}
-              </RouterLink>
-
-              <!-- Directory info -->
-              <div class="text-sm text-surface-500 space-y-0.5">
-                <div v-if="person.city || person.state">
-                  <i class="pi pi-map-marker text-xs mr-1"></i>
-                  {{ [person.city, person.state].filter(Boolean).join(', ') }}
-                </div>
-                <div v-if="person.pledgeClassYear">
-                  <i class="pi pi-calendar text-xs mr-1"></i>
-                  PC {{ person.pledgeClassYear }}
-                </div>
-                <div v-if="person.officeHistory?.length">
-                  <i class="pi pi-star text-xs mr-1"></i>
-                  {{ person.officeHistory.map((o) => o.position).join(', ') }}
-                </div>
-                <div v-if="person.relationships?.length">
-                  <i class="pi pi-users text-xs mr-1"></i>
-                  {{ person.relationships.length }} connection{{ person.relationships.length === 1 ? '' : 's' }}
-                </div>
-              </div>
-
-              <!-- Actions -->
-              <div class="flex gap-2 mt-auto pt-1 border-t border-surface-100">
-                <RouterLink :to="{ name: 'person-profile', params: { id: person.id } }" class="flex-1">
-                  <Button label="View Profile" icon="pi pi-user" size="small" severity="secondary" outlined class="w-full" />
+          <!-- Member results table -->
+          <DataTable
+            v-if="response.results.length > 0"
+            :value="response.results"
+            dataKey="id"
+            stripedRows
+            sortField="lastName"
+            :sortOrder="1"
+            :paginator="response.results.length > 25"
+            :rows="25"
+            :rowsPerPageOptions="[25, 50, 100]"
+            paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
+            responsiveLayout="stack"
+            breakpoint="640px"
+            class="text-sm"
+          >
+            <Column field="lastName" header="Name" sortable>
+              <template #body="{ data }">
+                <RouterLink
+                  :to="{ name: 'person-profile', params: { id: data.id } }"
+                  class="flex items-center gap-2.5 font-medium text-[#6F8FAF] hover:underline"
+                >
+                  <Avatar
+                    :label="initials(data)"
+                    shape="circle"
+                    class="shrink-0 text-white"
+                    :style="{ backgroundColor: '#6F8FAF', width: '2rem', height: '2rem', fontSize: '0.75rem' }"
+                  />
+                  <span>{{ data.firstName }} {{ data.lastName }}</span>
                 </RouterLink>
-                <a v-if="person.linkedinProfileUrl" :href="person.linkedinProfileUrl" target="_blank" rel="noopener noreferrer">
-                  <Button icon="pi pi-linkedin" size="small" severity="secondary" outlined v-tooltip.top="'View LinkedIn'" />
-                </a>
+              </template>
+            </Column>
+
+            <Column field="pledgeClassYear" header="PC Class" sortable>
+              <template #body="{ data }">
+                {{ data.pledgeClassYear ?? '—' }}
+              </template>
+            </Column>
+
+            <Column header="Location" :sortable="false">
+              <template #body="{ data }">
+                {{ [data.city, data.state].filter(Boolean).join(', ') || '—' }}
+              </template>
+            </Column>
+
+            <Column header="" :sortable="false" class="w-[1%] whitespace-nowrap">
+              <template #body="{ data }">
+                <div class="flex gap-1.5 justify-end">
+                  <RouterLink :to="{ name: 'person-profile', params: { id: data.id } }">
+                    <Button
+                      icon="pi pi-user"
+                      size="small"
+                      severity="secondary"
+                      outlined
+                      v-tooltip.top="'View profile'"
+                    />
+                  </RouterLink>
+                  <a
+                    v-if="data.linkedinProfileUrl"
+                    :href="data.linkedinProfileUrl"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <Button
+                      icon="pi pi-linkedin"
+                      size="small"
+                      severity="secondary"
+                      outlined
+                      v-tooltip.top="'View LinkedIn'"
+                    />
+                  </a>
+                </div>
+              </template>
+            </Column>
+          </DataTable>
+
+          <!-- Admin-only agent trace -->
+          <details
+            v-if="authStore.isAdmin && response.trace"
+            class="mt-6 rounded-lg border border-surface-200 bg-surface-50 text-xs text-surface-600"
+          >
+            <summary class="cursor-pointer select-none px-3 py-2 font-medium flex items-center gap-2">
+              <i class="pi pi-wrench text-surface-400"></i>
+              Woogle trace
+              <span
+                class="rounded px-1.5 py-0.5 font-semibold uppercase tracking-wide"
+                :class="
+                  response.trace.engine === 'agent'
+                    ? 'bg-green-100 text-green-700'
+                    : 'bg-amber-100 text-amber-700'
+                "
+              >
+                {{ response.trace.engine }}
+              </span>
+              <span class="text-surface-400 font-normal">
+                {{ response.trace.steps }} step{{ response.trace.steps === 1 ? '' : 's' }} ·
+                {{ (response.trace.latencyMs / 1000).toFixed(1) }}s
+              </span>
+            </summary>
+            <div class="px-3 pb-3 pt-1 flex flex-col gap-1.5">
+              <div>
+                <span class="font-semibold">Tools used:</span>
+                {{ response.trace.toolsUsed.length ? response.trace.toolsUsed.join(' → ') : 'none' }}
+              </div>
+              <div>
+                <span class="font-semibold">Query type:</span> {{ response.queryType }}
+              </div>
+              <div v-if="response.trace.fallbackReason" class="text-amber-700">
+                <span class="font-semibold">Fallback reason:</span> {{ response.trace.fallbackReason }}
+              </div>
+              <div v-if="response.trace.sql && response.trace.sql.length" class="flex flex-col gap-1">
+                <span class="font-semibold">SQL run:</span>
+                <pre
+                  v-for="(stmt, i) in response.trace.sql"
+                  :key="i"
+                  class="whitespace-pre-wrap break-words rounded bg-surface-800 text-surface-100 p-2 text-[11px] leading-snug overflow-x-auto"
+                >{{ stmt }}</pre>
               </div>
             </div>
-          </div>
+          </details>
         </template>
 
         <!-- Empty state -->
@@ -189,6 +253,9 @@ import { marked } from 'marked'
 import Card from 'primevue/card'
 import InputText from 'primevue/inputtext'
 import Button from 'primevue/button'
+import DataTable from 'primevue/datatable'
+import Column from 'primevue/column'
+import Avatar from 'primevue/avatar'
 import { RouterLink } from 'vue-router'
 import { useToast } from 'primevue/usetoast'
 import apiClient from '@/services/api'
@@ -230,6 +297,15 @@ interface NewsletterSource {
   title: string | null
 }
 
+interface AgentTrace {
+  engine: 'agent' | 'fallback'
+  steps: number
+  toolsUsed: string[]
+  latencyMs: number
+  fallbackReason: string | null
+  sql: string[] | null
+}
+
 interface AskResponse {
   interpretation: string
   queryType: 'member_directory' | 'site_content' | 'mixed'
@@ -237,6 +313,7 @@ interface AskResponse {
   sources: NewsletterSource[]
   results: AlumniResult[]
   totalDbMatches: number
+  trace?: AgentTrace
 }
 
 const authStore = useAuthStore()
@@ -253,6 +330,9 @@ const renderedAnswer = computed<string>(() => {
 
 const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1)
 
+const initials = (p: { firstName: string; lastName: string }) =>
+  `${p.firstName?.[0] ?? ''}${p.lastName?.[0] ?? ''}`.toUpperCase() || '?'
+
 const openNewsletter = async (newsletterId: string) => {
   try {
     const { data } = await apiClient.get<{ url: string }>(`/newsletters/${newsletterId}/signed-url`)
@@ -262,18 +342,11 @@ const openNewsletter = async (newsletterId: string) => {
   }
 }
 
-const examples = [
-  'What was our most recent GPA?',
-  'Who are parents of the class of 2019?',
-  'Who are legacy members?',
-  'Summarize the article written about Buddy Biancalana',
-  'Class of 2026',
-]
-
-function useExample(example: string) {
-  query.value = example
-  void submit()
-}
+const introText = computed(() =>
+  authStore.isAdmin
+    ? "Just ask. Woogle searches across Alpha Nu — members and families, exec history, events, rush, and every newsletter, plus admin-only data and ad-hoc queries. You're seeing the full picture."
+    : "Just ask. Woogle searches across Alpha Nu — members and families, exec history, events, rush, and every newsletter — showing whatever your role lets you see, and always respecting each member's privacy settings.",
+)
 
 async function submit() {
   const q = query.value.trim()
@@ -283,7 +356,7 @@ async function submit() {
   response.value = null
 
   try {
-    const { data } = await apiClient.post<AskResponse>('/ask', { query: q }, { timeout: 30000 })
+    const { data } = await apiClient.post<AskResponse>('/ask', { query: q }, { timeout: 60000 })
     response.value = data
   } catch {
     toast.add({

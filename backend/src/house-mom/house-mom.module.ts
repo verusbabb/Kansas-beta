@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common'
 import { SequelizeModule } from '@nestjs/sequelize'
 import { AuthModule } from '../auth/auth.module'
 import { StorageModule } from '../storage/storage.module'
+import { KnowledgeModule } from '../knowledge/knowledge.module'
 import { HouseMom } from '../database/entities/house-mom.entity'
 import { User } from '../database/entities/user.entity'
 import { Person } from '../database/entities/person.entity'
@@ -13,6 +14,7 @@ import { HouseMomService } from './house-mom.service'
     SequelizeModule.forFeature([HouseMom, User, Person]), // User + Person for UserLookupGuard
     AuthModule,
     StorageModule,
+    KnowledgeModule,
   ],
   controllers: [HouseMomController],
   providers: [HouseMomService],

@@ -1,11 +1,13 @@
 import { Injectable } from '@nestjs/common'
 import { InjectModel } from '@nestjs/sequelize'
 import { Sequelize } from 'sequelize-typescript'
-import { QueryTypes } from 'sequelize'
+import { Op, QueryTypes } from 'sequelize'
 import { PinoLogger } from 'nestjs-pino'
 import { GoogleGenAI } from '@google/genai'
+import { viewerCounterpartRoleLabel } from '../person-relationships/relationship-connection-display'
 import { EmbeddingService } from './embedding.service'
 import { VectorStoreService } from './vector-store.service'
+import type { KnowledgeSourceType } from '../database/entities/knowledge-chunk.entity'
 import { StorageService } from '../storage/storage.service'
 import { Person } from '../database/entities/person.entity'
 import { ExecAssignment } from '../database/entities/exec-assignment.entity'
@@ -21,7 +23,25 @@ import { Newsletter } from '../database/entities/newsletter.entity'
 /** Strip HTML tags from a string for clean indexing. */
 function stripHtml(html: string | null | undefined): string {
   if (!html) return ''
-  return html.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim()
+  return html
+    .replace(/<[^>]*>/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
+/** Split long text into overlapping chunks for finer-grained retrieval. */
+function chunkText(text: string, size = 1200, overlap = 200): string[] {
+  const clean = (text ?? '').replace(/\s+/g, ' ').trim()
+  if (!clean) return []
+  if (clean.length <= size) return [clean]
+  const chunks: string[] = []
+  let start = 0
+  while (start < clean.length) {
+    chunks.push(clean.slice(start, start + size))
+    if (start + size >= clean.length) break
+    start += size - overlap
+  }
+  return chunks
 }
 
 /** Format a date as "Month D, YYYY" for readability in indexed content. */
@@ -102,16 +122,20 @@ export class IndexingService {
     let indexed = 0
     let errors = 0
 
+    // People and newsletters use non-destructive upserts (large/expensive to
+    // rebuild; their deletions are handled by write-through delete hooks). The
+    // smaller sources are rebuilt authoritatively (clear + re-insert) so rows
+    // deleted directly in the DB are pruned from the index too.
     const tasks: Array<() => Promise<number>> = [
       () => this.indexPeople(),
-      () => this.indexExecTeam(),
-      () => this.indexCalendarEvents(),
-      () => this.indexRushEvents(),
-      () => this.indexRushWidgets(),
-      () => this.indexHouseMom(),
-      () => this.indexHistoryImages(),
+      () => this.reindexSource('exec_team'),
+      () => this.reindexSource('calendar_event'),
+      () => this.reindexSource('rush_event'),
+      () => this.reindexSource('rush_widget'),
+      () => this.reindexSource('house_mom'),
+      () => this.reindexSource('history_image'),
       () => this.indexAllNewsletters(),
-      () => this.indexChapterFacts(),
+      () => this.reindexSource('chapter_fact'),
     ]
 
     for (const task of tasks) {
@@ -135,6 +159,45 @@ export class IndexingService {
 
     this.logger.info('IndexingService: reindexAll complete', { indexed, errors })
     return { indexed, errors }
+  }
+
+  /**
+   * Authoritatively rebuild one source type: clear all of its chunks, then
+   * re-insert from the current DB state. Use this for write-through indexing of
+   * small/low-churn sources on create/update/delete — a single call keeps the
+   * index fully in sync (including handling deletions) without per-record id
+   * tracking. NOTE: do not use for `person`/`newsletter` (large/expensive —
+   * those use incremental upserts + delete hooks).
+   */
+  async reindexSource(sourceType: KnowledgeSourceType): Promise<number> {
+    const indexer: Partial<Record<KnowledgeSourceType, () => Promise<number>>> = {
+      exec_team: () => this.indexExecTeam(),
+      calendar_event: () => this.indexCalendarEvents(),
+      rush_event: () => this.indexRushEvents(),
+      rush_widget: () => this.indexRushWidgets(),
+      house_mom: () => this.indexHouseMom(),
+      history_image: () => this.indexHistoryImages(),
+      chapter_fact: () => this.indexChapterFacts(),
+    }
+
+    const run = indexer[sourceType]
+    if (!run) {
+      this.logger.warn('IndexingService: reindexSource called for unsupported type', { sourceType })
+      return 0
+    }
+
+    try {
+      await this.vectorStore.deleteBySourceType(sourceType)
+      const count = await run()
+      this.logger.info('IndexingService: reindexed source', { sourceType, count })
+      return count
+    } catch (err: any) {
+      this.logger.error('IndexingService: reindexSource failed', {
+        sourceType,
+        message: err?.message,
+      })
+      return 0
+    }
   }
 
   // ---------------------------------------------------------------------------
@@ -178,8 +241,14 @@ export class IndexingService {
       { type: QueryTypes.SELECT },
     )
 
-    const outgoing = new Map<string, Array<{ type: string | null; toName: string; toYear: number | null }>>()
-    const incoming = new Map<string, Array<{ type: string | null; fromName: string; fromYear: number | null }>>()
+    const outgoing = new Map<
+      string,
+      Array<{ type: string | null; toName: string; toYear: number | null }>
+    >()
+    const incoming = new Map<
+      string,
+      Array<{ type: string | null; fromName: string; fromYear: number | null }>
+    >()
 
     for (const r of rows) {
       const out = outgoing.get(r.from_person_id) ?? []
@@ -234,42 +303,53 @@ export class IndexingService {
   private buildPersonChunk(
     p: Person,
     outgoing: Map<string, Array<{ type: string | null; toName: string; toYear: number | null }>>,
-    incoming: Map<string, Array<{ type: string | null; fromName: string; fromYear: number | null }>>,
+    incoming: Map<
+      string,
+      Array<{ type: string | null; fromName: string; fromYear: number | null }>
+    >,
     execMap: Map<string, Array<{ position: string; term: string }>>,
   ): string {
-    const parts: string[] = [
-      `Member: ${p.firstName} ${p.lastName}`,
-      p.pledgeClassYear ? `Pledge class of ${p.pledgeClassYear}` : null,
-      p.city && p.state
-        ? `Lives in ${p.city}, ${p.state}`
-        : p.state
-          ? `Lives in ${p.state}`
-          : null,
-    ].filter(Boolean) as string[]
+    const parts: string[] = []
 
-    // Parent: outgoing 'parent' relationships (fromPerson = this person, toPerson = parent)
-    const parents = (outgoing.get(p.id) ?? [])
-      .filter((r) => r.type === 'parent')
-      .map((r) => `${r.toName}${r.toYear ? ` (class of ${r.toYear})` : ''}`)
-    if (parents.length) {
-      parts.push(`Parent: ${parents.join(', ')}`)
+    // Identity / standing
+    if (p.isMember) {
+      parts.push(`Member: ${p.firstName} ${p.lastName}`)
+      if (p.pledgeClassYear) parts.push(`Pledge class of ${p.pledgeClassYear}`)
+    } else {
+      parts.push(`${p.firstName} ${p.lastName}`)
+      parts.push(
+        p.isParent
+          ? 'Parent of a chapter member (not a chapter member themselves)'
+          : 'Non-member contact',
+      )
     }
 
-    // Big brother: outgoing 'brother' relationships
-    const bigs = (outgoing.get(p.id) ?? [])
-      .filter((r) => r.type === 'brother')
-      .map((r) => `${r.toName}${r.toYear ? ` (class of ${r.toYear})` : ''}`)
-    if (bigs.length) {
-      parts.push(`Big brother: ${bigs.join(', ')}`)
+    // Location — only when shared with logged-in members.
+    if (p.shareAddressWithLoggedInMembers) {
+      if (p.city && p.state) parts.push(`Lives in ${p.city}, ${p.state}`)
+      else if (p.state) parts.push(`Lives in ${p.state}`)
     }
 
-    // Children / littles: people who list this person as their parent (incoming 'parent')
-    const children = (incoming.get(p.id) ?? [])
-      .filter((r) => r.type === 'parent')
-      .map((r) => `${r.fromName}${r.fromYear ? ` (class of ${r.fromYear})` : ''}`)
-    if (children.length) {
-      parts.push(`Children: ${children.join(', ')}`)
+    // Professional info — only when shared.
+    if (p.shareEmployerWithLoggedInMembers) {
+      if (p.jobTitle && p.employer) parts.push(`Works as ${p.jobTitle} at ${p.employer}`)
+      else if (p.employer) parts.push(`Works at ${p.employer}`)
+      else if (p.jobTitle) parts.push(`Job title: ${p.jobTitle}`)
     }
+
+    // Family connections — labeled with each counterpart's role relative to this
+    // person, using the shared direction logic so it's correct either way the
+    // edge was stored (e.g. a parent's child is shown as "Son", not "Parent").
+    const rels: string[] = []
+    for (const r of outgoing.get(p.id) ?? []) {
+      const role = viewerCounterpartRoleLabel(r.type, true)
+      rels.push(`${r.toName}${r.toYear ? ` (class of ${r.toYear})` : ''} — ${role}`)
+    }
+    for (const r of incoming.get(p.id) ?? []) {
+      const role = viewerCounterpartRoleLabel(r.type, false)
+      rels.push(`${r.fromName}${r.fromYear ? ` (class of ${r.fromYear})` : ''} — ${role}`)
+    }
+    if (rels.length) parts.push(`Family connections: ${rels.join('; ')}`)
 
     // Offices held from exec_assignments
     const offices = (execMap.get(p.id) ?? []).map((a) => `${a.position} (${a.term})`)
@@ -281,7 +361,11 @@ export class IndexingService {
   }
 
   async indexPeople(): Promise<number> {
-    const people = await this.personModel.findAll({ where: { isMember: true } })
+    // Index members and parents (parents are often non-members but are referenced
+    // in family/legacy questions). Skip unrelated non-member contacts.
+    const people = await this.personModel.findAll({
+      where: { [Op.or]: [{ isMember: true }, { isParent: true }] },
+    })
 
     const [{ outgoing, incoming }, execMap] = await Promise.all([
       this.fetchAllRelationships(),
@@ -305,13 +389,22 @@ export class IndexingService {
         await this.vectorStore.upsertForSource('person', p.id, [
           {
             content,
-            metadata: { firstName: p.firstName, lastName: p.lastName, pledgeClassYear: p.pledgeClassYear },
+            metadata: {
+              firstName: p.firstName,
+              lastName: p.lastName,
+              pledgeClassYear: p.pledgeClassYear,
+              isMember: p.isMember,
+              isParent: p.isParent,
+            },
             embedding,
           },
         ])
         count++
       } catch (err: any) {
-        this.logger.warn('IndexingService: failed to index person', { id: p.id, message: err?.message })
+        this.logger.warn('IndexingService: failed to index person', {
+          id: p.id,
+          message: err?.message,
+        })
       }
     }
 
@@ -349,7 +442,13 @@ export class IndexingService {
       items.push({
         termId,
         content: `Exec team for ${termLabel}${term.isCurrent ? ' (current)' : ''}: ${roster}.`,
-        meta: { termId, termLabel, isCurrent: term.isCurrent, season: term.season, year: term.year },
+        meta: {
+          termId,
+          termLabel,
+          isCurrent: term.isCurrent,
+          season: term.season,
+          year: term.year,
+        },
       })
     }
 
@@ -364,7 +463,10 @@ export class IndexingService {
         ])
         count++
       } catch (err: any) {
-        this.logger.warn('IndexingService: failed to index exec term', { termId: items[i].termId, message: err?.message })
+        this.logger.warn('IndexingService: failed to index exec term', {
+          termId: items[i].termId,
+          message: err?.message,
+        })
       }
     }
 
@@ -393,11 +495,18 @@ export class IndexingService {
       const e = items[i].event
       try {
         await this.vectorStore.upsertForSource('calendar_event', e.id, [
-          { content: items[i].content, metadata: { name: e.name, startDate: e.startDate, endDate: e.endDate }, embedding },
+          {
+            content: items[i].content,
+            metadata: { name: e.name, startDate: e.startDate, endDate: e.endDate },
+            embedding,
+          },
         ])
         count++
       } catch (err: any) {
-        this.logger.warn('IndexingService: failed to index calendar event', { id: e.id, message: err?.message })
+        this.logger.warn('IndexingService: failed to index calendar event', {
+          id: e.id,
+          message: err?.message,
+        })
       }
     }
 
@@ -427,11 +536,18 @@ export class IndexingService {
       const e = items[i].event
       try {
         await this.vectorStore.upsertForSource('rush_event', e.id, [
-          { content: items[i].content, metadata: { title: e.title, displayDate: e.displayDate, location: e.location }, embedding },
+          {
+            content: items[i].content,
+            metadata: { title: e.title, displayDate: e.displayDate, location: e.location },
+            embedding,
+          },
         ])
         count++
       } catch (err: any) {
-        this.logger.warn('IndexingService: failed to index rush event', { id: e.id, message: err?.message })
+        this.logger.warn('IndexingService: failed to index rush event', {
+          id: e.id,
+          message: err?.message,
+        })
       }
     }
 
@@ -455,11 +571,18 @@ export class IndexingService {
       const w = items[i].widget
       try {
         await this.vectorStore.upsertForSource('rush_widget', w.id, [
-          { content: items[i].content, metadata: { title: w.title, slotIndex: w.slotIndex }, embedding },
+          {
+            content: items[i].content,
+            metadata: { title: w.title, slotIndex: w.slotIndex },
+            embedding,
+          },
         ])
         count++
       } catch (err: any) {
-        this.logger.warn('IndexingService: failed to index rush widget', { id: w.id, message: err?.message })
+        this.logger.warn('IndexingService: failed to index rush widget', {
+          id: w.id,
+          message: err?.message,
+        })
       }
     }
 
@@ -504,11 +627,18 @@ export class IndexingService {
       const img = items[i].image
       try {
         await this.vectorStore.upsertForSource('history_image', img.id, [
-          { content: items[i].content, metadata: { caption: img.caption, altText: img.altText }, embedding },
+          {
+            content: items[i].content,
+            metadata: { caption: img.caption, altText: img.altText },
+            embedding,
+          },
         ])
         count++
       } catch (err: any) {
-        this.logger.warn('IndexingService: failed to index history image', { id: img.id, message: err?.message })
+        this.logger.warn('IndexingService: failed to index history image', {
+          id: img.id,
+          message: err?.message,
+        })
       }
     }
 
@@ -546,7 +676,11 @@ export class IndexingService {
             const content = `Newsletter: ${n.season} ${n.year} edition.`
             const embedding = await this.embeddingService.embed(content)
             await this.vectorStore.upsertForSource('newsletter', `${n.id}_meta`, [
-              { content, metadata: { newsletterId: n.id, season: n.season, year: n.year }, embedding },
+              {
+                content,
+                metadata: { newsletterId: n.id, season: n.season, year: n.year },
+                embedding,
+              },
             ])
             count++
           } catch {
@@ -605,10 +739,11 @@ Extract every distinct article or section from the newsletter.
 For each article return a JSON object with these fields:
 - title: article title or section heading (string)
 - author: author name if present, otherwise null
+- page: the page number where the article starts (integer), or null if unknown
 - content: full text content of the article (string, preserve meaning but remove formatting artifacts)
 
-Return ONLY a valid JSON array: [{ "title": "...", "author": "...", "content": "..." }, ...]
-Do not include boilerplate, page numbers, headers, or footers as separate articles.`
+Return ONLY a valid JSON array: [{ "title": "...", "author": "...", "page": 1, "content": "..." }, ...]
+Do not skip content. Capture all substantive text; only omit pure layout artifacts (page numbers, repeated headers/footers) as separate articles.`
 
     const result = await this.genAI.models.generateContent({
       model: 'gemini-2.5-flash',
@@ -624,45 +759,88 @@ Do not include boilerplate, page numbers, headers, or footers as separate articl
       config: { responseMimeType: 'application/json', temperature: 0 },
     })
 
-    let articles: Array<{ title: string; author: string | null; content: string }> = []
+    let articles: Array<{
+      title: string
+      author: string | null
+      content: string
+      page?: number | null
+    }> = []
     try {
       articles = JSON.parse(result.text ?? '[]')
     } catch {
       this.logger.warn('IndexingService: failed to parse Gemini article extraction', {
         newsletterId: newsletter.id,
       })
-      return 0
+    }
+
+    // Fallback: if structured extraction yielded nothing, pull the raw text and
+    // chunk it ourselves rather than indexing a lossy season/year stub.
+    if (!articles.length) {
+      const rawResult = await this.genAI.models.generateContent({
+        model: 'gemini-2.5-flash',
+        contents: [
+          {
+            role: 'user',
+            parts: [
+              { fileData: { fileUri: uploadedFile.uri, mimeType: 'application/pdf' } },
+              {
+                text: 'Extract ALL readable text from this newsletter PDF as plain text, preserving reading order. Return only the text.',
+              },
+            ],
+          },
+        ],
+        config: { temperature: 0 },
+      })
+      const rawText = rawResult.text ?? ''
+      articles = chunkText(rawText).map((c, i) => ({
+        title: `Section ${i + 1}`,
+        author: null,
+        page: null,
+        content: c,
+      }))
     }
 
     if (!articles.length) return 0
 
-    // Step 4: Embed all article chunks concurrently then upsert
-    const chunkTexts = articles.map((article) =>
-      [
-        `Newsletter (${newsletter.season} ${newsletter.year})`,
-        article.title ? `Article: ${article.title}` : null,
-        article.author ? `By: ${article.author}` : null,
-        article.content,
-      ]
-        .filter(Boolean)
-        .join('\n'),
-    )
+    // Step 4: Split each article into overlapping sub-chunks (so long articles
+    // become several retrievable passages), embed, then upsert.
+    const chunkInputs: Array<{ content: string; meta: Record<string, any> }> = []
+    for (const article of articles) {
+      const subs = chunkText(article.content)
+      subs.forEach((sub, subIndex) => {
+        const header = [
+          `Newsletter (${newsletter.season} ${newsletter.year})`,
+          article.title ? `Article: ${article.title}` : null,
+          article.author ? `By: ${article.author}` : null,
+          article.page != null ? `Page ${article.page}` : null,
+        ]
+          .filter(Boolean)
+          .join('\n')
+        chunkInputs.push({
+          content: `${header}\n${sub}`,
+          meta: {
+            newsletterId: newsletter.id,
+            season: newsletter.season,
+            year: newsletter.year,
+            articleTitle: article.title,
+            author: article.author,
+            page: article.page ?? null,
+            chunkIndex: subIndex,
+          },
+        })
+      })
+    }
 
-    const embeddings = await this.embeddingService.embedBatch(chunkTexts)
+    const embeddings = await this.embeddingService.embedBatch(chunkInputs.map((c) => c.content))
 
-    const chunks: Array<{ content: string; metadata: Record<string, any>; embedding: number[] }> = []
-    for (let i = 0; i < articles.length; i++) {
+    const chunks: Array<{ content: string; metadata: Record<string, any>; embedding: number[] }> =
+      []
+    for (let i = 0; i < chunkInputs.length; i++) {
       const embedding = embeddings[i]
       if (!embedding) continue
       chunks.push({
-        content: chunkTexts[i],
-        metadata: {
-          newsletterId: newsletter.id,
-          season: newsletter.season,
-          year: newsletter.year,
-          articleTitle: articles[i].title,
-          author: articles[i].author,
-        },
+        content: chunkInputs[i].content,
+        metadata: chunkInputs[i].meta,
         embedding,
       })
     }
@@ -717,7 +895,8 @@ Do not include boilerplate, page numbers, headers, or footers as separate articl
     ]
 
     const embeddings = await this.embeddingService.embedBatch(facts)
-    const chunks: Array<{ content: string; metadata: Record<string, any>; embedding: number[] }> = []
+    const chunks: Array<{ content: string; metadata: Record<string, any>; embedding: number[] }> =
+      []
 
     for (let i = 0; i < facts.length; i++) {
       const embedding = embeddings[i]
@@ -741,7 +920,7 @@ Do not include boilerplate, page numbers, headers, or footers as separate articl
   // ---------------------------------------------------------------------------
 
   async indexOnePerson(person: Person): Promise<void> {
-    if (!person.isMember) return
+    if (!person.isMember && !person.isParent) return
 
     type RelRow = {
       from_person_id: string
@@ -787,10 +966,24 @@ Do not include boilerplate, page numbers, headers, or footers as separate articl
 
     // Build lookup maps scoped to this person
     const outgoing = new Map([
-      [person.id, relRows.filter((r) => r.from_person_id === person.id).map((r) => ({ type: r.relationship_type, toName: r.to_name, toYear: r.to_year }))],
+      [
+        person.id,
+        relRows
+          .filter((r) => r.from_person_id === person.id)
+          .map((r) => ({ type: r.relationship_type, toName: r.to_name, toYear: r.to_year })),
+      ],
     ])
     const incoming = new Map([
-      [person.id, relRows.filter((r) => r.to_person_id === person.id).map((r) => ({ type: r.relationship_type, fromName: r.from_name, fromYear: r.from_year }))],
+      [
+        person.id,
+        relRows
+          .filter((r) => r.to_person_id === person.id)
+          .map((r) => ({
+            type: r.relationship_type,
+            fromName: r.from_name,
+            fromYear: r.from_year,
+          })),
+      ],
     ])
     const execMap = new Map([
       [person.id, assignRows.map((r) => ({ position: r.position, term: r.term }))],
@@ -807,6 +1000,8 @@ Do not include boilerplate, page numbers, headers, or footers as separate articl
             firstName: person.firstName,
             lastName: person.lastName,
             pledgeClassYear: person.pledgeClassYear,
+            isMember: person.isMember,
+            isParent: person.isParent,
           },
           embedding,
         },

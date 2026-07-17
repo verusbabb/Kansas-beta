@@ -6,6 +6,7 @@ import { StorageService } from '../storage/storage.service'
 import { UploadHistoryImageDto } from './dto/upload-history-image.dto'
 import { UpdateHistoryImageDto } from './dto/update-history-image.dto'
 import { HistoryImageResponseDto } from './dto/history-image-response.dto'
+import { IndexingService } from '../knowledge/indexing.service'
 
 export interface HistoryImageFile {
   fieldname: string
@@ -23,6 +24,7 @@ export class HistoryImagesService {
     private historyImageModel: typeof HistoryImage,
     private readonly storageService: StorageService,
     private readonly logger: PinoLogger,
+    private readonly indexingService: IndexingService,
   ) {
     this.logger.setContext(HistoryImagesService.name)
   }
@@ -70,6 +72,7 @@ export class HistoryImagesService {
         uploadedBy,
       })
 
+      void this.indexingService.reindexSource('history_image')
       return this.toDto(image)
     } catch (error) {
       this.logger.error('Failed to create history image', { uploadedBy, error })
@@ -104,6 +107,7 @@ export class HistoryImagesService {
     if (dto.altText !== undefined) image.altText = dto.altText?.trim() || undefined
     if (dto.sortOrder !== undefined) image.sortOrder = dto.sortOrder
     await image.save()
+    void this.indexingService.reindexSource('history_image')
     return this.toDto(image)
   }
 
@@ -127,6 +131,7 @@ export class HistoryImagesService {
       }
     }
     await image.destroy()
+    void this.indexingService.reindexSource('history_image')
   }
 
   async removeMany(ids: string[]): Promise<void> {
@@ -144,6 +149,7 @@ export class HistoryImagesService {
       }
     }
     await this.historyImageModel.destroy({ where: { id: ids } })
+    void this.indexingService.reindexSource('history_image')
   }
 
   private toDto(image: HistoryImage): HistoryImageResponseDto {

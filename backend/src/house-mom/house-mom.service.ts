@@ -6,6 +6,7 @@ import { StorageService } from '../storage/storage.service'
 import { HouseMomPublicDto } from './dto/house-mom-public.dto'
 import { UpdateHouseMomDto } from './dto/update-house-mom.dto'
 import { normalizeUsPhoneForStorage } from '../common/utils/us-phone'
+import { IndexingService } from '../knowledge/indexing.service'
 
 const PHOTO_URL_EXPIRY_MINUTES = 7 * 24 * 60
 
@@ -27,6 +28,7 @@ export class HouseMomService {
     private readonly houseMomModel: typeof HouseMom,
     private readonly storageService: StorageService,
     private readonly logger: PinoLogger,
+    private readonly indexingService: IndexingService,
   ) {
     this.logger.setContext(HouseMomService.name)
   }
@@ -101,6 +103,7 @@ export class HouseMomService {
       dto.bioHtml === undefined || dto.bioHtml === null ? null : dto.bioHtml.trim() || null
     await row.save()
 
+    void this.indexingService.reindexSource('house_mom')
     const photoUrl = await this.signedPhotoUrl(row.photoFilePath)
     return this.toPublicDto(row, photoUrl)
   }

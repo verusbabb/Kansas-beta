@@ -6,7 +6,7 @@ import {
   NotFoundException,
 } from '@nestjs/common'
 import { InjectModel } from '@nestjs/sequelize'
-import { Op, Transaction, UniqueConstraintError, literal } from 'sequelize'
+import { Op, Transaction, UniqueConstraintError } from 'sequelize'
 import { PinoLogger } from 'nestjs-pino'
 import { ExecPosition } from '../database/entities/exec-position.entity'
 import { ExecTerm } from '../database/entities/exec-term.entity'
@@ -25,6 +25,7 @@ import { PersonExecHistoryEntryDto } from './dto/person-exec-history-entry.dto'
 import { ClaimMyExecAssignmentDto } from './dto/claim-my-exec-assignment.dto'
 import { ReleaseMyExecAssignmentDto } from './dto/release-my-exec-assignment.dto'
 import { execRoleEmailForPositionCode } from './exec-position-role-emails'
+import { IndexingService } from '../knowledge/indexing.service'
 import type { ExecSeason } from '../database/entities/exec-term.entity'
 
 /** Signed URL TTL for roster headshots (embedded in public HTML). */
@@ -43,6 +44,7 @@ export class ExecTeamService {
     private personModel: typeof Person,
     private readonly storageService: StorageService,
     private readonly logger: PinoLogger,
+    private readonly indexingService: IndexingService,
   ) {
     this.logger.setContext(ExecTeamService.name)
   }
@@ -143,7 +145,13 @@ export class ExecTeamService {
     // Deduplicate by personId, prefer the current-term entry when the same
     // person appears in both terms
     const seenPersonIds = new Set<string>()
-    const results: { id: string; firstName: string; lastName: string; termLabel: string; isCurrent: boolean }[] = []
+    const results: {
+      id: string
+      firstName: string
+      lastName: string
+      termLabel: string
+      isCurrent: boolean
+    }[] = []
 
     // Process current-term assignments first so dedup retains them
     const currentFirst = [...assignments].sort((a, b) => {
@@ -157,7 +165,8 @@ export class ExecTeamService {
       if (!person || seenPersonIds.has(person.id)) continue
       seenPersonIds.add(person.id)
       const term = a.execTerm as ExecTerm
-      const termLabel = term.label ?? `${term.season.charAt(0).toUpperCase() + term.season.slice(1)} ${term.year}`
+      const termLabel =
+        term.label ?? `${term.season.charAt(0).toUpperCase() + term.season.slice(1)} ${term.year}`
       const isCurrentTerm = currentTerm ? term.id === currentTerm.id : false
       results.push({
         id: person.id,
@@ -302,6 +311,7 @@ export class ExecTeamService {
       isCurrent: !!dto.isCurrent,
     })
     this.logger.info('Created exec term', { id: term.id })
+    void this.indexingService.reindexSource('exec_team')
     return this.toTermDto(term)
   }
 
@@ -322,6 +332,7 @@ export class ExecTeamService {
     }
 
     await term.save()
+    void this.indexingService.reindexSource('exec_team')
     return this.toTermDto(term)
   }
 
@@ -333,6 +344,7 @@ export class ExecTeamService {
     await this.execAssignmentModel.destroy({ where: { execTermId: id } })
     await term.destroy()
     this.logger.info('Deleted exec term', { id })
+    void this.indexingService.reindexSource('exec_team')
   }
 
   async replaceRoster(termId: string, dto: ReplaceExecRosterDto): Promise<ExecRosterResponseDto> {
@@ -394,6 +406,7 @@ export class ExecTeamService {
     })
 
     this.logger.info('Replaced exec roster', { termId })
+    void this.indexingService.reindexSource('exec_team')
     return this.getRosterForTerm(termId)
   }
 
@@ -453,7 +466,7 @@ export class ExecTeamService {
       throw new BadRequestException('Unknown executive position')
     }
 
-    return this.execTermModel.sequelize!.transaction(async (transaction) => {
+    const result = await this.execTermModel.sequelize!.transaction(async (transaction) => {
       const term = await this.findOrCreateTermForSelfAssignment(dto.year, dto.season, transaction)
 
       let assignment = await this.execAssignmentModel.findOne({
@@ -495,6 +508,9 @@ export class ExecTeamService {
         position: this.toPositionDto(position),
       }
     })
+
+    void this.indexingService.reindexSource('exec_team')
+    return result
   }
 
   /**
@@ -534,5 +550,6 @@ export class ExecTeamService {
       termId: term.id,
       positionId: dto.positionId,
     })
+    void this.indexingService.reindexSource('exec_team')
   }
 }
