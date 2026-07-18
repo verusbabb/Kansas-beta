@@ -13,11 +13,7 @@ import { BaseEntity } from './base.entity'
 import { User } from './user.entity'
 
 export type EmailAudienceType =
-  | 'everyone'
-  | 'all_members'
-  | 'all_parents'
-  | 'class_years'
-  | 'custom'
+  'everyone' | 'all_members' | 'all_parents' | 'class_years' | 'custom'
 
 export type EmailCampaignStatus = 'draft' | 'sent'
 

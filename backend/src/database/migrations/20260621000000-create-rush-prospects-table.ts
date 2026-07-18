@@ -84,7 +84,14 @@ export async function up(queryInterface: QueryInterface): Promise<void> {
       allowNull: true,
     },
     legacyRelationship: {
-      type: DataTypes.ENUM('father', 'grandfather', 'great_grandfather', 'uncle', 'brother', 'cousin'),
+      type: DataTypes.ENUM(
+        'father',
+        'grandfather',
+        'great_grandfather',
+        'uncle',
+        'brother',
+        'cousin',
+      ),
       allowNull: true,
     },
     referralSource: {

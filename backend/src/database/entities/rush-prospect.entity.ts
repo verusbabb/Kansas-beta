@@ -28,7 +28,8 @@ export type PipelineStage =
 
 export type ClassYear = 'freshman' | 'sophomore' | 'junior' | 'senior' | 'other'
 export type EnrollmentSemester = 'fall' | 'spring'
-export type LegacyRelationship = 'father' | 'grandfather' | 'great_grandfather' | 'uncle' | 'brother' | 'cousin'
+export type LegacyRelationship =
+  'father' | 'grandfather' | 'great_grandfather' | 'uncle' | 'brother' | 'cousin'
 
 @Table({
   tableName: 'rush_prospects',

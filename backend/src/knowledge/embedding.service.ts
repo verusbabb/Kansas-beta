@@ -28,7 +28,9 @@ export class EmbeddingService {
    */
   async embed(text: string): Promise<number[]> {
     if (!this.genAI) {
-      throw new ServiceUnavailableException('Embedding service not configured (missing GEMINI_API_KEY)')
+      throw new ServiceUnavailableException(
+        'Embedding service not configured (missing GEMINI_API_KEY)',
+      )
     }
 
     const response = await this.genAI.models.embedContent({
@@ -53,7 +55,9 @@ export class EmbeddingService {
   async embedBatch(texts: string[]): Promise<(number[] | null)[]> {
     if (!texts.length) return []
     if (!this.genAI) {
-      throw new ServiceUnavailableException('Embedding service not configured (missing GEMINI_API_KEY)')
+      throw new ServiceUnavailableException(
+        'Embedding service not configured (missing GEMINI_API_KEY)',
+      )
     }
 
     const CONCURRENCY = 10

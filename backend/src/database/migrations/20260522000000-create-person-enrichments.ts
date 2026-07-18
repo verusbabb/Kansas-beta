@@ -74,6 +74,6 @@ export async function up(queryInterface: QueryInterface): Promise<void> {
 export async function down(queryInterface: QueryInterface): Promise<void> {
   await queryInterface.dropTable('person_enrichments')
   await queryInterface.sequelize.query(
-    "DROP TYPE IF EXISTS enum_person_enrichments_source; DROP TYPE IF EXISTS enum_person_enrichments_confidence;",
+    'DROP TYPE IF EXISTS enum_person_enrichments_source; DROP TYPE IF EXISTS enum_person_enrichments_confidence;',
   )
 }

@@ -17,7 +17,8 @@ export class RushProspectResponseDto extends RushProspectSummaryDto {
   /** Resolved full name from the people table when legacyRelativePersonId is set */
   @ApiProperty({ nullable: true }) legacyRelativeFullName!: string | null
   @ApiProperty({ nullable: true }) referralSource!: string | null
-  @ApiProperty({ type: [RushProspectActivityResponseDto] }) activities!: RushProspectActivityResponseDto[]
+  @ApiProperty({ type: [RushProspectActivityResponseDto] })
+  activities!: RushProspectActivityResponseDto[]
 }
 
 export class MemberLegacySearchResultDto {

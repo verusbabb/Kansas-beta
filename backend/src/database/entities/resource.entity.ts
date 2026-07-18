@@ -1,12 +1,4 @@
-import {
-  Table,
-  Column,
-  DataType,
-  PrimaryKey,
-  Default,
-  Index,
-  HasMany,
-} from 'sequelize-typescript'
+import { Table, Column, DataType, PrimaryKey, Default, Index, HasMany } from 'sequelize-typescript'
 import { BaseEntity } from './base.entity'
 import { v4 as uuidv4 } from 'uuid'
 import { ResourceVersion } from './resource-version.entity'
@@ -43,7 +35,12 @@ export class Resource extends BaseEntity {
 
   @Index
   @Column({
-    type: DataType.ENUM(ResourceTag.LEGAL, ResourceTag.INSURANCE, ResourceTag.NATIONAL, ResourceTag.OTHER),
+    type: DataType.ENUM(
+      ResourceTag.LEGAL,
+      ResourceTag.INSURANCE,
+      ResourceTag.NATIONAL,
+      ResourceTag.OTHER,
+    ),
     allowNull: false,
   })
   tag!: ResourceTag

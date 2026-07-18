@@ -204,7 +204,8 @@ export class UsersController {
   @ApiOperation({ summary: 'Resend invite / password-reset email to a user (admin only)' })
   @ApiResponse({
     status: HttpStatus.OK,
-    description: 'Returns whether the invite email was sent. Google-only users cannot receive a password reset email.',
+    description:
+      'Returns whether the invite email was sent. Google-only users cannot receive a password reset email.',
     schema: {
       type: 'object',
       properties: {

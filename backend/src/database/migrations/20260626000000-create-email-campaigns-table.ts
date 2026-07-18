@@ -17,13 +17,7 @@ export async function up(queryInterface: QueryInterface): Promise<void> {
       allowNull: false,
     },
     audienceType: {
-      type: DataTypes.ENUM(
-        'everyone',
-        'all_members',
-        'all_parents',
-        'class_years',
-        'custom',
-      ),
+      type: DataTypes.ENUM('everyone', 'all_members', 'all_parents', 'class_years', 'custom'),
       allowNull: false,
     },
     // Array of pledge class years (integers) — only for audienceType 'class_years'

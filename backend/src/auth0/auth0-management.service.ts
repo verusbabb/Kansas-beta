@@ -152,9 +152,7 @@ export class Auth0ManagementService {
    * cannot receive a password reset email — the caller is informed via the
    * returned result rather than silently doing nothing.
    */
-  async resendPasswordResetEmail(
-    email: string,
-  ): Promise<{ sent: boolean; reason?: string }> {
+  async resendPasswordResetEmail(email: string): Promise<{ sent: boolean; reason?: string }> {
     if (!this.client) {
       await this.sendPasswordResetEmail(email)
       return { sent: true }
@@ -176,7 +174,8 @@ export class Auth0ManagementService {
         // Social-only user (e.g. Google) — password reset email won't reach them
         return {
           sent: false,
-          reason: 'This user has logged in with Google and does not have a password-based account. They can continue to sign in with Google.',
+          reason:
+            'This user has logged in with Google and does not have a password-based account. They can continue to sign in with Google.',
         }
       }
 

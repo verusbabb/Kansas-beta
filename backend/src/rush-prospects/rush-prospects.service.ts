@@ -142,7 +142,11 @@ export class RushProspectsService {
 
   // ── Admin: list prospects ────────────────────────────────────────────────
 
-  async findAll(rushYear: number, stage?: string, search?: string): Promise<RushProspectSummaryDto[]> {
+  async findAll(
+    rushYear: number,
+    stage?: string,
+    search?: string,
+  ): Promise<RushProspectSummaryDto[]> {
     const where: Record<string, unknown> = { rushYear }
     if (stage) where['pipelineStage'] = stage
     if (search) {
@@ -190,7 +194,12 @@ export class RushProspectsService {
           as: 'activities',
           include: [
             { model: RushEvent, as: 'rushEvent', attributes: ['id', 'title'], required: false },
-            { model: User, as: 'createdBy', attributes: ['id', 'firstName', 'lastName'], required: false },
+            {
+              model: User,
+              as: 'createdBy',
+              attributes: ['id', 'firstName', 'lastName'],
+              required: false,
+            },
           ],
           separate: true,
           order: [['createdAt', 'DESC']],
@@ -217,7 +226,11 @@ export class RushProspectsService {
 
   // ── Admin: update prospect ───────────────────────────────────────────────
 
-  async update(id: string, dto: UpdateRushProspectDto, requestingUser: User): Promise<RushProspectResponseDto> {
+  async update(
+    id: string,
+    dto: UpdateRushProspectDto,
+    requestingUser: User,
+  ): Promise<RushProspectResponseDto> {
     const prospect = await this.prospectModel.findByPk(id)
     if (!prospect) throw new NotFoundException(`Prospect ${id} not found`)
 
@@ -237,12 +250,20 @@ export class RushProspectsService {
       ...(dto.gpa !== undefined && { gpa: dto.gpa }),
       ...(dto.actScore !== undefined && { actScore: dto.actScore }),
       ...(dto.satScore !== undefined && { satScore: dto.satScore }),
-      ...(dto.sportsActivities !== undefined && { sportsActivities: dto.sportsActivities?.trim() ?? null }),
+      ...(dto.sportsActivities !== undefined && {
+        sportsActivities: dto.sportsActivities?.trim() ?? null,
+      }),
       ...(dto.honorsAwards !== undefined && { honorsAwards: dto.honorsAwards?.trim() ?? null }),
-      ...(dto.legacyRelativePersonId !== undefined && { legacyRelativePersonId: dto.legacyRelativePersonId }),
-      ...(dto.legacyRelativeName !== undefined && { legacyRelativeName: dto.legacyRelativeName?.trim() ?? null }),
+      ...(dto.legacyRelativePersonId !== undefined && {
+        legacyRelativePersonId: dto.legacyRelativePersonId,
+      }),
+      ...(dto.legacyRelativeName !== undefined && {
+        legacyRelativeName: dto.legacyRelativeName?.trim() ?? null,
+      }),
       ...(dto.legacyRelationship !== undefined && { legacyRelationship: dto.legacyRelationship }),
-      ...(dto.referralSource !== undefined && { referralSource: dto.referralSource?.trim() ?? null }),
+      ...(dto.referralSource !== undefined && {
+        referralSource: dto.referralSource?.trim() ?? null,
+      }),
       ...(dto.pipelineStage !== undefined && { pipelineStage: dto.pipelineStage }),
       ...(dto.assignedToPersonId !== undefined && { assignedToPersonId: dto.assignedToPersonId }),
       ...(dto.internalRating !== undefined && { internalRating: dto.internalRating }),
@@ -284,7 +305,12 @@ export class RushProspectsService {
     const loaded = await this.activityModel.findByPk(activity.id, {
       include: [
         { model: RushEvent, as: 'rushEvent', attributes: ['id', 'title'], required: false },
-        { model: User, as: 'createdBy', attributes: ['id', 'firstName', 'lastName'], required: false },
+        {
+          model: User,
+          as: 'createdBy',
+          attributes: ['id', 'firstName', 'lastName'],
+          required: false,
+        },
       ],
     })
 
@@ -303,7 +329,8 @@ export class RushProspectsService {
 
   private toSummaryDto(p: RushProspect): RushProspectSummaryDto {
     const lastStageChange = (p.activities ?? []).find((a) => a.activityType === 'stage_change')
-    const assignedPerson = p.assignedToPerson as (Person & { firstName: string; lastName: string }) | null
+    const assignedPerson = p.assignedToPerson as
+      (Person & { firstName: string; lastName: string }) | null
     return {
       id: p.id,
       rushYear: p.rushYear,
@@ -327,7 +354,8 @@ export class RushProspectsService {
   }
 
   private toResponseDto(p: RushProspect): RushProspectResponseDto {
-    const legacyPerson = p.legacyRelativePerson as (Person & { firstName: string; lastName: string }) | null
+    const legacyPerson = p.legacyRelativePerson as
+      (Person & { firstName: string; lastName: string }) | null
     // assignedToPerson is already resolved in toSummaryDto via p.assignedToPerson
     return {
       ...this.toSummaryDto(p),

@@ -53,7 +53,9 @@ export class UserLookupGuard implements CanActivate {
     if (!email) {
       // Email should always be present via custom claim from Auth0 Action
       // If missing, it's a configuration issue
-      this.logger.error(`Email not found in token auth0Id=${auth0Id} hasCustomClaim=${!!jwtPayload['https://kansas-beta-api/email']} hasStandardClaim=${!!jwtPayload.email}`)
+      this.logger.error(
+        `Email not found in token auth0Id=${auth0Id} hasCustomClaim=${!!jwtPayload['https://kansas-beta-api/email']} hasStandardClaim=${!!jwtPayload.email}`,
+      )
       throw new ForbiddenException(
         'Invalid token: missing email claim. Please ensure Auth0 Action is configured correctly.',
       )
@@ -81,7 +83,9 @@ export class UserLookupGuard implements CanActivate {
         // Update auth0Id whenever the identity changes (e.g. account linking transition,
         // or user switching between Google and password before the Post-Login action runs).
         if (user.auth0Id !== auth0Id) {
-          this.logger.log(`Updating stored auth0Id for user matched by email=${email} old=${user.auth0Id} new=${auth0Id}`)
+          this.logger.log(
+            `Updating stored auth0Id for user matched by email=${email} old=${user.auth0Id} new=${auth0Id}`,
+          )
           user.auth0Id = auth0Id
           await user.save()
         }
@@ -120,6 +124,8 @@ export class UserLookupGuard implements CanActivate {
     if (matches.length !== 1) return
     user.personId = matches[0].id
     await user.save()
-    this.logger.log(`Linked user to directory person by email userId=${user.id} personId=${user.personId}`)
+    this.logger.log(
+      `Linked user to directory person by email userId=${user.id} personId=${user.personId}`,
+    )
   }
 }

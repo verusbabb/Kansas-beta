@@ -92,7 +92,9 @@ export class RushProspectsController {
   @UseGuards(JwtAuthGuard, UserLookupGuard, RolesGuard)
   @Roles(UserRole.MEMBER, UserRole.RUSH_CHAIR, UserRole.EDITOR, UserRole.ADMIN)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Get prospect detail with activity log (member/rush chair/editor/admin)' })
+  @ApiOperation({
+    summary: 'Get prospect detail with activity log (member/rush chair/editor/admin)',
+  })
   @ApiParam({ name: 'id', type: 'string' })
   @ApiResponse({ status: HttpStatus.OK, type: RushProspectResponseDto })
   async findOne(@Param('id') id: string): Promise<RushProspectResponseDto> {
@@ -104,7 +106,9 @@ export class RushProspectsController {
   @UseGuards(JwtAuthGuard, UserLookupGuard, RolesGuard)
   @Roles(UserRole.RUSH_CHAIR, UserRole.EDITOR, UserRole.ADMIN)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Update prospect (rush chair/editor/admin). Stage changes are auto-logged.' })
+  @ApiOperation({
+    summary: 'Update prospect (rush chair/editor/admin). Stage changes are auto-logged.',
+  })
   @ApiParam({ name: 'id', type: 'string' })
   @ApiResponse({ status: HttpStatus.OK, type: RushProspectResponseDto })
   async update(

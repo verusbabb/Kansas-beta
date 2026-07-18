@@ -7,10 +7,7 @@ import { Person } from '../database/entities/person.entity'
 import { AuthModule } from '../auth/auth.module'
 
 @Module({
-  imports: [
-    SequelizeModule.forFeature([User, Person]),
-    AuthModule,
-  ],
+  imports: [SequelizeModule.forFeature([User, Person]), AuthModule],
   controllers: [UsersController],
   providers: [UsersService],
   exports: [UsersService],

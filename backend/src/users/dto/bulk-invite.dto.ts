@@ -11,8 +11,7 @@ export class BulkInviteDto {
   personIds!: string[]
 
   @ApiPropertyOptional({
-    description:
-      'When true, returns counts without creating any users or sending any emails.',
+    description: 'When true, returns counts without creating any users or sending any emails.',
     default: false,
   })
   @IsOptional()

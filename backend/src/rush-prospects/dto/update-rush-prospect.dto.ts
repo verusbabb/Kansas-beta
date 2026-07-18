@@ -127,10 +127,32 @@ export class UpdateRushProspectDto {
 
   @ApiProperty({
     required: false,
-    enum: ['inquiry', 'screened', 'active', 'priority', 'bid_pending', 'bid_extended', 'bid_accepted', 'bid_declined', 'no_bid', 'withdrawn'],
+    enum: [
+      'inquiry',
+      'screened',
+      'active',
+      'priority',
+      'bid_pending',
+      'bid_extended',
+      'bid_accepted',
+      'bid_declined',
+      'no_bid',
+      'withdrawn',
+    ],
   })
   @IsOptional()
-  @IsEnum(['inquiry', 'screened', 'active', 'priority', 'bid_pending', 'bid_extended', 'bid_accepted', 'bid_declined', 'no_bid', 'withdrawn'])
+  @IsEnum([
+    'inquiry',
+    'screened',
+    'active',
+    'priority',
+    'bid_pending',
+    'bid_extended',
+    'bid_accepted',
+    'bid_declined',
+    'no_bid',
+    'withdrawn',
+  ])
   pipelineStage?: string
 
   @ApiProperty({ required: false })

@@ -151,11 +151,7 @@ export class ResourcesService {
       if (!version) throw new NotFoundException(`Resource ${id} has no files`)
     }
 
-    return this.storageService.getDownloadSignedUrl(
-      version.filePath,
-      version.originalFilename,
-      60,
-    )
+    return this.storageService.getDownloadSignedUrl(version.filePath, version.originalFilename, 60)
   }
 
   async remove(id: string): Promise<void> {

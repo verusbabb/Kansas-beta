@@ -35,7 +35,10 @@ export class CreateRushProspectDto {
   @MaxLength(30)
   phone!: string
 
-  @ApiProperty({ example: 'freshman', enum: ['freshman', 'sophomore', 'junior', 'senior', 'other'] })
+  @ApiProperty({
+    example: 'freshman',
+    enum: ['freshman', 'sophomore', 'junior', 'senior', 'other'],
+  })
   @IsEnum(['freshman', 'sophomore', 'junior', 'senior', 'other'])
   classYear!: string
 
