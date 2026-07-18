@@ -41,7 +41,7 @@ steps:
   # Uses ts-node to run TypeScript migrations directly (no build needed)
   # DATABASE_PASSWORD is injected from Secret Manager via secretEnv
   # Uses Cloud SQL Proxy for TCP connection (more reliable in Cloud Build)
-  - name: 'node:20'
+  - name: 'node:22'
     entrypoint: 'bash'
     args:
       - '-c'
@@ -103,7 +103,7 @@ steps:
   # Uses ts-node to run TypeScript seeders directly (no build needed)
   # DATABASE_PASSWORD is injected from Secret Manager via secretEnv
   # Uses Cloud SQL Proxy for TCP connection (more reliable in Cloud Build)
-  - name: 'node:20'
+  - name: 'node:22'
     entrypoint: 'bash'
     args:
       - '-c'
