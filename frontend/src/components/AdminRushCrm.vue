@@ -36,7 +36,7 @@
           'flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium border transition-colors',
           stageFilter === stat.stage
             ? 'bg-[#6F8FAF] text-white border-[#6F8FAF]'
-            : 'bg-surface-0 text-surface-700 border-surface-200 hover:border-[#6F8FAF] hover:text-[#6F8FAF]',
+            : 'bg-surface-0 text-surface-700 border-surface-200 hover:border-[#6F8FAF] hover:text-[#6F8FAF]'
         ]"
         @click="toggleStageFilter(stat.stage)"
       >
@@ -44,7 +44,9 @@
         <span
           :class="[
             'rounded-full px-1.5 py-0.5 text-xs font-bold',
-            stageFilter === stat.stage ? 'bg-white text-[#6F8FAF]' : 'bg-surface-100 text-surface-600',
+            stageFilter === stat.stage
+              ? 'bg-white text-[#6F8FAF]'
+              : 'bg-surface-100 text-surface-600'
           ]"
         >
           {{ stat.count }}
@@ -56,11 +58,7 @@
     <div class="flex flex-col sm:flex-row gap-3">
       <IconField class="flex-1">
         <InputIcon class="pi pi-search" />
-        <InputText
-          v-model="searchQuery"
-          placeholder="Search by name or email…"
-          class="w-full"
-        />
+        <InputText v-model="searchQuery" placeholder="Search by name or email…" class="w-full" />
       </IconField>
       <Select
         v-model="stageFilter"
@@ -185,7 +183,12 @@
             <i
               v-for="n in 5"
               :key="n"
-              :class="['pi text-sm', n <= data.internalRating ? 'pi-star-fill text-yellow-400' : 'pi-star text-surface-300']"
+              :class="[
+                'pi text-sm',
+                n <= data.internalRating
+                  ? 'pi-star-fill text-yellow-400'
+                  : 'pi-star text-surface-300'
+              ]"
             />
           </span>
           <span v-else class="text-surface-400">—</span>
@@ -194,7 +197,9 @@
 
       <Column field="assignedToPersonName" header="Assigned To" sortable>
         <template #body="{ data }">
-          <span v-if="data.assignedToPersonName" class="text-sm">{{ data.assignedToPersonName }}</span>
+          <span v-if="data.assignedToPersonName" class="text-sm">{{
+            data.assignedToPersonName
+          }}</span>
           <span v-else class="text-surface-400">—</span>
         </template>
       </Column>
@@ -234,7 +239,7 @@
     <Dialog
       v-model:visible="detailVisible"
       modal
-      :style="{ width: '64rem', maxWidth: '95vw' }"
+      :style="{ width: '76rem', maxWidth: '95vw' }"
       :header="`${currentProspect?.firstName ?? ''} ${currentProspect?.lastName ?? ''}`"
       :closable="true"
       @hide="onDetailClose"
@@ -243,276 +248,632 @@
         <ProgressSpinner style="width: 48px; height: 48px" />
       </div>
 
-      <div v-else-if="fullProspect" class="flex flex-col lg:flex-row gap-6">
-        <!-- Left: editable info -->
-        <div class="flex-1 flex flex-col gap-5 min-w-0">
-          <h3 class="font-semibold text-surface-700 border-b border-surface-100 pb-2">Prospect Info</h3>
+      <div v-else-if="fullProspect" class="flex flex-col gap-5">
+        <!-- Summary strip (read-only glance) -->
+        <div class="flex flex-wrap items-center gap-4 pb-4 border-b border-surface-100">
+          <!-- Initials avatar -->
+          <div
+            class="h-12 w-12 rounded-full bg-gradient-to-br from-[#6F8FAF] to-[#4d6b8a] text-white flex items-center justify-center font-bold text-lg shrink-0 shadow-sm"
+          >
+            {{ initials }}
+          </div>
 
-          <div class="grid grid-cols-2 gap-4">
-            <div class="flex flex-col gap-1">
-              <label class="text-xs font-semibold text-surface-500 uppercase tracking-wide">First Name</label>
-              <InputText v-model="editForm.firstName" :disabled="!canEditProspects" class="w-full" />
+          <!-- Status + meta -->
+          <div class="flex flex-col gap-2 min-w-0">
+            <div class="flex items-center gap-2 flex-wrap">
+              <Tag
+                :value="stageLabelMap[fullProspect.pipelineStage]"
+                :severity="stageSeverityMap[fullProspect.pipelineStage]"
+              />
+              <div
+                class="flex items-center gap-0.5 bg-surface-50 rounded-full px-2 py-1 border border-surface-100"
+              >
+                <i
+                  v-for="n in 5"
+                  :key="n"
+                  :class="[
+                    'pi text-sm',
+                    (fullProspect.internalRating ?? 0) >= n
+                      ? 'pi-star-fill text-yellow-400'
+                      : 'pi-star text-surface-300'
+                  ]"
+                />
+              </div>
             </div>
-            <div class="flex flex-col gap-1">
-              <label class="text-xs font-semibold text-surface-500 uppercase tracking-wide">Last Name</label>
-              <InputText v-model="editForm.lastName" :disabled="!canEditProspects" class="w-full" />
+            <div class="flex items-center gap-2 flex-wrap">
+              <span
+                v-tooltip.bottom="fullProspect.applicationSubmittedAt ? 'Application received' : 'Added to pipeline'"
+                class="inline-flex items-center gap-1.5 text-xs font-medium text-surface-600 bg-surface-100 rounded-full px-2.5 py-1"
+              >
+                <i class="pi pi-calendar-plus text-[#6F8FAF]" />
+                Applied {{ formatDateShort(fullProspect.applicationSubmittedAt ?? fullProspect.createdAt) }}
+              </span>
+              <span
+                v-if="fullProspect.hometown"
+                class="inline-flex items-center gap-1.5 text-xs font-medium text-surface-600 bg-surface-100 rounded-full px-2.5 py-1"
+              >
+                <i class="pi pi-map-marker text-[#6F8FAF]" /> {{ fullProspect.hometown }}
+              </span>
+              <span
+                v-if="fullProspect.gpa != null"
+                class="inline-flex items-center gap-1.5 text-xs font-medium text-surface-700 bg-surface-100 rounded-full px-2.5 py-1"
+              >
+                <span class="text-surface-400 font-semibold uppercase tracking-wide">GPA</span>
+                {{ fullProspect.gpa }}
+              </span>
+              <span
+                v-if="fullProspect.actScore != null"
+                class="inline-flex items-center gap-1.5 text-xs font-medium text-surface-700 bg-surface-100 rounded-full px-2.5 py-1"
+              >
+                <span class="text-surface-400 font-semibold uppercase tracking-wide">ACT</span>
+                {{ fullProspect.actScore }}
+              </span>
+              <span
+                v-if="fullProspect.satScore != null"
+                class="inline-flex items-center gap-1.5 text-xs font-medium text-surface-700 bg-surface-100 rounded-full px-2.5 py-1"
+              >
+                <span class="text-surface-400 font-semibold uppercase tracking-wide">SAT</span>
+                {{ fullProspect.satScore }}
+              </span>
             </div>
           </div>
 
-          <div class="flex flex-col gap-1">
-            <label class="text-xs font-semibold text-surface-500 uppercase tracking-wide">Email</label>
+          <!-- Contact actions -->
+          <div class="flex items-center gap-2 ml-auto shrink-0">
             <a
-              :href="`mailto:${fullProspect.email}?subject=Kansas Beta Rush&body=Hi ${fullProspect.firstName},%0A%0A`"
+              :href="mailtoLink"
               target="_blank"
               rel="noopener noreferrer"
-              class="text-[#6F8FAF] hover:underline text-sm"
+              v-tooltip.bottom="'Email'"
+              class="w-9 h-9 flex items-center justify-center rounded-full border border-surface-200 text-[#6F8FAF] hover:bg-[#6F8FAF] hover:text-white hover:border-[#6F8FAF] transition-colors"
             >
-              {{ fullProspect.email }}
+              <i class="pi pi-envelope" />
             </a>
-          </div>
-
-          <div class="grid grid-cols-2 gap-4">
-            <div class="flex flex-col gap-1">
-              <label class="text-xs font-semibold text-surface-500 uppercase tracking-wide">Phone</label>
-              <InputText v-model="editForm.phone" :disabled="!canEditProspects" class="w-full" />
-            </div>
-            <div class="flex flex-col gap-1">
-              <label class="text-xs font-semibold text-surface-500 uppercase tracking-wide">Class Year</label>
-              <Select
-                v-model="editForm.classYear"
-                :options="classYearOptions"
-                option-label="label"
-                option-value="value"
-                placeholder="Select"
-                :disabled="!canEditProspects"
-                class="w-full"
-              />
-            </div>
-          </div>
-
-          <div class="grid grid-cols-2 gap-4">
-            <div class="flex flex-col gap-1">
-              <label class="text-xs font-semibold text-surface-500 uppercase tracking-wide">Enrollment Semester</label>
-              <Select
-                v-model="editForm.enrollmentSemester"
-                :options="semesterOptions"
-                option-label="label"
-                option-value="value"
-                placeholder="Semester"
-                :disabled="!canEditProspects"
-                class="w-full"
-              />
-            </div>
-            <div class="flex flex-col gap-1">
-              <label class="text-xs font-semibold text-surface-500 uppercase tracking-wide">Enrollment Year</label>
-              <Select
-                v-model="editForm.enrollmentYear"
-                :options="enrollmentYearOptions"
-                option-label="label"
-                option-value="value"
-                placeholder="Year"
-                :disabled="!canEditProspects"
-                class="w-full"
-              />
-            </div>
-          </div>
-
-          <div class="grid grid-cols-2 gap-4">
-            <div class="flex flex-col gap-1">
-              <label class="text-xs font-semibold text-surface-500 uppercase tracking-wide">Hometown</label>
-              <InputText v-model="editForm.hometown" :disabled="!canEditProspects" class="w-full" />
-            </div>
-            <div class="flex flex-col gap-1">
-              <label class="text-xs font-semibold text-surface-500 uppercase tracking-wide">High School</label>
-              <InputText v-model="editForm.highSchool" :disabled="!canEditProspects" class="w-full" />
-            </div>
-          </div>
-
-          <div class="grid grid-cols-3 gap-4">
-            <div class="flex flex-col gap-1">
-              <label class="text-xs font-semibold text-surface-500 uppercase tracking-wide">GPA</label>
-              <InputText v-model="editForm.gpaStr" placeholder="3.85" :disabled="!canEditProspects" class="w-full" />
-            </div>
-            <div class="flex flex-col gap-1">
-              <label class="text-xs font-semibold text-surface-500 uppercase tracking-wide">ACT</label>
-              <InputText v-model="editForm.actScoreStr" placeholder="32" :disabled="!canEditProspects" class="w-full" />
-            </div>
-            <div class="flex flex-col gap-1">
-              <label class="text-xs font-semibold text-surface-500 uppercase tracking-wide">SAT</label>
-              <InputText v-model="editForm.satScoreStr" placeholder="1420" :disabled="!canEditProspects" class="w-full" />
-            </div>
-          </div>
-
-          <div class="flex flex-col gap-1">
-            <label class="text-xs font-semibold text-surface-500 uppercase tracking-wide">Major</label>
-            <InputText v-model="editForm.major" :disabled="!canEditProspects" class="w-full" />
-          </div>
-
-          <!-- Pipeline stage -->
-          <div class="flex flex-col gap-1">
-            <label class="text-xs font-semibold text-surface-500 uppercase tracking-wide">Pipeline Stage</label>
-            <Select
-              v-model="editForm.pipelineStage"
-              :options="pipelineStageOptions"
-              option-label="label"
-              option-value="value"
-              :disabled="!canEditProspects"
-              class="w-full"
+            <a
+              v-if="fullProspect.phone"
+              :href="`tel:${fullProspect.phone}`"
+              v-tooltip.bottom="fullProspect.phone"
+              class="w-9 h-9 flex items-center justify-center rounded-full border border-surface-200 text-[#6F8FAF] hover:bg-[#6F8FAF] hover:text-white hover:border-[#6F8FAF] transition-colors"
             >
-              <template #option="{ option }">
-                <div class="flex flex-col py-0.5">
-                  <span class="font-medium">{{ option.label }}</span>
-                  <span class="text-xs text-surface-500 leading-snug max-w-xs">
-                    {{ option.description }}
-                  </span>
-                </div>
-              </template>
-            </Select>
-          </div>
-
-          <!-- Assigned Rush Chair -->
-          <div class="flex flex-col gap-1">
-            <label class="text-xs font-semibold text-surface-500 uppercase tracking-wide">Assigned Rush Chair</label>
-            <Select
-              v-if="canEditProspects"
-              v-model="editForm.assignedToPersonId"
-              :options="rushChairOptions"
-              option-label="label"
-              option-value="value"
-              placeholder="Unassigned"
-              show-clear
-              class="w-full"
-            >
-              <template #option="{ option }">
-                <div class="flex flex-col py-0.5">
-                  <span class="font-medium">{{ option.label }}</span>
-                  <span class="text-xs text-surface-500 leading-snug">{{ option.termLabel }}</span>
-                </div>
-              </template>
-            </Select>
-            <p v-else class="text-sm text-surface-700">
-              {{ fullProspect.assignedToPersonName ?? 'Unassigned' }}
-            </p>
-          </div>
-
-          <!-- Internal rating -->
-          <div class="flex flex-col gap-1">
-            <label class="text-xs font-semibold text-surface-500 uppercase tracking-wide">Internal Rating</label>
-            <div class="flex gap-2">
-              <button
-                v-for="n in 5"
-                :key="n"
-                type="button"
-                class="text-2xl transition-colors"
-                :class="canEditProspects ? '' : 'cursor-default'"
-                :disabled="!canEditProspects"
-                @click="canEditProspects && (editForm.internalRating = editForm.internalRating === n ? null : n)"
-              >
-                <i :class="['pi', (editForm.internalRating ?? 0) >= n ? 'pi-star-fill text-yellow-400' : 'pi-star text-surface-300']" />
-              </button>
-            </div>
-          </div>
-
-          <!-- Legacy -->
-          <div v-if="fullProspect.legacyRelativeFullName || fullProspect.legacyRelativeName" class="flex flex-col gap-1">
-            <label class="text-xs font-semibold text-surface-500 uppercase tracking-wide">Alpha Nu Legacy</label>
-            <p class="text-sm text-surface-700">
-              {{ fullProspect.legacyRelativeFullName ?? fullProspect.legacyRelativeName }}
-              <span v-if="fullProspect.legacyRelationship" class="text-surface-500">
-                ({{ legacyRelationshipLabels[fullProspect.legacyRelationship] }})
-              </span>
-            </p>
-          </div>
-
-          <!-- Referral -->
-          <div v-if="fullProspect.referralSource" class="flex flex-col gap-1">
-            <label class="text-xs font-semibold text-surface-500 uppercase tracking-wide">Referral Source</label>
-            <p class="text-sm text-surface-700">{{ fullProspect.referralSource }}</p>
-          </div>
-
-          <!-- Save button -->
-          <div v-if="canEditProspects" class="flex justify-end pt-2 border-t border-surface-100">
-            <Button
-              label="Save Changes"
-              icon="pi pi-check"
-              :loading="saving"
-              class="bg-[#6F8FAF] hover:bg-[#5a7a9a] border-[#6F8FAF]"
-              @click="saveProspect"
-            />
+              <i class="pi pi-phone" />
+            </a>
           </div>
         </div>
 
-        <!-- Right: activity log -->
-        <div class="w-full lg:w-80 flex flex-col gap-4 min-w-0">
-          <h3 class="font-semibold text-surface-700 border-b border-surface-100 pb-2">Activity Log</h3>
+        <!-- Status / progress band -->
+        <div
+          class="relative overflow-hidden rounded-2xl border border-surface-200 bg-surface-0 shadow-md p-5 flex flex-col gap-5"
+        >
+          <span
+            class="pointer-events-none absolute inset-x-0 top-0 h-1.5 bg-gradient-to-r from-[#6F8FAF] via-[#9DB6CC] to-[#6F8FAF]"
+          />
 
-          <!-- Add note -->
-          <div v-if="canLogActivities" class="flex flex-col gap-2 p-3 bg-surface-50 rounded-lg">
-            <Textarea
-              v-model="newNote"
-              placeholder="Add a note, call log, or activity…"
-              rows="3"
-              class="w-full text-sm"
-              auto-resize
-            />
-            <div class="flex gap-2">
+          <!-- Pipeline stage (hero) -->
+          <div class="flex flex-col gap-3">
+            <div class="flex items-start justify-between gap-3">
+              <div class="flex flex-col gap-1 min-w-0">
+                <div class="flex items-center gap-2 flex-wrap">
+                  <span class="text-xl font-bold text-surface-900">
+                    {{ stageLabelMap[fullProspect.pipelineStage] }}
+                  </span>
+                  <Tag v-if="isTerminalStage" value="Off track" severity="secondary" class="text-xs" />
+                  <span
+                    v-else
+                    class="text-xs font-semibold text-[#6F8FAF] bg-[#6F8FAF]/10 rounded-full px-2 py-0.5"
+                  >
+                    Step {{ happyPathIndex + 1 }} of {{ happyPathStages.length }}
+                  </span>
+                </div>
+                <p class="text-xs text-surface-500 leading-snug">
+                  {{ stageDescriptionMap[fullProspect.pipelineStage] }}
+                </p>
+              </div>
+              <span
+                v-if="statusSavedField === 'stage'"
+                class="shrink-0 text-xs text-green-600 flex items-center gap-1"
+              >
+                <i class="pi pi-check" /> Saved
+              </span>
+              <i
+                v-else-if="statusSaving === 'stage'"
+                class="shrink-0 pi pi-spin pi-spinner text-surface-400 text-xs"
+              />
+            </div>
+
+            <!-- Happy-path stepper -->
+            <div class="flex items-center pt-1">
+              <template v-for="(s, i) in happyPathStages" :key="s">
+                <div
+                  v-tooltip.top="stageLabelMap[s]"
+                  :class="[
+                    'flex items-center justify-center rounded-full shrink-0 transition-all',
+                    i === happyPathIndex ? 'h-6 w-6' : 'h-5 w-5',
+                    stepClass(i),
+                  ]"
+                >
+                  <i v-if="i < happyPathIndex" class="pi pi-check text-[10px]" />
+                  <span v-else-if="i === happyPathIndex" class="h-2 w-2 rounded-full bg-white" />
+                </div>
+                <div
+                  v-if="i < happyPathStages.length - 1"
+                  :class="[
+                    'h-1 flex-1 rounded-full transition-colors',
+                    happyPathIndex > i ? 'bg-[#6F8FAF]' : 'bg-surface-200',
+                  ]"
+                />
+              </template>
+            </div>
+
+            <!-- Stage selector -->
+            <div class="flex items-center gap-2">
               <Select
-                v-model="newActivityType"
-                :options="manualActivityTypeOptions"
+                v-if="canEditProspects"
+                v-model="editForm.pipelineStage"
+                :options="pipelineStageOptions"
                 option-label="label"
                 option-value="value"
-                class="flex-1 text-sm"
-              />
-              <Button
-                label="Log"
-                icon="pi pi-plus"
-                size="small"
-                :loading="addingActivity"
-                :disabled="!newNote.trim()"
-                class="bg-[#6F8FAF] hover:bg-[#5a7a9a] border-[#6F8FAF]"
-                @click="logActivity"
+                class="flex-1"
+                v-tooltip.bottom="stageDescriptionMap[editForm.pipelineStage]"
+                @change="autoSaveStatus('stage', { pipelineStage: editForm.pipelineStage })"
+              >
+                <template #option="{ option }">
+                  <div class="flex flex-col py-0.5">
+                    <span class="font-medium">{{ option.label }}</span>
+                    <span class="text-xs text-surface-500 leading-snug max-w-xs">
+                      {{ option.description }}
+                    </span>
+                  </div>
+                </template>
+              </Select>
+              <Tag
+                v-else
+                :value="stageLabelMap[fullProspect.pipelineStage]"
+                :severity="stageSeverityMap[fullProspect.pipelineStage]"
               />
             </div>
           </div>
 
-          <!-- Activity list -->
-          <div class="flex flex-col gap-3 overflow-y-auto max-h-[480px] pr-1">
-            <div
-              v-for="activity in fullProspect.activities"
-              :key="activity.id"
-              class="flex gap-2.5 text-sm"
-            >
-              <div class="mt-0.5 shrink-0">
-                <i :class="[activityTypeIcons[activity.activityType], 'text-[#6F8FAF] text-base']" />
+          <!-- Rush chair + rating (stat tiles) -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div class="rounded-xl border border-surface-100 bg-surface-50 p-3 flex flex-col gap-1.5">
+              <div class="flex items-center justify-between">
+                <span
+                  class="text-xs font-semibold text-surface-500 uppercase tracking-wide flex items-center gap-1.5"
+                >
+                  <i class="pi pi-user-edit text-[#6F8FAF]" /> Rush Chair
+                </span>
+                <span
+                  v-if="statusSavedField === 'chair'"
+                  class="text-xs text-green-600 flex items-center gap-1"
+                >
+                  <i class="pi pi-check" /> Saved
+                </span>
+                <i
+                  v-else-if="statusSaving === 'chair'"
+                  class="pi pi-spin pi-spinner text-surface-400 text-xs"
+                />
               </div>
-              <div class="flex flex-col gap-0.5 min-w-0">
-                <div class="flex items-center gap-1.5 flex-wrap">
-                  <span class="font-medium text-surface-800">
-                    {{ activityTypeLabels[activity.activityType] }}
-                  </span>
-                  <span
-                    v-if="activity.activityType === 'stage_change' && activity.fromStage && activity.toStage"
-                    class="text-surface-500 text-xs"
-                  >
-                    {{ stageLabelMap[activity.fromStage] ?? activity.fromStage }}
-                    <i class="pi pi-arrow-right mx-1" />
-                    {{ stageLabelMap[activity.toStage] ?? activity.toStage }}
-                  </span>
-                </div>
-                <p v-if="activity.note" class="text-surface-600 break-words">{{ activity.note }}</p>
-                <p v-if="activity.rushEventTitle" class="text-surface-500 italic text-xs">
-                  {{ activity.rushEventTitle }}
-                </p>
-                <p class="text-surface-400 text-xs">
-                  {{ formatDate(activity.createdAt) }}
-                  <span v-if="activity.createdByName"> · {{ activity.createdByName }}</span>
-                </p>
+              <Select
+                v-if="canEditProspects"
+                v-model="editForm.assignedToPersonId"
+                :options="rushChairOptions"
+                option-label="label"
+                option-value="value"
+                placeholder="Unassigned"
+                show-clear
+                class="w-full"
+                @change="
+                  autoSaveStatus('chair', { assignedToPersonId: editForm.assignedToPersonId })
+                "
+              >
+                <template #option="{ option }">
+                  <div class="flex flex-col py-0.5">
+                    <span class="font-medium">{{ option.label }}</span>
+                    <span class="text-xs text-surface-500 leading-snug">{{
+                      option.termLabel
+                    }}</span>
+                  </div>
+                </template>
+              </Select>
+              <p v-else class="text-sm text-surface-700">
+                {{ fullProspect.assignedToPersonName ?? 'Unassigned' }}
+              </p>
+            </div>
+
+            <div class="rounded-xl border border-surface-100 bg-surface-50 p-3 flex flex-col gap-1.5">
+              <div class="flex items-center justify-between">
+                <span
+                  class="text-xs font-semibold text-surface-500 uppercase tracking-wide flex items-center gap-1.5"
+                >
+                  <i class="pi pi-star text-[#6F8FAF]" /> Internal Rating
+                </span>
+                <span
+                  v-if="statusSavedField === 'rating'"
+                  class="text-xs text-green-600 flex items-center gap-1"
+                >
+                  <i class="pi pi-check" /> Saved
+                </span>
+                <i
+                  v-else-if="statusSaving === 'rating'"
+                  class="pi pi-spin pi-spinner text-surface-400 text-xs"
+                />
+              </div>
+              <div class="flex gap-1.5">
+                <button
+                  v-for="n in 5"
+                  :key="n"
+                  type="button"
+                  class="text-2xl transition-transform hover:scale-110"
+                  :class="canEditProspects ? '' : 'cursor-default hover:scale-100'"
+                  :disabled="!canEditProspects"
+                  @click="setRating(n)"
+                >
+                  <i
+                    :class="[
+                      'pi',
+                      (editForm.internalRating ?? 0) >= n
+                        ? 'pi-star-fill text-yellow-400'
+                        : 'pi-star text-surface-300'
+                    ]"
+                  />
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Activity (dominant) + profile rail -->
+        <div class="flex flex-col lg:flex-row gap-6">
+          <!-- Activity -->
+          <div class="flex-1 flex flex-col gap-4 min-w-0">
+            <h3 class="font-semibold text-surface-700 border-b border-surface-100 pb-2">
+              Activity
+            </h3>
+
+            <!-- Composer -->
+            <div
+              v-if="canLogActivities"
+              class="flex flex-col gap-2 p-3 bg-surface-50 rounded-lg border border-surface-100"
+            >
+              <div class="flex flex-wrap gap-2">
+                <button
+                  v-for="opt in manualActivityTypeOptions"
+                  :key="opt.value"
+                  type="button"
+                  :class="[
+                    'flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium border transition-colors',
+                    newActivityType === opt.value
+                      ? 'bg-[#6F8FAF] text-white border-[#6F8FAF]'
+                      : 'bg-surface-0 text-surface-700 border-surface-200 hover:border-[#6F8FAF] hover:text-[#6F8FAF]'
+                  ]"
+                  @click="newActivityType = opt.value"
+                >
+                  <i :class="opt.icon" />
+                  {{ opt.label }}
+                </button>
+              </div>
+              <Textarea
+                v-model="newNote"
+                placeholder="Add a note, call log, or activity…"
+                rows="3"
+                class="w-full text-sm"
+                auto-resize
+              />
+              <div class="flex justify-end">
+                <Button
+                  label="Log"
+                  icon="pi pi-plus"
+                  size="small"
+                  :loading="addingActivity"
+                  :disabled="!newNote.trim()"
+                  class="bg-[#6F8FAF] hover:bg-[#5a7a9a] border-[#6F8FAF]"
+                  @click="logActivity"
+                />
               </div>
             </div>
 
-            <p v-if="fullProspect.activities.length === 0" class="text-surface-400 text-sm text-center py-4">
-              No activity yet.
-            </p>
+            <!-- Activity feed -->
+            <div class="flex flex-col gap-3 overflow-y-auto max-h-[520px] pr-1">
+              <div
+                v-for="activity in fullProspect.activities"
+                :key="activity.id"
+                class="flex gap-2.5 text-sm"
+              >
+                <div class="mt-0.5 shrink-0">
+                  <i
+                    :class="[activityTypeIcons[activity.activityType], 'text-[#6F8FAF] text-base']"
+                  />
+                </div>
+                <div class="flex flex-col gap-0.5 min-w-0">
+                  <div class="flex items-center gap-1.5 flex-wrap">
+                    <span class="font-medium text-surface-800">
+                      {{ activityTypeLabels[activity.activityType] }}
+                    </span>
+                    <span
+                      v-if="
+                        activity.activityType === 'stage_change' &&
+                        activity.fromStage &&
+                        activity.toStage
+                      "
+                      class="text-surface-500 text-xs"
+                    >
+                      {{ stageLabelMap[activity.fromStage] ?? activity.fromStage }}
+                      <i class="pi pi-arrow-right mx-1" />
+                      {{ stageLabelMap[activity.toStage] ?? activity.toStage }}
+                    </span>
+                  </div>
+                  <p v-if="activity.note" class="text-surface-600 break-words">
+                    {{ activity.note }}
+                  </p>
+                  <p v-if="activity.rushEventTitle" class="text-surface-500 italic text-xs">
+                    {{ activity.rushEventTitle }}
+                  </p>
+                  <p class="text-surface-400 text-xs">
+                    {{ formatDate(activity.createdAt) }}
+                    <span v-if="activity.createdByName"> · {{ activity.createdByName }}</span>
+                  </p>
+                </div>
+              </div>
+
+              <p
+                v-if="fullProspect.activities.length === 0"
+                class="text-surface-400 text-sm text-center py-4"
+              >
+                No activity yet.
+              </p>
+            </div>
+          </div>
+
+          <!-- Profile rail -->
+          <div class="w-full lg:w-80 flex flex-col gap-3 min-w-0">
+            <div class="flex items-center justify-between border-b border-surface-100 pb-2">
+              <h3 class="font-semibold text-surface-700">Profile</h3>
+              <Button
+                v-if="canEditProspects && !profileEditMode"
+                label="Edit"
+                icon="pi pi-pencil"
+                text
+                size="small"
+                @click="profileEditMode = true"
+              />
+            </div>
+
+            <!-- Read mode -->
+            <div v-if="!profileEditMode" class="flex flex-col gap-3 text-sm">
+              <div class="flex flex-col">
+                <span class="text-xs font-semibold text-surface-500 uppercase tracking-wide">Name</span>
+                <span class="text-surface-700">{{ fullProspect.firstName }} {{ fullProspect.lastName }}</span>
+              </div>
+              <div class="flex flex-col">
+                <span class="text-xs font-semibold text-surface-500 uppercase tracking-wide">Email</span>
+                <a
+                  :href="mailtoLink"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="text-[#6F8FAF] hover:underline break-words"
+                >
+                  {{ fullProspect.email }}
+                </a>
+              </div>
+              <div class="flex flex-col">
+                <span class="text-xs font-semibold text-surface-500 uppercase tracking-wide">Phone</span>
+                <span :class="fullProspect.phone ? 'text-surface-700' : 'text-surface-400'">
+                  {{ fullProspect.phone || '—' }}
+                </span>
+              </div>
+              <div class="grid grid-cols-2 gap-3">
+                <div class="flex flex-col">
+                  <span class="text-xs font-semibold text-surface-500 uppercase tracking-wide">Class Year</span>
+                  <span :class="fullProspect.classYear ? 'text-surface-700' : 'text-surface-400'">
+                    {{ fullProspect.classYear ? classYearLabels[fullProspect.classYear] : '—' }}
+                  </span>
+                </div>
+                <div class="flex flex-col">
+                  <span class="text-xs font-semibold text-surface-500 uppercase tracking-wide">Enrollment</span>
+                  <span
+                    :class="
+                      fullProspect.enrollmentSemester && fullProspect.enrollmentYear
+                        ? 'text-surface-700'
+                        : 'text-surface-400'
+                    "
+                  >
+                    <template v-if="fullProspect.enrollmentSemester && fullProspect.enrollmentYear">
+                      {{ fullProspect.enrollmentSemester === 'fall' ? 'Fall' : 'Spring' }}
+                      {{ fullProspect.enrollmentYear }}
+                    </template>
+                    <template v-else>—</template>
+                  </span>
+                </div>
+              </div>
+              <div class="grid grid-cols-2 gap-3">
+                <div class="flex flex-col">
+                  <span class="text-xs font-semibold text-surface-500 uppercase tracking-wide">Hometown</span>
+                  <span :class="fullProspect.hometown ? 'text-surface-700 break-words' : 'text-surface-400'">
+                    {{ fullProspect.hometown || '—' }}
+                  </span>
+                </div>
+                <div class="flex flex-col">
+                  <span class="text-xs font-semibold text-surface-500 uppercase tracking-wide">High School</span>
+                  <span :class="fullProspect.highSchool ? 'text-surface-700 break-words' : 'text-surface-400'">
+                    {{ fullProspect.highSchool || '—' }}
+                  </span>
+                </div>
+              </div>
+              <div class="grid grid-cols-3 gap-3">
+                <div class="flex flex-col">
+                  <span class="text-xs font-semibold text-surface-500 uppercase tracking-wide">GPA</span>
+                  <span :class="fullProspect.gpa != null ? 'text-surface-700' : 'text-surface-400'">
+                    {{ fullProspect.gpa != null ? fullProspect.gpa : '—' }}
+                  </span>
+                </div>
+                <div class="flex flex-col">
+                  <span class="text-xs font-semibold text-surface-500 uppercase tracking-wide">ACT</span>
+                  <span :class="fullProspect.actScore != null ? 'text-surface-700' : 'text-surface-400'">
+                    {{ fullProspect.actScore != null ? fullProspect.actScore : '—' }}
+                  </span>
+                </div>
+                <div class="flex flex-col">
+                  <span class="text-xs font-semibold text-surface-500 uppercase tracking-wide">SAT</span>
+                  <span :class="fullProspect.satScore != null ? 'text-surface-700' : 'text-surface-400'">
+                    {{ fullProspect.satScore != null ? fullProspect.satScore : '—' }}
+                  </span>
+                </div>
+              </div>
+              <div class="flex flex-col">
+                <span class="text-xs font-semibold text-surface-500 uppercase tracking-wide">Major</span>
+                <span :class="fullProspect.major ? 'text-surface-700' : 'text-surface-400'">
+                  {{ fullProspect.major || '—' }}
+                </span>
+              </div>
+              <div class="flex flex-col">
+                <span class="text-xs font-semibold text-surface-500 uppercase tracking-wide">Alpha Nu Legacy</span>
+                <span
+                  :class="
+                    fullProspect.legacyRelativeFullName || fullProspect.legacyRelativeName
+                      ? 'text-surface-700'
+                      : 'text-surface-400'
+                  "
+                >
+                  <template v-if="fullProspect.legacyRelativeFullName || fullProspect.legacyRelativeName">
+                    {{ fullProspect.legacyRelativeFullName ?? fullProspect.legacyRelativeName }}
+                    <span v-if="fullProspect.legacyRelationship" class="text-surface-500">
+                      ({{ legacyRelationshipLabels[fullProspect.legacyRelationship] }})
+                    </span>
+                  </template>
+                  <template v-else>—</template>
+                </span>
+              </div>
+              <div class="flex flex-col">
+                <span class="text-xs font-semibold text-surface-500 uppercase tracking-wide">Referral Source</span>
+                <span :class="fullProspect.referralSource ? 'text-surface-700' : 'text-surface-400'">
+                  {{ fullProspect.referralSource || '—' }}
+                </span>
+              </div>
+            </div>
+
+            <!-- Edit mode -->
+            <div v-else class="flex flex-col gap-4">
+              <div class="grid grid-cols-2 gap-3">
+                <div class="flex flex-col gap-1">
+                  <label class="text-xs font-semibold text-surface-500 uppercase tracking-wide"
+                    >First Name</label
+                  >
+                  <InputText v-model="editForm.firstName" class="w-full" />
+                </div>
+                <div class="flex flex-col gap-1">
+                  <label class="text-xs font-semibold text-surface-500 uppercase tracking-wide"
+                    >Last Name</label
+                  >
+                  <InputText v-model="editForm.lastName" class="w-full" />
+                </div>
+              </div>
+              <div class="flex flex-col gap-1">
+                <label class="text-xs font-semibold text-surface-500 uppercase tracking-wide"
+                  >Phone</label
+                >
+                <InputText v-model="editForm.phone" placeholder="e.g. (913) 555-0182" class="w-full" />
+              </div>
+              <div class="grid grid-cols-2 gap-3">
+                <div class="flex flex-col gap-1">
+                  <label class="text-xs font-semibold text-surface-500 uppercase tracking-wide"
+                    >Class Year</label
+                  >
+                  <Select
+                    v-model="editForm.classYear"
+                    :options="classYearOptions"
+                    option-label="label"
+                    option-value="value"
+                    placeholder="Select"
+                    class="w-full"
+                  />
+                </div>
+                <div class="flex flex-col gap-1">
+                  <label class="text-xs font-semibold text-surface-500 uppercase tracking-wide"
+                    >Major</label
+                  >
+                  <InputText v-model="editForm.major" class="w-full" />
+                </div>
+              </div>
+              <div class="grid grid-cols-2 gap-3">
+                <div class="flex flex-col gap-1">
+                  <label class="text-xs font-semibold text-surface-500 uppercase tracking-wide"
+                    >Enrollment Semester</label
+                  >
+                  <Select
+                    v-model="editForm.enrollmentSemester"
+                    :options="semesterOptions"
+                    option-label="label"
+                    option-value="value"
+                    placeholder="Semester"
+                    class="w-full"
+                  />
+                </div>
+                <div class="flex flex-col gap-1">
+                  <label class="text-xs font-semibold text-surface-500 uppercase tracking-wide"
+                    >Enrollment Year</label
+                  >
+                  <Select
+                    v-model="editForm.enrollmentYear"
+                    :options="enrollmentYearOptions"
+                    option-label="label"
+                    option-value="value"
+                    placeholder="Year"
+                    class="w-full"
+                  />
+                </div>
+              </div>
+              <div class="grid grid-cols-2 gap-3">
+                <div class="flex flex-col gap-1">
+                  <label class="text-xs font-semibold text-surface-500 uppercase tracking-wide"
+                    >Hometown</label
+                  >
+                  <InputText v-model="editForm.hometown" placeholder="e.g. Overland Park, KS" class="w-full" />
+                </div>
+                <div class="flex flex-col gap-1">
+                  <label class="text-xs font-semibold text-surface-500 uppercase tracking-wide"
+                    >High School</label
+                  >
+                  <InputText v-model="editForm.highSchool" class="w-full" />
+                </div>
+              </div>
+              <div class="grid grid-cols-3 gap-3">
+                <div class="flex flex-col gap-1">
+                  <label class="text-xs font-semibold text-surface-500 uppercase tracking-wide"
+                    >GPA</label
+                  >
+                  <InputText v-model="editForm.gpaStr" placeholder="e.g. 3.65" class="w-full" />
+                </div>
+                <div class="flex flex-col gap-1">
+                  <label class="text-xs font-semibold text-surface-500 uppercase tracking-wide"
+                    >ACT</label
+                  >
+                  <InputText v-model="editForm.actScoreStr" placeholder="e.g. 32" class="w-full" />
+                </div>
+                <div class="flex flex-col gap-1">
+                  <label class="text-xs font-semibold text-surface-500 uppercase tracking-wide"
+                    >SAT</label
+                  >
+                  <InputText v-model="editForm.satScoreStr" placeholder="e.g. 1420" class="w-full" />
+                </div>
+              </div>
+              <div class="flex justify-end gap-2 pt-2 border-t border-surface-100">
+                <Button
+                  label="Cancel"
+                  text
+                  severity="secondary"
+                  size="small"
+                  @click="cancelProfileEdit"
+                />
+                <Button
+                  label="Save"
+                  icon="pi pi-check"
+                  size="small"
+                  :loading="savingProfile"
+                  class="bg-[#6F8FAF] hover:bg-[#5a7a9a] border-[#6F8FAF]"
+                  @click="saveProfile"
+                />
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -541,7 +902,13 @@ import ProgressSpinner from 'primevue/progressspinner'
 import ConfirmDialog from 'primevue/confirmdialog'
 import { useRushProspectStore } from '@/stores/rushProspect'
 import { useAuthStore } from '@/stores/auth'
-import type { RushProspectSummary, RushProspectResponse, PipelineStage, ClassYear } from '@/types/rushProspect'
+import type {
+  RushProspectSummary,
+  RushProspectResponse,
+  PipelineStage,
+  ClassYear,
+  UpdateRushProspectPayload
+} from '@/types/rushProspect'
 import {
   PIPELINE_STAGE_LABELS,
   PIPELINE_STAGE_SEVERITY,
@@ -550,7 +917,7 @@ import {
   LEGACY_RELATIONSHIP_LABELS,
   ACTIVITY_TYPE_LABELS,
   ACTIVITY_TYPE_ICONS,
-  ALL_PIPELINE_STAGES,
+  ALL_PIPELINE_STAGES
 } from '@/types/rushProspect'
 
 const store = useRushProspectStore()
@@ -562,14 +929,10 @@ const toast = useToast()
  * Full Rush CRM editing (edit details, change stage, assign chairs, rate, delete):
  * admins, editors, and rush chairs. Members are read-only here.
  */
-const canEditProspects = computed(
-  () => authStore.isEditor || authStore.isRushChair,
-)
+const canEditProspects = computed(() => authStore.isEditor || authStore.isRushChair)
 
 /** Logging notes/activities: everyone who can reach the CRM, including members. */
-const canLogActivities = computed(
-  () => canEditProspects.value || authStore.isMember,
-)
+const canLogActivities = computed(() => canEditProspects.value || authStore.isMember)
 
 // ── Year selector ────────────────────────────────────────────────────────────
 
@@ -587,17 +950,19 @@ const defaultPledgeClassYear = currentMonth >= 8 ? currentYear + 1 : currentYear
 const selectedYear = ref(defaultPledgeClassYear)
 
 const yearOptions = computed(() =>
-  [-1, 0, 1, 2].map((offset) => ({
-    label: String(defaultPledgeClassYear + offset),
-    value: defaultPledgeClassYear + offset,
-  })).sort((a, b) => b.value - a.value),
+  [-1, 0, 1, 2]
+    .map((offset) => ({
+      label: String(defaultPledgeClassYear + offset),
+      value: defaultPledgeClassYear + offset
+    }))
+    .sort((a, b) => b.value - a.value)
 )
 
 const enrollmentYearOptions = computed(() =>
   [0, 1, 2].map((offset) => ({
     label: String(currentYear + offset),
-    value: currentYear + offset,
-  })),
+    value: currentYear + offset
+  }))
 )
 
 function onYearChange() {
@@ -631,7 +996,7 @@ const isFiltered = computed(
   () =>
     searchQuery.value.trim() !== '' ||
     stageFilter.value !== null ||
-    assignedChairFilter.value !== null,
+    assignedChairFilter.value !== null
 )
 
 const filteredProspects = computed(() => {
@@ -650,7 +1015,7 @@ const filteredProspects = computed(() => {
       (p) =>
         p.firstName.toLowerCase().includes(q) ||
         p.lastName.toLowerCase().includes(q) ||
-        p.email.toLowerCase().includes(q),
+        p.email.toLowerCase().includes(q)
     )
   }
   return rows
@@ -660,8 +1025,8 @@ const stageFilterOptions = computed(() => [
   { label: 'All stages', value: null },
   ...ALL_PIPELINE_STAGES.map((s) => ({
     label: PIPELINE_STAGE_LABELS[s],
-    value: s,
-  })),
+    value: s
+  }))
 ])
 
 const chairFilterOptions = computed(() => [
@@ -669,8 +1034,8 @@ const chairFilterOptions = computed(() => [
   { label: 'Unassigned', value: '__unassigned__' },
   ...store.rushChairs.map((rc) => ({
     label: `${rc.firstName} ${rc.lastName}`,
-    value: rc.id,
-  })),
+    value: rc.id
+  }))
 ])
 
 const stageStats = computed(() => {
@@ -681,7 +1046,7 @@ const stageStats = computed(() => {
   return ALL_PIPELINE_STAGES.filter((s) => (counts[s] ?? 0) > 0).map((s) => ({
     stage: s,
     label: PIPELINE_STAGE_LABELS[s],
-    count: counts[s]!,
+    count: counts[s]!
   }))
 })
 
@@ -709,7 +1074,16 @@ function formatDate(iso: string): string {
     day: 'numeric',
     year: 'numeric',
     hour: 'numeric',
-    minute: '2-digit',
+    minute: '2-digit'
+  })
+}
+
+/** Date-only formatter (e.g. "Jul 12, 2026") for at-a-glance chips. */
+function formatDateShort(iso: string): string {
+  return new Date(iso).toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric'
   })
 }
 
@@ -719,7 +1093,56 @@ const detailVisible = ref(false)
 const detailLoading = ref(false)
 const currentProspect = ref<RushProspectSummary | null>(null)
 const fullProspect = ref<RushProspectResponse | null>(null)
-const saving = ref(false)
+
+// Profile rail edit mode (rail is read-only until the user opts in)
+const profileEditMode = ref(false)
+const savingProfile = ref(false)
+
+// Auto-save state for the status controls (stage / chair / rating)
+type StatusField = 'stage' | 'chair' | 'rating'
+const statusSaving = ref<StatusField | null>(null)
+const statusSavedField = ref<StatusField | null>(null)
+let statusSavedTimer: ReturnType<typeof setTimeout> | null = null
+
+// Happy-path pipeline stages (terminal/negative stages live off this track)
+const HAPPY_PATH_STAGES: PipelineStage[] = [
+  'inquiry',
+  'screened',
+  'active',
+  'priority',
+  'bid_pending',
+  'bid_extended',
+  'bid_accepted'
+]
+const happyPathStages = HAPPY_PATH_STAGES
+
+const happyPathIndex = computed(() =>
+  fullProspect.value ? HAPPY_PATH_STAGES.indexOf(fullProspect.value.pipelineStage) : -1
+)
+
+const isTerminalStage = computed(() =>
+  fullProspect.value ? !HAPPY_PATH_STAGES.includes(fullProspect.value.pipelineStage) : false
+)
+
+function stepClass(i: number): string {
+  const idx = happyPathIndex.value
+  if (idx < 0) return 'bg-surface-200 text-surface-400'
+  if (i < idx) return 'bg-[#6F8FAF] text-white'
+  if (i === idx) return 'bg-[#6F8FAF] text-white ring-4 ring-[#6F8FAF]/25'
+  return 'bg-surface-200 text-surface-400'
+}
+
+const mailtoLink = computed(() =>
+  fullProspect.value
+    ? `mailto:${fullProspect.value.email}?subject=Kansas Beta Rush&body=Hi ${fullProspect.value.firstName},%0A%0A`
+    : ''
+)
+
+const initials = computed(() => {
+  const p = fullProspect.value
+  if (!p) return ''
+  return `${p.firstName?.[0] ?? ''}${p.lastName?.[0] ?? ''}`.toUpperCase()
+})
 
 const editForm = ref({
   firstName: '',
@@ -736,13 +1159,15 @@ const editForm = ref({
   satScoreStr: '',
   pipelineStage: 'inquiry' as PipelineStage,
   internalRating: null as number | null,
-  assignedToPersonId: null as string | null,
+  assignedToPersonId: null as string | null
 })
 
 async function openDetail(prospect: RushProspectSummary) {
   currentProspect.value = prospect
   detailVisible.value = true
   detailLoading.value = true
+  profileEditMode.value = false
+  statusSavedField.value = null
   await store.fetchOne(prospect.id)
   if (store.current) {
     fullProspect.value = store.current
@@ -767,7 +1192,7 @@ function populateEditForm(p: RushProspectResponse) {
     satScoreStr: p.satScore != null ? String(p.satScore) : '',
     pipelineStage: p.pipelineStage,
     internalRating: p.internalRating,
-    assignedToPersonId: p.assignedToPersonId,
+    assignedToPersonId: p.assignedToPersonId
   }
 }
 
@@ -775,11 +1200,57 @@ function onDetailClose() {
   fullProspect.value = null
   currentProspect.value = null
   newNote.value = ''
+  profileEditMode.value = false
+  statusSavedField.value = null
+  statusSaving.value = null
+  if (statusSavedTimer) {
+    clearTimeout(statusSavedTimer)
+    statusSavedTimer = null
+  }
 }
 
-async function saveProspect() {
+/**
+ * Auto-save a single status control (pipeline stage, assigned chair, rating).
+ * Sends a partial PATCH, keeps the dialog open, and flashes an inline "Saved".
+ * On failure, the edited field is reverted to the last known server value.
+ */
+async function autoSaveStatus(field: StatusField, payload: UpdateRushProspectPayload) {
+  if (!fullProspect.value || !canEditProspects.value) return
+  statusSaving.value = field
+  try {
+    await store.updateProspect(fullProspect.value.id, payload)
+    // Refresh from the server response — this also pulls in any newly
+    // generated stage_change activity so the timeline updates instantly.
+    fullProspect.value = store.current!
+    statusSavedField.value = field
+    if (statusSavedTimer) clearTimeout(statusSavedTimer)
+    statusSavedTimer = setTimeout(() => {
+      statusSavedField.value = null
+    }, 2000)
+  } catch {
+    const p = fullProspect.value
+    if (p) {
+      if (field === 'stage') editForm.value.pipelineStage = p.pipelineStage
+      else if (field === 'chair') editForm.value.assignedToPersonId = p.assignedToPersonId
+      else if (field === 'rating') editForm.value.internalRating = p.internalRating
+    }
+    toast.add({ severity: 'error', summary: 'Error', detail: 'Failed to save change', life: 4000 })
+  } finally {
+    statusSaving.value = null
+  }
+}
+
+function setRating(n: number) {
+  if (!canEditProspects.value) return
+  const next = editForm.value.internalRating === n ? null : n
+  editForm.value.internalRating = next
+  autoSaveStatus('rating', { internalRating: next })
+}
+
+/** Save the profile rail (reference fields only — status controls auto-save). */
+async function saveProfile() {
   if (!fullProspect.value) return
-  saving.value = true
+  savingProfile.value = true
   try {
     const ef = editForm.value
     await store.updateProspect(fullProspect.value.id, {
@@ -794,19 +1265,21 @@ async function saveProspect() {
       major: ef.major.trim() || undefined,
       gpa: ef.gpaStr ? parseFloat(ef.gpaStr) : null,
       actScore: ef.actScoreStr ? parseInt(ef.actScoreStr, 10) : null,
-      satScore: ef.satScoreStr ? parseInt(ef.satScoreStr, 10) : null,
-      pipelineStage: ef.pipelineStage,
-      internalRating: ef.internalRating,
-      assignedToPersonId: ef.assignedToPersonId,
+      satScore: ef.satScoreStr ? parseInt(ef.satScoreStr, 10) : null
     })
     fullProspect.value = store.current!
-    toast.add({ severity: 'success', summary: 'Saved', detail: 'Prospect updated', life: 3000 })
-    detailVisible.value = false
+    profileEditMode.value = false
+    toast.add({ severity: 'success', summary: 'Saved', detail: 'Profile updated', life: 3000 })
   } catch {
     toast.add({ severity: 'error', summary: 'Error', detail: 'Failed to save changes', life: 4000 })
   } finally {
-    saving.value = false
+    savingProfile.value = false
   }
+}
+
+function cancelProfileEdit() {
+  if (fullProspect.value) populateEditForm(fullProspect.value)
+  profileEditMode.value = false
 }
 
 // ── Activity log ─────────────────────────────────────────────────────────────
@@ -816,10 +1289,10 @@ const newActivityType = ref<'note' | 'event_attended' | 'call_logged'>('note')
 const addingActivity = ref(false)
 
 const manualActivityTypeOptions = [
-  { label: 'Note', value: 'note' },
-  { label: 'Call Logged', value: 'call_logged' },
-  { label: 'Event Attended', value: 'event_attended' },
-]
+  { label: 'Note', value: 'note', icon: 'pi pi-comment' },
+  { label: 'Call', value: 'call_logged', icon: 'pi pi-phone' },
+  { label: 'Event', value: 'event_attended', icon: 'pi pi-star' }
+] as const
 
 async function logActivity() {
   if (!fullProspect.value || !newNote.value.trim()) return
@@ -827,7 +1300,7 @@ async function logActivity() {
   try {
     await store.addActivity(fullProspect.value.id, {
       activityType: newActivityType.value,
-      note: newNote.value.trim(),
+      note: newNote.value.trim()
     })
     fullProspect.value = store.current!
     newNote.value = ''
@@ -853,14 +1326,24 @@ function confirmDelete(prospect: RushProspectSummary) {
     accept: async () => {
       try {
         await store.deleteProspect(prospect.id)
-        toast.add({ severity: 'success', summary: 'Deleted', detail: 'Prospect removed', life: 3000 })
+        toast.add({
+          severity: 'success',
+          summary: 'Deleted',
+          detail: 'Prospect removed',
+          life: 3000
+        })
         if (detailVisible.value && currentProspect.value?.id === prospect.id) {
           detailVisible.value = false
         }
       } catch {
-        toast.add({ severity: 'error', summary: 'Error', detail: 'Failed to delete prospect', life: 4000 })
+        toast.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'Failed to delete prospect',
+          life: 4000
+        })
       }
-    },
+    }
   })
 }
 
@@ -871,25 +1354,25 @@ const classYearOptions = [
   { label: 'Sophomore', value: 'sophomore' },
   { label: 'Junior', value: 'junior' },
   { label: 'Senior', value: 'senior' },
-  { label: 'Other', value: 'other' },
+  { label: 'Other', value: 'other' }
 ]
 
 const semesterOptions = [
   { label: 'Fall', value: 'fall' },
-  { label: 'Spring', value: 'spring' },
+  { label: 'Spring', value: 'spring' }
 ]
 
 const pipelineStageOptions = ALL_PIPELINE_STAGES.map((s) => ({
   label: PIPELINE_STAGE_LABELS[s],
   description: PIPELINE_STAGE_DESCRIPTIONS[s],
-  value: s,
+  value: s
 }))
 
 const rushChairOptions = computed(() =>
   store.rushChairs.map((rc) => ({
     label: `${rc.firstName} ${rc.lastName}`,
     value: rc.id,
-    termLabel: rc.isCurrent ? `${rc.termLabel} (Current)` : `${rc.termLabel} (Upcoming)`,
-  })),
+    termLabel: rc.isCurrent ? `${rc.termLabel} (Current)` : `${rc.termLabel} (Upcoming)`
+  }))
 )
 </script>

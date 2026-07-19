@@ -2,6 +2,7 @@ export enum ResourceTag {
   LEGAL = 'legal',
   INSURANCE = 'insurance',
   NATIONAL = 'national',
+  CHAPTER_MANAGEMENT = 'chapter_management',
   OTHER = 'other',
 }
 
@@ -46,5 +47,6 @@ export const RESOURCE_TAG_LABELS: Record<ResourceTag, string> = {
   [ResourceTag.LEGAL]: 'Legal',
   [ResourceTag.INSURANCE]: 'Insurance',
   [ResourceTag.NATIONAL]: 'General Fraternity',
+  [ResourceTag.CHAPTER_MANAGEMENT]: 'Chapter Management',
   [ResourceTag.OTHER]: 'Other',
 }

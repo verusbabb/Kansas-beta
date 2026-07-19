@@ -15,7 +15,7 @@
   <div class="max-w-5xl mx-auto px-4 py-8 flex flex-col gap-6">
 
     <!-- Stat / filter strip -->
-    <div class="flex gap-3 overflow-x-auto pb-1 sm:grid sm:grid-cols-5 sm:overflow-visible">
+    <div class="flex gap-3 overflow-x-auto pb-1 sm:grid sm:grid-cols-6 sm:overflow-visible">
       <div
         v-for="opt in tagFilterOptions"
         :key="opt.value"
@@ -388,6 +388,7 @@ const tagFilterOptions = [
   { label: 'Legal',     value: ResourceTag.LEGAL,       icon: 'pi pi-file',        iconBg: 'bg-indigo-50', iconColor: 'text-indigo-500' },
   { label: 'Insurance', value: ResourceTag.INSURANCE,   icon: 'pi pi-shield',      iconBg: 'bg-purple-50', iconColor: 'text-purple-500' },
   { label: 'General Fraternity', value: ResourceTag.NATIONAL, icon: 'pi pi-flag', iconBg: 'bg-amber-50', iconColor: 'text-amber-500' },
+  { label: 'Chapter Management', value: ResourceTag.CHAPTER_MANAGEMENT, icon: 'pi pi-briefcase', iconBg: 'bg-teal-50', iconColor: 'text-teal-500' },
   { label: 'Other',     value: ResourceTag.OTHER,       icon: 'pi pi-tag',         iconBg: 'bg-slate-50',  iconColor: 'text-slate-500'  },
 ]
 
@@ -400,6 +401,7 @@ const tagOptions = [
   { label: 'Legal', value: ResourceTag.LEGAL },
   { label: 'Insurance', value: ResourceTag.INSURANCE },
   { label: 'General Fraternity', value: ResourceTag.NATIONAL },
+  { label: 'Chapter Management', value: ResourceTag.CHAPTER_MANAGEMENT },
   { label: 'Other', value: ResourceTag.OTHER },
 ]
 
@@ -600,6 +602,7 @@ function tagBadgeClass(tag: ResourceTag): string {
     [ResourceTag.LEGAL]: 'bg-blue-100 text-blue-800',
     [ResourceTag.INSURANCE]: 'bg-purple-100 text-purple-800',
     [ResourceTag.NATIONAL]: 'bg-amber-100 text-amber-800',
+    [ResourceTag.CHAPTER_MANAGEMENT]: 'bg-teal-100 text-teal-800',
     [ResourceTag.OTHER]: 'bg-slate-100 text-slate-700',
   }
   return `${base} ${colors[tag] ?? colors[ResourceTag.OTHER]}`

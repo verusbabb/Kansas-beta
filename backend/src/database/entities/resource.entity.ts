@@ -7,6 +7,7 @@ export enum ResourceTag {
   LEGAL = 'legal',
   INSURANCE = 'insurance',
   NATIONAL = 'national',
+  CHAPTER_MANAGEMENT = 'chapter_management',
   OTHER = 'other',
 }
 
@@ -39,6 +40,7 @@ export class Resource extends BaseEntity {
       ResourceTag.LEGAL,
       ResourceTag.INSURANCE,
       ResourceTag.NATIONAL,
+      ResourceTag.CHAPTER_MANAGEMENT,
       ResourceTag.OTHER,
     ),
     allowNull: false,

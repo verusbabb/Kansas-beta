@@ -95,7 +95,7 @@ const DOMAIN_VIEWS: WoogleViewDef[] = [
     name: 'woogle_resources',
     access: 'safe',
     schema:
-      'woogle_resources(id, title, description, tag, uploaded_by, created_at) — member resource documents; tag one of legal/insurance/national/other.',
+      'woogle_resources(id, title, description, tag, uploaded_by, created_at) — member resource documents; tag one of legal/insurance/national/chapter_management/other.',
   },
   // --- Operational / sensitive (admins only) --------------------------------
   {
