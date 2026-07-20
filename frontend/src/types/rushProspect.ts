@@ -114,9 +114,11 @@ export interface RushProspectSummary {
   lastName: string
   email: string
   phone: string | null
+  hometown: string | null
   classYear: ClassYear | null
   enrollmentSemester: EnrollmentSemester | null
   enrollmentYear: number | null
+  isLegacy: boolean
   pipelineStage: PipelineStage
   internalRating: number | null
   assignedToPersonId: string | null
@@ -191,9 +193,9 @@ export const LEGACY_RELATIONSHIP_LABELS: Record<LegacyRelationship, string> = {
 export const ACTIVITY_TYPE_LABELS: Record<ActivityType, string> = {
   application_received: 'Application Received',
   stage_change: 'Stage Changed',
-  note: 'Note',
-  event_attended: 'Event Attended',
-  call_logged: 'Call Logged',
+  note: 'General Note',
+  event_attended: 'Event Note',
+  call_logged: 'Call Note',
   bid_extended: 'Bid Extended',
   bid_accepted: 'Bid Accepted',
   bid_declined: 'Bid Declined',

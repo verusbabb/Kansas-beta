@@ -131,7 +131,7 @@
         <template #body="{ data }">
           <button
             type="button"
-            class="font-medium text-[#6F8FAF] hover:underline text-left"
+            class="font-medium text-[#6F8FAF] hover:underline text-left whitespace-nowrap"
             @click.stop="openDetail(data)"
           >
             {{ data.lastName }}, {{ data.firstName }}
@@ -139,30 +139,20 @@
         </template>
       </Column>
 
-      <Column field="email" header="Email">
+      <Column field="hometown" header="Hometown" sortable>
         <template #body="{ data }">
-          <a
-            :href="`mailto:${data.email}?subject=Kansas Beta Rush&body=Hi ${data.firstName},%0A%0A`"
-            target="_blank"
-            rel="noopener noreferrer"
-            class="text-[#6F8FAF] hover:underline"
-            @click.stop
+          <span v-if="data.hometown" class="text-surface-700">{{ data.hometown }}</span>
+          <span v-else class="text-surface-400">—</span>
+        </template>
+      </Column>
+
+      <Column field="isLegacy" header="Legacy" sortable>
+        <template #body="{ data }">
+          <span
+            v-if="data.isLegacy"
+            class="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-semibold rounded-full bg-amber-100 text-amber-800"
           >
-            {{ data.email }}
-          </a>
-        </template>
-      </Column>
-
-      <Column field="classYear" header="Class Year" sortable>
-        <template #body="{ data }">
-          {{ data.classYear ? classYearLabels[data.classYear] : '—' }}
-        </template>
-      </Column>
-
-      <Column field="enrollmentSemester" header="KU Start" sortable>
-        <template #body="{ data }">
-          <span v-if="data.enrollmentSemester && data.enrollmentYear">
-            {{ data.enrollmentSemester === 'fall' ? 'Fall' : 'Spring' }} {{ data.enrollmentYear }}
+            <i class="pi pi-star-fill text-[10px]" /> Legacy
           </span>
           <span v-else class="text-surface-400">—</span>
         </template>
@@ -210,9 +200,18 @@
         </template>
       </Column>
 
-      <Column header="" style="width: 80px">
+      <Column header="" style="width: 120px">
         <template #body="{ data }">
           <div class="flex items-center gap-1" @click.stop>
+            <a
+              :href="`mailto:${data.email}?subject=Kansas Beta Rush&body=Hi ${data.firstName},%0A%0A`"
+              target="_blank"
+              rel="noopener noreferrer"
+              v-tooltip.top="`Email ${data.email}`"
+              class="w-8 h-8 flex items-center justify-center rounded-full text-[#6F8FAF] hover:bg-surface-100"
+            >
+              <i class="pi pi-envelope" />
+            </a>
             <Button
               :icon="canEditProspects ? 'pi pi-pencil' : 'pi pi-eye'"
               size="small"
@@ -1289,9 +1288,9 @@ const newActivityType = ref<'note' | 'event_attended' | 'call_logged'>('note')
 const addingActivity = ref(false)
 
 const manualActivityTypeOptions = [
-  { label: 'Note', value: 'note', icon: 'pi pi-comment' },
-  { label: 'Call', value: 'call_logged', icon: 'pi pi-phone' },
-  { label: 'Event', value: 'event_attended', icon: 'pi pi-star' }
+  { label: 'General Note', value: 'note', icon: 'pi pi-comment' },
+  { label: 'Call Note', value: 'call_logged', icon: 'pi pi-phone' },
+  { label: 'Event Note', value: 'event_attended', icon: 'pi pi-star' }
 ] as const
 
 async function logActivity() {
