@@ -16,9 +16,18 @@
           </div>
         </template>
         <template #end>
-          <div v-if="isAuth0Configured" class="flex items-center gap-3">
-            <UserProfile v-if="isAuthenticated && authStore.user" />
-            <LoginButton v-else />
+          <div class="flex items-center gap-3">
+            <Button
+              label="Donate"
+              icon="pi pi-heart"
+              size="small"
+              class="bg-[#6F8FAF] hover:bg-[#5a7a9a] border-[#6F8FAF] shrink-0"
+              @click="router.push('/donate')"
+            />
+            <div v-if="isAuth0Configured" class="flex items-center gap-3">
+              <UserProfile v-if="isAuthenticated && authStore.user" />
+              <LoginButton v-else />
+            </div>
           </div>
         </template>
 
@@ -61,6 +70,7 @@
   import { useRouter } from 'vue-router';
   import Menu from 'primevue/menu';
   import Menubar from 'primevue/menubar';
+  import Button from 'primevue/button';
   import Toast from 'primevue/toast';
   import LoginButton from './LoginButton.vue';
   import UserProfile from './UserProfile.vue';
@@ -108,7 +118,6 @@
         ...(canAdmin ? [{ label: "Admin", icon: "pi pi-cog", command: go("/admin") }] : []),
       ]
       return [
-        { label: "Donate",    icon: "pi pi-heart",        command: go("/donate") },
         { label: "Contact",   icon: "pi pi-envelope",     command: go("/contact") },
         ...(extras.length ? [{ separator: true }] : []),
         ...extras,
@@ -125,7 +134,6 @@
         { label: "News",    icon: "pi pi-book",      command: go("/newsletters") },
         { label: "History", icon: "pi pi-clock",     command: go("/history") },
         { separator: true },
-        { label: "Donate",  icon: "pi pi-heart",     command: go("/donate") },
         { label: "Contact", icon: "pi pi-envelope",  command: go("/contact") },
         ...(extras.length ? [{ separator: true }] : []),
         ...extras,
@@ -152,7 +160,6 @@
       ...(showRushCrm ? [{ label: "Rush CRM", icon: "pi pi-id-card", route: "/admin?section=rush-crm" }] : []),
       { label: "News",     icon: "pi pi-book",      route: "/newsletters" },
       { label: "History",  icon: "pi pi-clock",     route: "/history" },
-      { label: "Donate",   icon: "pi pi-heart",     route: "/donate" },
       { label: "Contact",  icon: "pi pi-envelope",  route: "/contact" },
       ...(canAdmin ? [{ label: "Admin", icon: "pi pi-cog", route: "/admin" }] : []),
     ]
