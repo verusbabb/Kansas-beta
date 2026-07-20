@@ -15,6 +15,7 @@ import History from '../views/History.vue'
 import Ask from '../views/Ask.vue'
 import Resources from '../views/Resources.vue'
 import RushApply from '../views/RushApply.vue'
+import RushPipeline from '../views/RushPipeline.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -57,6 +58,11 @@ const router = createRouter({
     {
       path: '/resources',
       component: Resources,
+      meta: { requiresAuth: true, requiredRole: ['admin', 'editor', 'rush_chair', 'member'] },
+    },
+    {
+      path: '/rush-pipeline',
+      component: RushPipeline,
       meta: { requiresAuth: true, requiredRole: ['admin', 'editor', 'rush_chair', 'member'] },
     },
   ],

@@ -105,16 +105,17 @@
     const canAdmin = authStore.canAccessAdminPanel
     const canResources = authStore.canAccessResources
     const canWoogle = authStore.canUseWoogle
-    const showRushCrm = authStore.isMember || authStore.isRushChair
+    const showRushCrm = authStore.canAccessRushCrm
     const useMedium = windowWidth.value >= 1200
 
     const go = (path) => () => router.push(path)
 
     if (useMedium) {
-      // Medium layout (1200–1649): More contains Donate, Contact, and authed tools
+      // Medium layout (1200–1649): More contains Woogle, Contact, and authed tools
       const extras = [
+        ...(canWoogle ? [{ label: "Woogle", icon: "pi pi-sparkles", command: go("/ask") }] : []),
         ...(canResources ? [{ label: "Resources", icon: "pi pi-folder-open", command: go("/resources") }] : []),
-        ...(showRushCrm ? [{ label: "Rush CRM", icon: "pi pi-id-card", command: go("/admin?section=rush-crm") }] : []),
+        ...(showRushCrm ? [{ label: "Rush CRM", icon: "pi pi-id-card", command: go("/rush-pipeline") }] : []),
         ...(canAdmin ? [{ label: "Admin", icon: "pi pi-cog", command: go("/admin") }] : []),
       ]
       return [
@@ -127,7 +128,7 @@
       const extras = [
         ...(canWoogle ? [{ label: "Woogle", icon: "pi pi-sparkles", command: go("/ask") }] : []),
         ...(canResources ? [{ label: "Resources", icon: "pi pi-folder-open", command: go("/resources") }] : []),
-        ...(showRushCrm ? [{ label: "Rush CRM", icon: "pi pi-id-card", command: go("/admin?section=rush-crm") }] : []),
+        ...(showRushCrm ? [{ label: "Rush CRM", icon: "pi pi-id-card", command: go("/rush-pipeline") }] : []),
         ...(canAdmin ? [{ label: "Admin", icon: "pi pi-cog", command: go("/admin") }] : []),
       ]
       return [
@@ -146,8 +147,8 @@
     const canAdmin = authStore.canAccessAdminPanel
     const canResources = authStore.canAccessResources
     const canWoogle = authStore.canUseWoogle
-    const showRushCrm = authStore.isMember || authStore.isRushChair
-    const useFlat   = windowWidth.value >= 1650
+    const showRushCrm = authStore.canAccessRushCrm
+    const useFlat   = windowWidth.value >= 1800
     const useMedium = windowWidth.value >= 1200
 
     const flatItems = [
@@ -157,10 +158,10 @@
       { label: "People",   icon: "pi pi-id-card",   route: "/members" },
       ...(canWoogle ? [{ label: "Woogle",    icon: "pi pi-sparkles",    route: "/ask" }] : []),
       ...(canResources ? [{ label: "Resources", icon: "pi pi-folder-open", route: "/resources" }] : []),
-      ...(showRushCrm ? [{ label: "Rush CRM", icon: "pi pi-id-card", route: "/admin?section=rush-crm" }] : []),
       { label: "News",     icon: "pi pi-book",      route: "/newsletters" },
       { label: "History",  icon: "pi pi-clock",     route: "/history" },
       { label: "Contact",  icon: "pi pi-envelope",  route: "/contact" },
+      ...(showRushCrm ? [{ label: "Rush CRM", icon: "pi pi-id-card", route: "/rush-pipeline" }] : []),
       ...(canAdmin ? [{ label: "Admin", icon: "pi pi-cog", route: "/admin" }] : []),
     ]
 
@@ -169,7 +170,6 @@
       { label: "Rush",     icon: "pi pi-users",    route: "/rush" },
       { label: "Calendar", icon: "pi pi-calendar", route: "/events" },
       { label: "People",   icon: "pi pi-id-card",  route: "/members" },
-      ...(canWoogle ? [{ label: "Woogle", icon: "pi pi-sparkles", route: "/ask" }] : []),
       { label: "News",    icon: "pi pi-book",  route: "/newsletters" },
       { label: "History", icon: "pi pi-clock", route: "/history" },
       { label: "More", icon: "pi pi-ellipsis-h", isMore: true },
