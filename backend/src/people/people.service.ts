@@ -205,7 +205,10 @@ export class PeopleService {
     let redactWorkEmail = false
     let redactEmployer = false
     let redactPhones = false
-    let redactAddress = false
+    // Address is split into two tiers: street+ZIP (sensitive, opt-in) and city+state
+    // (general location, always visible to signed-in members). Guests see neither.
+    let redactStreet = false
+    let redactCityState = false
     let redactLinkedIn = false
     let redactExternalId = false
 
@@ -216,14 +219,17 @@ export class PeopleService {
         redactWorkEmail = true
         redactEmployer = true
         redactPhones = true
-        redactAddress = true
+        redactStreet = true
+        redactCityState = true
         redactLinkedIn = true
       } else if (!self) {
         redactEmail = !person.shareEmailWithLoggedInMembers
         redactWorkEmail = !person.shareWorkEmailWithLoggedInMembers
         redactEmployer = !person.shareEmployerWithLoggedInMembers
         redactPhones = !person.sharePhonesWithLoggedInMembers
-        redactAddress = !person.shareAddressWithLoggedInMembers
+        redactStreet = !person.shareAddressWithLoggedInMembers
+        // City/state remain visible to any signed-in member regardless of opt-in.
+        redactCityState = false
         redactLinkedIn = !person.shareLinkedInWithLoggedInMembers
       }
     }
@@ -240,10 +246,10 @@ export class PeopleService {
       id: person.id,
       firstName: person.firstName,
       lastName: person.lastName,
-      addressLine1: redactAddress ? null : person.addressLine1,
-      city: redactAddress ? null : person.city,
-      state: redactAddress ? null : person.state,
-      zip: redactAddress ? null : person.zip,
+      addressLine1: redactStreet ? null : person.addressLine1,
+      city: redactCityState ? null : person.city,
+      state: redactCityState ? null : person.state,
+      zip: redactStreet ? null : person.zip,
       personalEmail: redactEmail ? null : person.personalEmail,
       hasEmailOnFile,
       workEmail: redactWorkEmail ? null : (person.workEmail ?? null),
