@@ -144,17 +144,19 @@ export class Person extends BaseEntity {
   })
   shareEmployerWithLoggedInMembers!: boolean
 
+  /** Opt-in: masked by default for logged-in viewers; members choose to share phones. Guests never receive phones. */
   @Column({
     type: DataType.BOOLEAN,
     allowNull: false,
-    defaultValue: true,
+    defaultValue: false,
   })
   sharePhonesWithLoggedInMembers!: boolean
 
+  /** Opt-in: masked by default for logged-in viewers; members choose to share street address. Guests never receive address. */
   @Column({
     type: DataType.BOOLEAN,
     allowNull: false,
-    defaultValue: true,
+    defaultValue: false,
   })
   shareAddressWithLoggedInMembers!: boolean
 

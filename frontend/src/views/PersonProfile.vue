@@ -253,7 +253,8 @@
             </Message>
             <p class="text-surface-600 text-sm m-0 mb-4">
               When each option is on, other signed-in chapter members who browse the directory can see that
-              field. Guests only see names and roles, not contact info.
+              field. Phone numbers and mailing address are off by default. Guests only see names and roles, not
+              contact info.
             </p>
             <div class="flex flex-col gap-4">
               <div class="flex flex-wrap items-center justify-between gap-2">
@@ -634,8 +635,9 @@
                     The following information is not visible to the general public.
                   </p>
                   <p class="text-surface-600 text-sm m-0">
-                    Switches default to on so other signed-in chapter members can see each item. Turn a switch
-                    off to hide that item from members (guests never see these fields either way).
+                    Phone numbers and mailing address are hidden from other members by default — turn those
+                    switches on to share them. Turn any switch off to hide that item from members (guests never
+                    see these fields either way).
                   </p>
                 </div>
                 <div class="flex flex-wrap items-center justify-between gap-2">
@@ -1188,8 +1190,8 @@ const myProfileSaving = ref(false)
 const privacyShareEmail = ref(true)
 const privacyShareWorkEmail = ref(true)
 const privacyShareEmployer = ref(true)
-const privacySharePhones = ref(true)
-const privacyShareAddress = ref(true)
+const privacySharePhones = ref(false)
+const privacyShareAddress = ref(false)
 const privacyShareLinkedIn = ref(true)
 
 const editEmail = ref('')
@@ -1224,8 +1226,8 @@ function hydratePrivacySharesFromPerson(person: PersonResponse) {
   privacyShareEmail.value = person.shareEmailWithLoggedInMembers ?? true
   privacyShareWorkEmail.value = person.shareWorkEmailWithLoggedInMembers ?? true
   privacyShareEmployer.value = person.shareEmployerWithLoggedInMembers ?? true
-  privacySharePhones.value = person.sharePhonesWithLoggedInMembers ?? true
-  privacyShareAddress.value = person.shareAddressWithLoggedInMembers ?? true
+  privacySharePhones.value = person.sharePhonesWithLoggedInMembers ?? false
+  privacyShareAddress.value = person.shareAddressWithLoggedInMembers ?? false
   privacyShareLinkedIn.value = person.shareLinkedInWithLoggedInMembers ?? true
 }
 

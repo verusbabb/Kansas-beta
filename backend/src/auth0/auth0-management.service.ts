@@ -49,18 +49,18 @@ export class Auth0ManagementService {
           // Database connection user — send password reset email so they can set a password
           const auth0Id = dbUser.user_id!
           await this.sendPasswordResetEmail(email)
-          this.logger.info('Sent password reset email to existing Auth0 database user', {
-            email,
-            auth0Id,
-          })
+          this.logger.info(
+            { email, auth0Id },
+            'Sent password reset email to existing Auth0 database user',
+          )
           return auth0Id
         } else {
           // Social-only user (e.g. Google) — they already have a login method, no ticket needed
           const auth0Id = existing.data[0].user_id!
-          this.logger.info('Existing Auth0 social user found, skipping password ticket', {
-            email,
-            auth0Id,
-          })
+          this.logger.info(
+            { email, auth0Id },
+            'Existing Auth0 social user found, skipping password ticket',
+          )
           return auth0Id
         }
       }
@@ -77,14 +77,50 @@ export class Auth0ManagementService {
 
       const auth0Id = created.data.user_id!
       await this.sendPasswordResetEmail(email)
-      this.logger.info('Provisioned Auth0 user and sent password reset email', { email, auth0Id })
+      this.logger.info({ email, auth0Id }, 'Provisioned Auth0 user and sent password reset email')
       return auth0Id
     } catch (error) {
-      this.logger.warn('Auth0 provisionUser failed — user saved in DB without Auth0 link', {
-        email,
-        error: error instanceof Error ? error.message : String(error),
-      })
+      this.logger.warn(
+        { email, error: error instanceof Error ? error.message : String(error) },
+        'Auth0 provisionUser failed — user saved in DB without Auth0 link',
+      )
       return null
+    }
+  }
+
+  /**
+   * Permanently delete a user in Auth0 by user_id. Idempotent: a missing user is
+   * treated as success so the email can be cleanly re-enrolled later.
+   */
+  async deleteUser(auth0Id: string): Promise<void> {
+    if (!this.client) return
+    try {
+      await this.client.users.delete({ id: auth0Id })
+      this.logger.info({ auth0Id }, 'Deleted Auth0 user')
+    } catch (error) {
+      this.logger.warn(
+        { auth0Id, error: error instanceof Error ? error.message : String(error) },
+        'Auth0 deleteUser failed',
+      )
+    }
+  }
+
+  /**
+   * Permanently delete every Auth0 identity matching an email (database + social).
+   * Used when no auth0Id is stored but a stray identity may still exist. Best-effort.
+   */
+  async deleteUserByEmail(email: string): Promise<void> {
+    if (!this.client) return
+    try {
+      const result = await this.client.usersByEmail.getByEmail({ email })
+      for (const u of result.data) {
+        if (u.user_id) await this.deleteUser(u.user_id)
+      }
+    } catch (error) {
+      this.logger.warn(
+        { email, error: error instanceof Error ? error.message : String(error) },
+        'Auth0 deleteUserByEmail failed',
+      )
     }
   }
 
@@ -95,12 +131,12 @@ export class Auth0ManagementService {
     if (!this.client) return
     try {
       await this.client.users.update({ id: auth0Id }, { blocked: true })
-      this.logger.info('Blocked Auth0 user', { auth0Id })
+      this.logger.info({ auth0Id }, 'Blocked Auth0 user')
     } catch (error) {
-      this.logger.warn('Auth0 blockUser failed', {
-        auth0Id,
-        error: error instanceof Error ? error.message : String(error),
-      })
+      this.logger.warn(
+        { auth0Id, error: error instanceof Error ? error.message : String(error) },
+        'Auth0 blockUser failed',
+      )
     }
   }
 
@@ -111,12 +147,12 @@ export class Auth0ManagementService {
     if (!this.client) return
     try {
       await this.client.users.update({ id: auth0Id }, { blocked: false })
-      this.logger.info('Unblocked Auth0 user', { auth0Id })
+      this.logger.info({ auth0Id }, 'Unblocked Auth0 user')
     } catch (error) {
-      this.logger.warn('Auth0 unblockUser failed', {
-        auth0Id,
-        error: error instanceof Error ? error.message : String(error),
-      })
+      this.logger.warn(
+        { auth0Id, error: error instanceof Error ? error.message : String(error) },
+        'Auth0 unblockUser failed',
+      )
     }
   }
 
@@ -135,13 +171,12 @@ export class Auth0ManagementService {
           connection: this.dbConnection,
         },
       )
-      this.logger.info('Updated Auth0 user email', { auth0Id, newEmail, emailVerified })
+      this.logger.info({ auth0Id, newEmail, emailVerified }, 'Updated Auth0 user email')
     } catch (error) {
-      this.logger.warn('Auth0 updateEmail failed', {
-        auth0Id,
-        newEmail,
-        error: error instanceof Error ? error.message : String(error),
-      })
+      this.logger.warn(
+        { auth0Id, newEmail, error: error instanceof Error ? error.message : String(error) },
+        'Auth0 updateEmail failed',
+      )
     }
   }
 
@@ -183,10 +218,10 @@ export class Auth0ManagementService {
       return { sent: true }
     } catch (error) {
       // If the lookup fails, fall back to sending — better to send than to block
-      this.logger.warn('Auth0 user lookup failed in resendPasswordResetEmail, sending anyway', {
-        email,
-        error: error instanceof Error ? error.message : String(error),
-      })
+      this.logger.warn(
+        { email, error: error instanceof Error ? error.message : String(error) },
+        'Auth0 user lookup failed in resendPasswordResetEmail, sending anyway',
+      )
       await this.sendPasswordResetEmail(email)
       return { sent: true }
     }

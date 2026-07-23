@@ -8,6 +8,7 @@ import { StorageModule } from '../storage/storage.module'
 import { PersonRelationshipsModule } from '../person-relationships/person-relationships.module'
 import { ExecTeamModule } from '../exec-team/exec-team.module'
 import { KnowledgeModule } from '../knowledge/knowledge.module'
+import { UsersModule } from '../users/users.module'
 import { PeopleService } from './people.service'
 import { PeopleController } from './people.controller'
 
@@ -19,6 +20,7 @@ import { PeopleController } from './people.controller'
     PersonRelationshipsModule,
     ExecTeamModule,
     KnowledgeModule,
+    UsersModule,
   ],
   controllers: [PeopleController],
   providers: [PeopleService],

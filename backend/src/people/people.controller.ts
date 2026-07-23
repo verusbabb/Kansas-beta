@@ -282,13 +282,17 @@ export class PeopleController {
   @ApiParam({ name: 'id', description: 'Person UUID' })
   @ApiOperation({
     summary: 'Remove a directory person (admin only)',
-    description: 'Soft-deletes the person; they no longer appear in the public directory.',
+    description:
+      'Removes the person from the directory and hard-deletes any linked app user and their Auth0 login. The email can be re-enrolled later.',
   })
   @ApiResponse({ status: HttpStatus.NO_CONTENT, description: 'Person removed' })
   @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'Person not found' })
   @ApiResponse({ status: HttpStatus.FORBIDDEN, description: 'Admin required' })
-  async remove(@Param('id', ParseUUIDPipe) id: string): Promise<void> {
-    return this.peopleService.remove(id)
+  async remove(
+    @Req() req: { user: User },
+    @Param('id', ParseUUIDPipe) id: string,
+  ): Promise<void> {
+    return this.peopleService.remove(id, req.user)
   }
 
   @Post()

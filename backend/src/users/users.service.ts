@@ -7,7 +7,7 @@ import {
 } from '@nestjs/common'
 import { InjectModel } from '@nestjs/sequelize'
 import { PinoLogger } from 'nestjs-pino'
-import { Op } from 'sequelize'
+import { Op, Transaction, type WhereOptions } from 'sequelize'
 import { User, UserRole } from '../database/entities/user.entity'
 import { Person } from '../database/entities/person.entity'
 import { Auth0ManagementService } from '../auth0/auth0-management.service'
@@ -389,11 +389,16 @@ export class UsersService {
   }
 
   /**
-   * Delete a user (soft delete) and block them in Auth0.
+   * Permanently delete a user (hard delete) and remove them from Auth0.
+   *
+   * Hard delete (not soft) is intentional: it prevents stale rows from blocking a
+   * future re-enrollment of the same email, and deleting the Auth0 identity revokes
+   * login. The directory `people` row is untouched — the person remains a member,
+   * they just no longer have an app account.
    */
   async remove(id: string): Promise<void> {
     try {
-      const user = await this.userModel.findByPk(id)
+      const user = await this.userModel.findByPk(id, { paranoid: false })
 
       if (!user) {
         throw new NotFoundException(`User with ID ${id} not found`)
@@ -404,18 +409,84 @@ export class UsersService {
       }
 
       const auth0Id = user.auth0Id
-      await user.destroy()
-      this.logger.info('User soft-deleted', { id })
+      const email = user.email
+      await user.destroy({ force: true })
+      this.logger.info({ id }, 'User hard-deleted')
 
-      if (auth0Id) {
-        await this.auth0.blockUser(auth0Id)
-      }
+      await this.deleteFromAuth0(auth0Id, email)
     } catch (error) {
       if (error instanceof NotFoundException || error instanceof ForbiddenException) {
         throw error
       }
-      this.logger.error('Failed to delete user', { id, error })
+      this.logger.error({ id, error }, 'Failed to delete user')
       throw error
+    }
+  }
+
+  /**
+   * Hard-delete every app user linked to a directory person — by `personId` or by
+   * matching email — inside the caller's transaction. Returns the Auth0 identities
+   * to delete after the transaction commits (see {@link deleteAuth0Identities}).
+   *
+   * Throws if a linked account is protected, or belongs to the acting admin
+   * (self-lockout guard), so the caller's transaction rolls back cleanly.
+   */
+  async hardDeleteUsersForDirectoryPerson(
+    params: { personId: string; email: string | null; actingUserId?: string },
+    transaction: Transaction,
+  ): Promise<Array<{ auth0Id: string | null; email: string }>> {
+    const { personId, email, actingUserId } = params
+
+    const orConditions: WhereOptions[] = [{ personId }]
+    if (email) {
+      orConditions.push({ email: { [Op.iLike]: email } })
+    }
+
+    const users = await this.userModel.findAll({
+      where: { [Op.or]: orConditions },
+      paranoid: false,
+      transaction,
+    })
+
+    const targets: Array<{ auth0Id: string | null; email: string }> = []
+    for (const user of users) {
+      if (this.isProtectedUser(user)) {
+        throw new ForbiddenException(
+          'This person is linked to a protected account and cannot be removed',
+        )
+      }
+      if (actingUserId && user.id === actingUserId) {
+        throw new ForbiddenException('You cannot remove your own account')
+      }
+      targets.push({ auth0Id: user.auth0Id, email: user.email })
+      await user.destroy({ force: true, transaction })
+    }
+
+    this.logger.info({ personId, count: targets.length }, 'Hard-deleted users linked to person')
+    return targets
+  }
+
+  /**
+   * Best-effort deletion of Auth0 identities collected during a cascade. Runs after
+   * the DB transaction commits; Auth0 is external and cannot participate in it.
+   */
+  async deleteAuth0Identities(
+    targets: Array<{ auth0Id: string | null; email: string }>,
+  ): Promise<void> {
+    for (const target of targets) {
+      await this.deleteFromAuth0(target.auth0Id, target.email)
+    }
+  }
+
+  /**
+   * Delete a user's Auth0 identity by id when known, otherwise by email (catches a
+   * stray identity created when a DB save failed mid-provision). Both are idempotent.
+   */
+  private async deleteFromAuth0(auth0Id: string | null, email: string): Promise<void> {
+    if (auth0Id) {
+      await this.auth0.deleteUser(auth0Id)
+    } else if (email) {
+      await this.auth0.deleteUserByEmail(email)
     }
   }
 

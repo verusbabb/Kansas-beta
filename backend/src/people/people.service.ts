@@ -33,6 +33,7 @@ import { PersonRelationshipsService } from '../person-relationships/person-relat
 import { ExecTeamService } from '../exec-team/exec-team.service'
 import { IndexingService } from '../knowledge/indexing.service'
 import { Auth0ManagementService } from '../auth0/auth0-management.service'
+import { UsersService } from '../users/users.service'
 
 /** Match `ExecTeamService` roster headshot signed URL lifetime. */
 const PROFILE_HEADSHOT_URL_EXPIRY_MINUTES = 7 * 24 * 60
@@ -61,6 +62,7 @@ export class PeopleService {
     private readonly execTeamService: ExecTeamService,
     private readonly indexingService: IndexingService,
     private readonly auth0: Auth0ManagementService,
+    private readonly usersService: UsersService,
   ) {
     this.logger.setContext(PeopleService.name)
   }
@@ -800,16 +802,48 @@ export class PeopleService {
   }
 
   /**
-   * Soft-delete a person (paranoid). Email can be reused via create restore path.
+   * Remove a person from the directory (admin only).
+   *
+   * Cascade: soft-deletes the person (paranoid — preserves relationships/history and
+   * lets the email be reused via the create restore path) AND hard-deletes any linked
+   * app user + their Auth0 identity, so the person can no longer log in and no stale
+   * user row blocks a future re-enrollment. The DB steps run in one transaction;
+   * Auth0 cleanup (external, non-transactional) runs after commit.
+   *
+   * @param actingUser the admin performing the removal, used to prevent self-lockout.
    */
-  async remove(id: string): Promise<void> {
+  async remove(id: string, actingUser?: User): Promise<void> {
     const person = await this.personModel.findByPk(id)
     if (!person) {
       throw new NotFoundException('Person not found')
     }
-    await person.destroy()
-    this.logger.info('Soft-deleted person', { id })
+
+    const email = person.personalEmail?.trim().toLowerCase() || null
+
+    // Self-lockout guard: an admin cannot remove their own directory record.
+    if (actingUser) {
+      const isSelf =
+        (actingUser.personId != null && actingUser.personId === id) ||
+        (!!email && actingUser.email.trim().toLowerCase() === email)
+      if (isSelf) {
+        throw new BadRequestException('You cannot remove your own directory record')
+      }
+    }
+
+    const sequelize = this.personModel.sequelize!
+    const auth0Targets = await sequelize.transaction(async (transaction) => {
+      const targets = await this.usersService.hardDeleteUsersForDirectoryPerson(
+        { personId: id, email, actingUserId: actingUser?.id },
+        transaction,
+      )
+      await person.destroy({ transaction })
+      return targets
+    })
+
+    this.logger.info({ id, removedUsers: auth0Targets.length }, 'Removed person from directory')
     void this.indexingService.deletePersonIndex(id)
+
+    await this.usersService.deleteAuth0Identities(auth0Targets)
   }
 
   /**

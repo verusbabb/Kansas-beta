@@ -675,8 +675,8 @@
       <div class="flex flex-col gap-3 border-t border-surface-200 pt-4">
         <p class="font-semibold text-surface-700 m-0">Visible to other signed-in members</p>
         <p class="text-sm text-surface-600 m-0">
-          Turn off to hide that field from viewers (guests never see contact info). Editors still see full
-          rows in this admin directory.
+          Turn off to hide that field from viewers (guests never see contact info). Phone numbers and mailing
+          address are off by default. Administrators always see full rows in this admin directory.
         </p>
         <div class="flex flex-wrap items-center justify-between gap-2">
           <label for="edit-share-email" class="text-surface-800">Personal email</label>
@@ -1227,8 +1227,8 @@ const editForm = ref({
   shareEmailWithLoggedInMembers: true,
   shareWorkEmailWithLoggedInMembers: true,
   shareEmployerWithLoggedInMembers: true,
-  sharePhonesWithLoggedInMembers: true,
-  shareAddressWithLoggedInMembers: true,
+  sharePhonesWithLoggedInMembers: false,
+  shareAddressWithLoggedInMembers: false,
   shareLinkedInWithLoggedInMembers: true,
 })
 
@@ -1483,8 +1483,8 @@ function resetEditForm() {
     shareEmailWithLoggedInMembers: true,
     shareWorkEmailWithLoggedInMembers: true,
     shareEmployerWithLoggedInMembers: true,
-    sharePhonesWithLoggedInMembers: true,
-    shareAddressWithLoggedInMembers: true,
+    sharePhonesWithLoggedInMembers: false,
+    shareAddressWithLoggedInMembers: false,
     shareLinkedInWithLoggedInMembers: true,
   }
   clearEditErrors()
@@ -1511,8 +1511,8 @@ function openEditDialog(p: PersonResponse) {
     shareEmailWithLoggedInMembers: p.shareEmailWithLoggedInMembers ?? true,
     shareWorkEmailWithLoggedInMembers: p.shareWorkEmailWithLoggedInMembers ?? true,
     shareEmployerWithLoggedInMembers: p.shareEmployerWithLoggedInMembers ?? true,
-    sharePhonesWithLoggedInMembers: p.sharePhonesWithLoggedInMembers ?? true,
-    shareAddressWithLoggedInMembers: p.shareAddressWithLoggedInMembers ?? true,
+    sharePhonesWithLoggedInMembers: p.sharePhonesWithLoggedInMembers ?? false,
+    shareAddressWithLoggedInMembers: p.shareAddressWithLoggedInMembers ?? false,
     shareLinkedInWithLoggedInMembers: p.shareLinkedInWithLoggedInMembers ?? true,
   }
   clearEditErrors()
